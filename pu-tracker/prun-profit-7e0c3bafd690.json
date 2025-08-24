@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "prun-profit",
+  "private_key_id": "7e0c3bafd690c7a80623f19f81858c4c37c918b2",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDmdQd0vRufRQG0\nVbozEA+BC6cEoVBtBigdsj+kM+aIEXTn+BucyCXsSB/kLpZSDoZS7cVIn50x1OVe\nQtRS88xc17iiayz/JVlqulW3wVxaJgS39Um56wI62umXOFQ1L8OjauH666YYYZOm\n0Z/mawMChjpz2ZIXPQrpS3E2qJH/Q5Z8oUX/I3KwnNY40kgo7G6GMjr/vhxJD3kh\n5hNmB54TCgzvb5jVu1c2NRJxBqBKPmbFQFI5fraA9jphUy7/00sjEYelpP5L+u4T\nIYO5zyzidPfIwN9/xJSEJMLB1tSORHY2Huf0xb/maridfKc9uYFz9eHN9rui24oU\nrKm0i32hAgMBAAECggEAYmuDYicrB0NsvWvJJ+qJfIaR7wfHdbAl7LzFsiYaI201\nHKYYgMX3cCfDOutsdiHO2tbBpMjJ1NDDnhRzYfPNiK72IqMb5eE5BTwLxHy3KKbI\n6BlAwb4sRx9bmCHN0KMT7ZQFa2g9GHd/m8Q1gi2cbPUPPI+j9Pm0UbrO4FVweG9A\n+30akKYT1CPBEkcJBx5u4cetfrzE5/PyY3i6PODGaKrsyAI8p2bQe8vXHPoilPuM\nZgrmwA122hFCAqW59DKgKuBm7/+hSIhFc8KEHanlpgtprC2C1ESw4JsMHZYsjfax\n5vhpw+d6c3gIjDzGST2JP0WDpy+qqno0UnTjh7+HGwKBgQDz6U6aCcY2zE9helCM\nCuzAGgmyUfgVloMP9NYt9pbxPCKlBtvZSZaTrgJLRRmKYYHu4ahT5/O45MNBcRKp\nS2BNPROqOYtkxEe8V115+lTKWnRpZTuhJjLHe1O3XXCFgroNMMi8GtSL1YHcjJ1D\nQ5itV/rb6flEbFAthvVoZjWNiwKBgQDx4QSfh8zYgLH3W4aVle30h4K/vywsmoM0\ny0r6FAiIpGuz9pSXwiZrnksp6TQw2XJKVV/2kl9GefLYRISDQRiPedPm51Tq4hYY\nxHpsNalN3XHYHBDBvQntN/oqaDmP7zmcOzGM+MTFPK0h0MUr6tYzkddoIxlLrIJr\nAPYUKDUfAwKBgQCoj6SlaXnVJu7485m0nlwtChGHbYRgDus2XMKjcxWvUxqyJ4JJ\nsMRh/NBTCkbzTh2IY+R7UAIr1dRmZmk6HABKgJoVer0tf0QAEfRktq5gRZDLwY0q\n+gX/u+gIAYggjE5djUg8TuJyXLPpIjgQYyehK/sOfaypL51dSTZR1sjNrwKBgEl/\nQHJhR2N6J5msHAcUGcw16QruwjODd97w7wVyVO2AWKHEiX5bpmUJInnHvO4jBNGF\ng7Ve4Mh/gcUpfMKNYzMlp7gADxOYQ3KfMTv0Sk+4vEEYthbIpF2Kpt9/8A3GeVD5\nw6K8bL4qI8mksGUZ5KCi7jtcfvE5qB9vmVaiqRGVAoGBAPEywqYV/xd3S8R3L7N7\n81uzcbUYaXk6z2zD0fLQgBbix4Dkvp9PRtGYRW262y/nLDppKEs3n/kDH7osbV9R\nbIkEdnKV9yk3VSrceN2+yWexGPcWucvV3Cz3NpNJCHc0cGP2UHLqg9VvNvQPQykI\nGFcCaayPRWogcQBV77ZcS+Vv\n-----END PRIVATE KEY-----\n",
+  "client_email": "pu-service@prun-profit.iam.gserviceaccount.com",
+  "client_id": "112066450803901438624",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/pu-service%40prun-profit.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

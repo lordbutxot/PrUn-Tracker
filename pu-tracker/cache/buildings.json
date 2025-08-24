@@ -1,0 +1,975 @@
+{
+  "RIG": {
+    "workforce": {
+      "Pio": 30,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "TNP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 80
+    },
+    "outputs": [
+      "ETC",
+      "O",
+      "TCS"
+    ]
+  },
+  "PAR": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PP1": {
+    "workforce": {
+      "Pio": 80,
+      "Tec": 0
+    },
+    "outputs": [
+      "BDE",
+      "BSE",
+      "BTA",
+      "BBH"
+    ]
+  },
+  "CLF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "HMS",
+      "LC",
+      "HSS"
+    ]
+  },
+  "SDP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "HBL": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "HBM": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "COG": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "HB4": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "FP": {
+    "workforce": {
+      "Pio": 40,
+      "Tec": 0
+    },
+    "outputs": [
+      "DW",
+      "DW",
+      "PPA",
+      "COF",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "RAT",
+      "PPA",
+      "PPA",
+      "MEA",
+      "FIM",
+      "FOD"
+    ]
+  },
+  "CRC": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "FS": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "FLO",
+      "BRO",
+      "BGC",
+      "BCO",
+      "SFK",
+      "HCC",
+      "BFR",
+      "MFK",
+      "AFR",
+      "UTS",
+      "SEQ",
+      "RGO",
+      "BGO"
+    ]
+  },
+  "HOS": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "UNI": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "FRM": {
+    "workforce": {
+      "Pio": 50,
+      "Tec": 0
+    },
+    "outputs": [
+      "NUT",
+      "BEA",
+      "GRN",
+      "RCO",
+      "RCO",
+      "HCP",
+      "VEG",
+      "HER",
+      "MAI",
+      "GRN",
+      "BEA"
+    ]
+  },
+  "LIB": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PWH": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "WEL": {
+    "workforce": {
+      "Pio": 70,
+      "Tec": 0
+    },
+    "outputs": [
+      "CHA",
+      "FC",
+      "GV",
+      "GC",
+      "FLP",
+      "MHL",
+      "SSC",
+      "TRU",
+      "THP",
+      "DRF"
+    ]
+  },
+  "BMP": {
+    "workforce": {
+      "Pio": 100,
+      "Tec": 0
+    },
+    "outputs": [
+      "OVE",
+      "EXO",
+      "EXO",
+      "EXO",
+      "PE",
+      "OVE",
+      "PWO",
+      "REP",
+      "MG",
+      "OVE",
+      "SEA",
+      "PT",
+      "PT",
+      "PT",
+      "PT",
+      "SUN",
+      "OFF",
+      "I",
+      "MCG",
+      "STR"
+    ]
+  },
+  "HB5": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "LM": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "HBB": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "STO": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PP3": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 40
+    },
+    "outputs": [
+      "INS",
+      "RBH",
+      "RDE",
+      "RTA",
+      "MGC",
+      "PSH",
+      "RSE",
+      "HSE"
+    ]
+  },
+  "ELP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 40
+    },
+    "outputs": [
+      "SAR",
+      "CD",
+      "AAR",
+      "AWF",
+      "BWS",
+      "HPC",
+      "BMF",
+      "LFE"
+    ]
+  },
+  "APF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 60
+    },
+    "outputs": [
+      "WR",
+      "LOG",
+      "COM",
+      "RCS",
+      "ADS",
+      "WS",
+      "AIR",
+      "ACS",
+      "LIS",
+      "NV1",
+      "PDA",
+      "FFC"
+    ]
+  },
+  "HB1": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "EMC": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "ART": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "WCE": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "CLR": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 15
+    },
+    "outputs": [
+      "NFI",
+      "TRN",
+      "TRA",
+      "NCS",
+      "LDI",
+      "SWF",
+      "CAP",
+      "SFE",
+      "MTC",
+      "MWF",
+      "MFE"
+    ]
+  },
+  "AAF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "NV2",
+      "CRU",
+      "TAC",
+      "CC",
+      "STS"
+    ]
+  },
+  "4DA": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "WPL": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "TK",
+      "COT",
+      "SIL",
+      "NL",
+      "KV"
+    ]
+  },
+  "PAC": {
+    "workforce": {
+      "Pio": 20,
+      "Tec": 0
+    },
+    "outputs": [
+      "EBU",
+      "CBU",
+      "PBU",
+      "SBU",
+      "TBU"
+    ]
+  },
+  "INC": {
+    "workforce": {
+      "Pio": 40,
+      "Tec": 0
+    },
+    "outputs": [
+      "C",
+      "C",
+      "C",
+      "C",
+      "C",
+      "C"
+    ]
+  },
+  "EXT": {
+    "workforce": {
+      "Pio": 60,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "HB2": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "LAB": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 70
+    },
+    "outputs": [
+      "JUI",
+      "BLE",
+      "DDT",
+      "TCL",
+      "NST",
+      "BL",
+      "BAC",
+      "BLE",
+      "CST",
+      "THF",
+      "NR"
+    ]
+  },
+  "ASM": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 50
+    },
+    "outputs": [
+      "AST",
+      "FET",
+      "WAL",
+      "CTF",
+      "FAL"
+    ]
+  },
+  "ADM": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "ECA": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 20
+    },
+    "outputs": [
+      "CBL",
+      "POW",
+      "SOL",
+      "FIR",
+      "RAG",
+      "CBS",
+      "SP",
+      "CBM"
+    ]
+  },
+  "PSY": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "SST": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "CM": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "SKF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 10
+    },
+    "outputs": [
+      "WCB",
+      "MCB",
+      "MFL",
+      "LSL",
+      "LCB",
+      "VCB",
+      "TCB",
+      "SSL",
+      "LFL",
+      "VSC",
+      "SCB",
+      "MSL",
+      "SFL",
+      "HCB"
+    ]
+  },
+  "SME": {
+    "workforce": {
+      "Pio": 50,
+      "Tec": 0
+    },
+    "outputs": [
+      "LI",
+      "AU",
+      "S",
+      "STL",
+      "SI",
+      "SI",
+      "SI",
+      "CF",
+      "TI",
+      "SI",
+      "CU",
+      "AL",
+      "AL",
+      "FE",
+      "FE"
+    ]
+  },
+  "HB3": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PPF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "PSS",
+      "LFP",
+      "PSM",
+      "DCL",
+      "DCM",
+      "PSL",
+      "DCS"
+    ]
+  },
+  "HYF": {
+    "workforce": {
+      "Pio": 40,
+      "Tec": 0
+    },
+    "outputs": [
+      "RCO",
+      "HCP",
+      "VEG",
+      "ALG",
+      "MUS",
+      "MAI",
+      "CAF",
+      "MUS"
+    ]
+  },
+  "POL": {
+    "workforce": {
+      "Pio": 10,
+      "Tec": 0
+    },
+    "outputs": [
+      "DEC",
+      "EPO",
+      "PG"
+    ]
+  },
+  "HWP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 10
+    },
+    "outputs": [
+      "LHP",
+      "BHP",
+      "HHP",
+      "RHP",
+      "ATP",
+      "BWH",
+      "AWH",
+      "AHP"
+    ]
+  },
+  "SL": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "IMM",
+      "WAI",
+      "SNM",
+      "IDC"
+    ]
+  },
+  "SD": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 50
+    },
+    "outputs": [
+      "BAI",
+      "LD",
+      "MLI",
+      "NF",
+      "SA",
+      "SAL",
+      "WM"
+    ]
+  },
+  "ORC": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 10
+    },
+    "outputs": [
+      "PIB",
+      "GRA",
+      "PIB",
+      "GRA",
+      "HOP",
+      "HOP"
+    ]
+  },
+  "INF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PP2": {
+    "workforce": {
+      "Pio": 25,
+      "Tec": 0
+    },
+    "outputs": [
+      "LSE",
+      "BSE",
+      "LTA",
+      "BTA",
+      "BBH",
+      "LBH",
+      "LDE",
+      "BDE",
+      "AEF"
+    ]
+  },
+  "REF": {
+    "workforce": {
+      "Pio": 60,
+      "Tec": 0
+    },
+    "outputs": [
+      "SF",
+      "SF",
+      "FF",
+      "HE3"
+    ]
+  },
+  "ACA": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PBH": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "MCA": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 20
+    },
+    "outputs": [
+      "FAN",
+      "DIS",
+      "HD",
+      "MB"
+    ]
+  },
+  "PP4": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 40
+    },
+    "outputs": [
+      "TSH",
+      "ASE",
+      "ATA",
+      "RSH",
+      "ADE",
+      "ABH"
+    ]
+  },
+  "CHP": {
+    "workforce": {
+      "Pio": 20,
+      "Tec": 0
+    },
+    "outputs": [
+      "PFE",
+      "SOI",
+      "FLX",
+      "CA",
+      "IND",
+      "NAB",
+      "LCR",
+      "REA",
+      "SC",
+      "NS",
+      "NA",
+      "MED",
+      "OLF"
+    ]
+  },
+  "SPP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 50
+    },
+    "outputs": [
+      "AGS",
+      "APT",
+      "BRP",
+      "ARP",
+      "SRP",
+      "BPT",
+      "BGS"
+    ]
+  },
+  "VRT": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "PHF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 25
+    },
+    "outputs": [
+      "ADR",
+      "BSC",
+      "BND",
+      "PK"
+    ]
+  },
+  "UPF": {
+    "workforce": {
+      "Pio": 20,
+      "Tec": 0
+    },
+    "outputs": [
+      "BR1",
+      "BR2",
+      "CQM",
+      "BRS",
+      "DOU",
+      "TCU",
+      "FUN",
+      "LU",
+      "CQL",
+      "RDS",
+      "WOR",
+      "CQT",
+      "RDL",
+      "SU",
+      "CQS",
+      "HAB"
+    ]
+  },
+  "SPF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "NOZ",
+      "HPR",
+      "RCT",
+      "QCR",
+      "AFP",
+      "BFP",
+      "ANZ",
+      "HNZ",
+      "HYR",
+      "AEN",
+      "ENG",
+      "FSE",
+      "HTE"
+    ]
+  },
+  "EDM": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "SCN",
+      "HOG",
+      "RAD",
+      "MHP",
+      "BID"
+    ]
+  },
+  "IVP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 70
+    },
+    "outputs": [
+      "RSI",
+      "MTP",
+      "VG"
+    ]
+  },
+  "EEP": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "EES",
+      "ES"
+    ]
+  },
+  "GF": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "NG",
+      "RG",
+      "RG",
+      "TUB",
+      "LIT",
+      "GCH",
+      "GNZ",
+      "GL",
+      "GL",
+      "GL",
+      "GEN"
+    ]
+  },
+  "SCA": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 30
+    },
+    "outputs": [
+      "ROM",
+      "MPC",
+      "PCB",
+      "SEN",
+      "TPU",
+      "RAM"
+    ]
+  },
+  "SE": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "NN",
+      "OS",
+      "DD",
+      "DA",
+      "DV",
+      "EDC"
+    ]
+  },
+  "FER": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": [
+      "VIT",
+      "WIN",
+      "GIN",
+      "ALE",
+      "KOM"
+    ]
+  },
+  "AML": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 20
+    },
+    "outputs": [
+      "BOS",
+      "SIO",
+      "FE",
+      "ZR",
+      "W"
+    ]
+  },
+  "DRS": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 40
+    },
+    "outputs": [
+      "CCD",
+      "DCH",
+      "SUD",
+      "RED",
+      "SRD",
+      "SDR",
+      "DRF"
+    ]
+  },
+  "COL": {
+    "workforce": {
+      "Pio": 50,
+      "Tec": 0
+    },
+    "outputs": []
+  },
+  "HBC": {
+    "workforce": {
+      "Pio": 0,
+      "Tec": 0
+    },
+    "outputs": []
+  }
+}

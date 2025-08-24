@@ -1,0 +1,39 @@
+{
+  "tio": {
+    "inputs": {},
+    "outputs": {
+      "TIO": 1
+    },
+    "building": "MINE"
+  },
+  "ts": {
+    "inputs": {
+      "TIO": 1
+    },
+    "outputs": {
+      "TS": 1
+    },
+    "building": "CHM"
+  },
+  "zir": {
+    "inputs": {},
+    "outputs": {
+      "ZIR": 1
+    },
+    "building": "MINE"
+  },
+  "h2o": {
+    "inputs": {},
+    "outputs": {
+      "H2O": 1
+    },
+    "building": "MINE"
+  },
+  "na": {
+    "inputs": {},
+    "outputs": {
+      "NA": 1
+    },
+    "building": "MINE"
+  }
+}
