@@ -13,6 +13,7 @@ from gspread_dataframe import set_with_dataframe
 from historical_data.config import CACHE_DIR, REFRESH_INTERVAL_HOURS, TARGET_SPREADSHEET_ID, CREDENTIALS_FILE, EXPECTED_EXCHANGES, FORMAT_CONFIGS
 from historical_data.sheets_api import authenticate_sheets, get_or_create_worksheet
 from historical_data.data_collection import TIER_0_RESOURCES
+from historical_data.db_manager import load_historical_data
 
 logger = logging.getLogger(__name__)
 
@@ -138,16 +139,115 @@ class MarketProcessor:
             await self.process_exchange(cx, start_time)
             time.sleep(60)  # Increased delay to minimize API load
 
+    def update_exchange_tabs(spreadsheet, report_df, analysis_results):
+        worksheet_titles = [ws.title for ws in spreadsheet.worksheets()]
+        exchange_tickers = [title.replace("DATA ", "") for title in worksheet_titles if title.startswith("DATA ")]
+        for exchange in exchange_tickers:
+            data_tab = f"DATA {exchange}"
+            report_tab = f"Report {exchange}"
+
+            # Filter for this exchange (assumes 'Exchange' column exists)
+            data_for_exchange = report_df[report_df['Exchange'] == exchange]
+            analysis_for_exchange = analysis_results[analysis_results['Exchange'] == exchange]
+
+            # Update or create DATA tab
+            if data_tab in worksheet_titles:
+                ws_data = spreadsheet.worksheet(data_tab)
+            else:
+                ws_data = spreadsheet.add_worksheet(title=data_tab, rows=1000, cols=len(data_for_exchange.columns))
+            ws_data.clear()
+            ws_data.update([data_for_exchange.columns.values.tolist()] + data_for_exchange.values.tolist())
+
+            # Update or create Report tab
+            if report_tab in worksheet_titles:
+                ws_report = spreadsheet.worksheet(report_tab)
+            else:
+                ws_report = spreadsheet.add_worksheet(title=report_tab, rows=1000, cols=len(analysis_for_exchange.columns))
+            ws_report.clear()
+            ws_report.update([analysis_for_exchange.columns.values.tolist()] + analysis_for_exchange.values.tolist())
+
 async def main():
+    """Main function that uploads processed data to Google Sheets."""
     start_time = time.time()
-    processor = MarketProcessor()
+    
+    # Load our processed data instead of historical database
+    processed_data_path = os.path.join(CACHE_DIR, 'processed_data.csv')
+    daily_report_path = os.path.join(CACHE_DIR, 'daily_report.csv')
+    
+    if not os.path.exists(daily_report_path):
+        logger.error(f"Daily report not found at {daily_report_path}")
+        logger.info("Please run process_data.py first to generate the daily report")
+        return
+    
     try:
-        for cx in EXPECTED_EXCHANGES:
-            await processor.process_exchange(cx, start_time)
-            time.sleep(60)  # Increased delay to minimize any residual API load
-        logger.info(f"Script completed in {time.time() - start_time:.2f} seconds")
-    finally:
-        await processor.close()
+        # Load the daily report with category and tier information
+        logger.info(f"Loading daily report from {daily_report_path}")
+        report_df = pd.read_csv(daily_report_path)
+        logger.info(f"Loaded daily report with {len(report_df)} rows and columns: {list(report_df.columns)}")
+        
+        # Authenticate and get spreadsheet
+        client = authenticate_sheets()
+        spreadsheet = client.open_by_key(TARGET_SPREADSHEET_ID)
+        
+        # Upload data for each exchange
+        for exchange in EXPECTED_EXCHANGES:
+            exchange_data = report_df[report_df['exchange'] == exchange].copy()
+            
+            if not exchange_data.empty:
+                logger.info(f"Uploading {len(exchange_data)} rows for exchange {exchange}")
+                
+                # Get or create worksheet for this exchange
+                worksheet_name = f"DATA {exchange}"
+                worksheet = get_or_create_worksheet(spreadsheet, worksheet_name)
+                
+                # Prepare data for upload - convert to the format expected by sheets
+                upload_data = exchange_data.copy()
+                
+                # Rename columns to match expected format if needed
+                column_mapping = {
+                    'ticker': 'Ticker',
+                    'exchange': 'Exchange', 
+                    'category': 'Category',
+                    'tier': 'Tier',
+                    'ai1_ask_price': 'AI1_Ask_Price',
+                    'ai1_bid_price': 'AI1_Bid_Price',
+                    'ci1_ask_price': 'CI1_Ask_Price', 
+                    'ci1_bid_price': 'CI1_Bid_Price',
+                    'ci2_ask_price': 'CI2_Ask_Price',
+                    'ci2_bid_price': 'CI2_Bid_Price',
+                    'nc1_ask_price': 'NC1_Ask_Price',
+                    'nc1_bid_price': 'NC1_Bid_Price',
+                    'nc2_ask_price': 'NC2_Ask_Price', 
+                    'nc2_bid_price': 'NC2_Bid_Price',
+                    'ic1_ask_price': 'IC1_Ask_Price',
+                    'ic1_bid_price': 'IC1_Bid_Price',
+                    'input_cost': 'Input_Cost',
+                    'profit_margin': 'Profit_Margin',
+                    'roi_percentage': 'ROI_Percentage',
+                    'investment_score': 'Investment_Score'
+                }
+                
+                upload_data = upload_data.rename(columns=column_mapping)
+                
+                # Clear existing content and upload new data
+                worksheet.clear()
+                
+                # Upload using gspread_dataframe for better formatting
+                from gspread_dataframe import set_with_dataframe
+                set_with_dataframe(worksheet, upload_data, include_index=False, include_column_header=True)
+                
+                logger.info(f"Successfully uploaded data to {worksheet_name}")
+                
+                # Add a small delay between uploads to avoid rate limits
+                time.sleep(2)
+            else:
+                logger.warning(f"No data found for exchange {exchange}")
+        
+        logger.info(f"Sheet upload completed in {time.time() - start_time:.2f} seconds")
+        
+    except Exception as e:
+        logger.error(f"Error in sheet upload: {e}")
+        raise
 
 if __name__ == "__main__":
     asyncio.run(main())

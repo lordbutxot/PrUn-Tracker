@@ -24,41 +24,65 @@ def is_cache_fresh(file):
     cache_time = datetime.fromtimestamp(os.path.getmtime(file), tz=timezone.utc)
     return (datetime.now(timezone.utc) - cache_time) < timedelta(hours=REFRESH_INTERVAL_HOURS)
 
+def load_chains():
+    chains_path = os.path.join(CACHE_DIR, "chains.json")
+    if os.path.exists(chains_path):
+        with open(chains_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
 def load_data_sheets(spreadsheet):
     """Load data from Google Sheets."""
     cache_file = os.path.join(CACHE_DIR, 'data_sheets_cache.json')
     if is_cache_fresh(cache_file):
         with open(cache_file, 'r') as f:
             logger.info(f"Loaded data sheets from cache: {cache_file}")
-            return pd.DataFrame(json.load(f))
+            all_df = pd.DataFrame(json.load(f))
+    else:
+        # Define your expected headers (20 columns)
+        EXPECTED_HEADERS = [
+            "Ticker", "Product", "Category", "Tier", "Input Materials", "Input Cost",
+            "Ask Price", "Bid Price", "Price Spread", "Supply", "Demand", "Traded",
+            "Saturation", "Profit (Ask)", "Profit (Bid)", "ROI (Ask)", "ROI (Bid)",
+            "Risk", "Viability", "Investment Score"
+        ]
+
+        worksheets = [ws for ws in spreadsheet.worksheets() if ws.title.startswith('Report ')]
+        all_data = []
+        for ws in worksheets:
+            data = ws.get_all_records(expected_headers=EXPECTED_HEADERS)
+            if data:
+                df = pd.DataFrame(data)
+                # Extract exchange from worksheet title (e.g., "Report AI1" -> "AI1")
+                exchange_code = ws.title.replace('Report ', '')
+                df['Exchange_Code'] = exchange_code
+                # Add Exchange column based on exchange code mapping
+                exchange_mapping = {
+                    'AI1': 'Antares I',
+                    'IC1': 'Interstellar Coalition I', 
+                    'NC1': 'New Ceres I',
+                    'NC2': 'New Ceres II',
+                    'CI1': 'Ceres I',
+                    'CI2': 'Ceres II'
+                }
+                df['Exchange'] = exchange_mapping.get(exchange_code, exchange_code)
+                all_data.append(df)
+
+        all_df = pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
+        if not all_df.empty:
+            all_df.to_json(cache_file, orient='records')
+            logger.info(f"Saved data sheets to cache: {cache_file}")
     
-    worksheets = [ws for ws in spreadsheet.worksheets() if ws.title.startswith('DATA ')]
-    all_data = []
-    for ws in worksheets:
-        data = ws.get_all_records()
-        if data:
-            df = pd.DataFrame(data)
-            # Extract ticker from worksheet title (e.g., "DATA AI1" -> "AI1")
-            ticker = ws.title.replace('DATA ', '')
-            df['Ticker'] = ticker
-            # Add Exchange column based on ticker mapping
-            # Map exchange tickers back to full names for consistency
-            exchange_mapping = {
-                'AI1': 'Antares I',
-                'IC1': 'Interstellar Coalition I', 
-                'NC1': 'New Ceres I',
-                'IC2': 'New Ceres II',  # Note: This might be 'Interstellar Coalition II'
-                'CI1': 'Ceres I',
-                'CI2': 'Ceres II'
-            }
-            df['Exchange'] = exchange_mapping.get(ticker, ticker)
-            all_data.append(df)
-    
-    all_df = pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
+    # --- Extract mappings and lists for pipeline ---
     if not all_df.empty:
-        all_df.to_json(cache_file, orient='records')
-        logger.info(f"Saved data sheets to cache: {cache_file}")
-    return all_df
+        categories = dict(zip(all_df['Ticker'].str.lower(), all_df['Category']))
+        tickers = dict(zip(all_df['Ticker'], all_df['Product']))
+        product_tiers = dict(zip(all_df['Ticker'].str.lower(), all_df['Tier']))
+        building_dict = {}
+        chains = load_chains()  # <-- Load the chains here!
+        return all_df, building_dict, categories, tickers, product_tiers, chains
+    else:
+        return all_df, {}, {}, {}, {}, {}
 
 def calculate_arbitrage_opportunities(df):
     """Calculate arbitrage opportunities."""
@@ -93,7 +117,7 @@ def calculate_input_cost(ticker, chains, price_data):
             total_cost += input_prices.min() * quantity
     return total_cost
 
-def calculate_buy_vs_produce(df, chains, tiers):
+def calculate_buy_vs_produce(df, chains):
     """Calculate buy vs produce decisions."""
     decisions = []
     for _, row in df.iterrows():
@@ -102,7 +126,7 @@ def calculate_buy_vs_produce(df, chains, tiers):
         if pd.isna(ask_price):
             continue
         input_cost = calculate_input_cost(ticker, chains, df)
-        tier = tiers.get(ticker, 0)
+        tier = row.get('Tier', 0)
         risk = 7.5 if tier == 0 else 5.0
         if input_cost > 0:
             viability = 2.5 if ask_price > input_cost else 5.0
@@ -124,7 +148,7 @@ def calculate_buy_vs_produce(df, chains, tiers):
         })
     return pd.DataFrame(decisions)
 
-def analyze_data(data_sheets, processed_data, chains, tiers, tickers):
+def analyze_data(data_sheets, processed_data, chains):
     """Analyze data for insights."""
     if processed_data.empty:
         logger.warning("No processed data")
@@ -171,7 +195,7 @@ def analyze_data(data_sheets, processed_data, chains, tiers, tickers):
         exchange_df['Profit'] = exchange_df.get('Profit', 0)
         exchange_df['Profit_Pct'] = exchange_df.get('Profit_Pct', 0)
         
-        decisions_df = calculate_buy_vs_produce(exchange_df, chains, tiers)
+        decisions_df = calculate_buy_vs_produce(exchange_df, chains)
         if not decisions_df.empty:
             exchange_df = exchange_df.merge(
                 decisions_df[['Ticker', 'Input_Cost', 'Cost_Ratio', 'Recommendation', 'Risk', 'Viability']],
@@ -182,9 +206,11 @@ def analyze_data(data_sheets, processed_data, chains, tiers, tickers):
             lambda row: (row['Profit'] / row['Ask Price'] * 100) if pd.notna(row['Ask Price']) and row['Ask Price'] > 0 else 0, axis=1
         )
         exchange_df['Investment Score'] = exchange_df['Profit'].rank(method='dense')
-        exchange_df['Product'] = exchange_df['Ticker'].map(tickers).fillna(exchange_df['Ticker'])
+        if 'Product' not in exchange_df.columns:
+            exchange_df['Product'] = exchange_df['Ticker']
         exchange_df['Material'] = exchange_df['Ticker']
-        exchange_df['Tier'] = exchange_df['Ticker'].map(tiers).fillna(0)
+        if 'Tier' not in exchange_df.columns:
+            exchange_df['Tier'] = 0
         
         for col in ['Profit', 'Profit_Pct', 'ROI (Ask)', 'Investment Score', 'Risk', 'Viability']:
             exchange_df[col] = exchange_df.get(col, 0)

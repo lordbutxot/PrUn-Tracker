@@ -1,0 +1,3605 @@
+{
+  "aar": {
+    "inputs": [
+      "au",
+      "kv",
+      "pcb",
+      "swf"
+    ],
+    "building": "elp:2xau-1xkv-4xpcb-6xswf=>3xaar",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:2xAU-1xKV-4xPCB-6xSWF=>3xAAR",
+    "tier": 3
+  },
+  "abh": {
+    "inputs": [
+      "nr",
+      "rbh"
+    ],
+    "building": "pp4:125xnr-2xrbh=>2xabh",
+    "workforce_tier": 4,
+    "recipe_id": "PP4:125xNR-2xRBH=>2xABH",
+    "tier": 4
+  },
+  "acs": {
+    "inputs": [
+      "fc",
+      "sar",
+      "thf",
+      "wai"
+    ],
+    "building": "apf:1xfc-1xsar-10xthf-1xwai=>1xacs",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xFC-1xSAR-10xTHF-1xWAI=>1xACS",
+    "tier": 4
+  },
+  "ade": {
+    "inputs": [
+      "kv",
+      "lde"
+    ],
+    "building": "pp4:2xkv-2xlde=>2xade",
+    "workforce_tier": 4,
+    "recipe_id": "PP4:2xKV-2xLDE=>2xADE",
+    "tier": 4
+  },
+  "adr": {
+    "inputs": [
+      "bsc",
+      "dcm",
+      "mfk",
+      "rea"
+    ],
+    "building": "phf:1xbsc-2xdcm-4xmfk-20xrea=>1xadr",
+    "workforce_tier": 3,
+    "recipe_id": "PHF:1xBSC-2xDCM-4xMFK-20xREA=>1xADR",
+    "tier": 3
+  },
+  "ads": {
+    "inputs": [
+      "bws",
+      "os",
+      "tra"
+    ],
+    "building": "apf:1xbws-1xos-8xtra=>1xads",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xBWS-1xOS-8xTRA=>1xADS",
+    "tier": 4
+  },
+  "aef": {
+    "inputs": [
+      "ne",
+      "pg"
+    ],
+    "building": "pp2:1xne-50xpg=>1xaef",
+    "workforce_tier": 2,
+    "recipe_id": "PP2:1xNE-50xPG=>1xAEF",
+    "tier": 2
+  },
+  "aen": {
+    "inputs": [
+      "acs",
+      "afp",
+      "anz",
+      "fet",
+      "mfk"
+    ],
+    "building": "spf:1xacs-4xafp-4xanz-20xfet-1xmfk=>1xaen",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xACS-4xAFP-4xANZ-20xFET-1xMFK=>1xAEN",
+    "tier": 5
+  },
+  "afp": {
+    "inputs": [
+      "atp",
+      "pg",
+      "sfk"
+    ],
+    "building": "spf:10xatp-50xpg-1xsfk=>1xafp",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:10xATP-50xPG-1xSFK=>1xAFP",
+    "tier": 5
+  },
+  "afr": {
+    "inputs": [
+      "al",
+      "zr"
+    ],
+    "building": "fs:1xal-1xzr=>1xafr",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xAL-1xZR=>1xAFR",
+    "tier": 2
+  },
+  "ags": {
+    "inputs": [
+      "ast",
+      "pg",
+      "tk"
+    ],
+    "building": "spp:20xast-100xpg-8xtk=>1xags",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:20xAST-100xPG-8xTK=>1xAGS",
+    "tier": 4
+  },
+  "ahp": {
+    "inputs": [
+      "al",
+      "fet",
+      "he"
+    ],
+    "building": "hwp:8xal-10xfet-1xhe=>4xahp",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:8xAL-10xFET-1xHE=>4xAHP",
+    "tier": 3
+  },
+  "air": {
+    "inputs": [
+      "bac",
+      "fc",
+      "gv",
+      "h2o",
+      "hcp",
+      "ns",
+      "pcb",
+      "sar",
+      "wai"
+    ],
+    "building": "apf:1xbac-1xfc-1xgv-1xh2o-1xhcp-1xns-1xpcb-1xsar-1xwai=>1xair",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xBAC-1xFC-1xGV-1xH2O-1xHCP-1xNS-1xPCB-1xSAR-1xWAI=>1xAIR",
+    "tier": 4
+  },
+  "al": {
+    "inputs": [
+      "ber"
+    ],
+    "building": "aml:2xber=>1xal-1xbe-1xsio",
+    "workforce_tier": 4,
+    "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
+    "tier": 4
+  },
+  "ale": {
+    "inputs": [
+      "amm",
+      "dw",
+      "grn",
+      "hop"
+    ],
+    "building": "fer:1xamm-3xdw-2xgrn-1xhop=>6xale",
+    "workforce_tier": 2,
+    "recipe_id": "FER:1xAMM-3xDW-2xGRN-1xHOP=>6xALE",
+    "tier": 2
+  },
+  "alg": {
+    "inputs": [
+      "h2o",
+      "ns"
+    ],
+    "building": "hyf:16xh2o-2xns=>12xalg",
+    "workforce_tier": 2,
+    "recipe_id": "HYF:16xH2O-2xNS=>12xALG",
+    "tier": 2
+  },
+  "alo": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "amm": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "anz": {
+    "inputs": [
+      "cha",
+      "fet",
+      "mfk"
+    ],
+    "building": "spf:1xcha-20xfet-4xmfk=>1xanz",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xCHA-20xFET-4xMFK=>1xANZ",
+    "tier": 5
+  },
+  "apt": {
+    "inputs": [
+      "atp",
+      "thf"
+    ],
+    "building": "spp:5xatp-30xthf=>12xapt",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:5xATP-30xTHF=>12xAPT",
+    "tier": 4
+  },
+  "ar": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "arp": {
+    "inputs": [
+      "lst",
+      "tk"
+    ],
+    "building": "spp:5xlst-2xtk=>10xarp",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:5xLST-2xTK=>10xARP",
+    "tier": 4
+  },
+  "ase": {
+    "inputs": [
+      "rse",
+      "ti"
+    ],
+    "building": "pp4:1xrse-2xti=>1xase",
+    "workforce_tier": 4,
+    "recipe_id": "PP4:1xRSE-2xTI=>1xASE",
+    "tier": 4
+  },
+  "ast": {
+    "inputs": [
+      "al",
+      "ti"
+    ],
+    "building": "asm:1xal-3xti=>4xast",
+    "workforce_tier": 4,
+    "recipe_id": "ASM:1xAL-3xTI=>4xAST",
+    "tier": 4
+  },
+  "ata": {
+    "inputs": [
+      "ng",
+      "rta"
+    ],
+    "building": "pp4:1xng-1xrta=>1xata",
+    "workforce_tier": 4,
+    "recipe_id": "PP4:1xNG-1xRTA=>1xATA",
+    "tier": 4
+  },
+  "atp": {
+    "inputs": [
+      "bos",
+      "ctf",
+      "he"
+    ],
+    "building": "hwp:2xbos-2xctf-1xhe=>2xatp",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:2xBOS-2xCTF-1xHE=>2xATP",
+    "tier": 3
+  },
+  "au": {
+    "inputs": [
+      "auo",
+      "c"
+    ],
+    "building": "sme:3xauo-1xc=>2xau",
+    "workforce_tier": 1,
+    "recipe_id": "SME:3xAUO-1xC=>2xAU",
+    "tier": 1
+  },
+  "auo": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "awf": {
+    "inputs": [
+      "bac",
+      "mag",
+      "pe"
+    ],
+    "building": "elp:10xbac-1xmag-10xpe=>5xawf",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:10xBAC-1xMAG-10xPE=>5xAWF",
+    "tier": 3
+  },
+  "awh": {
+    "inputs": [
+      "ctf",
+      "he",
+      "ti",
+      "tk"
+    ],
+    "building": "hwp:4xctf-1xhe-2xti-2xtk=>10xawh",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:4xCTF-1xHE-2xTI-2xTK=>10xAWH",
+    "tier": 3
+  },
+  "bac": {
+    "inputs": [
+      "hcp",
+      "o",
+      "s"
+    ],
+    "building": "lab:1xhcp-1xo-1xs=>10xbac",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:1xHCP-1xO-1xS=>10xBAC",
+    "tier": 3
+  },
+  "bai": {
+    "inputs": [],
+    "building": "sd:=>1xbai",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xBAI",
+    "tier": 3
+  },
+  "bbh": {
+    "inputs": [
+      "fe",
+      "lst"
+    ],
+    "building": "pp1:2xfe-1xlst=>1xbbh",
+    "workforce_tier": 1,
+    "recipe_id": "PP1:2xFE-1xLST=>1xBBH",
+    "tier": 1
+  },
+  "bco": {
+    "inputs": [
+      "cu",
+      "pe"
+    ],
+    "building": "fs:1xcu-300xpe=>10xbco",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xCU-300xPE=>10xBCO",
+    "tier": 2
+  },
+  "bde": {
+    "inputs": [
+      "pe"
+    ],
+    "building": "pp1:150xpe=>1xbde",
+    "workforce_tier": 1,
+    "recipe_id": "PP1:150xPE=>1xBDE",
+    "tier": 1
+  },
+  "be": {
+    "inputs": [
+      "ber"
+    ],
+    "building": "aml:2xber=>1xal-1xbe-1xsio",
+    "workforce_tier": 4,
+    "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
+    "tier": 4
+  },
+  "bea": {
+    "inputs": [
+      "h2o"
+    ],
+    "building": "frm:1xh2o=>2xbea",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:1xH2O=>2xBEA",
+    "tier": 1
+  },
+  "ber": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "bfp": {
+    "inputs": [
+      "pg",
+      "sfk",
+      "thp"
+    ],
+    "building": "spf:50xpg-1xsfk-5xthp=>1xbfp",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:50xPG-1xSFK-5xTHP=>1xBFP",
+    "tier": 5
+  },
+  "bfr": {
+    "inputs": [
+      "al",
+      "stl"
+    ],
+    "building": "fs:1xal-1xstl=>1xbfr",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xAL-1xSTL=>1xBFR",
+    "tier": 2
+  },
+  "bgc": {
+    "inputs": [
+      "bgo",
+      "pe"
+    ],
+    "building": "fs:1xbgo-300xpe=>10xbgc",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xBGO-300xPE=>10xBGC",
+    "tier": 2
+  },
+  "bgo": {
+    "inputs": [
+      "au",
+      "fe"
+    ],
+    "building": "fs:4xau-1xfe=>5xbgo",
+    "workforce_tier": 2,
+    "recipe_id": "FS:4xAU-1xFE=>5xBGO",
+    "tier": 2
+  },
+  "bgs": {
+    "inputs": [
+      "fal",
+      "kv",
+      "pg"
+    ],
+    "building": "spp:14xfal-4xkv-80xpg=>1xbgs",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:14xFAL-4xKV-80xPG=>1xBGS",
+    "tier": 4
+  },
+  "bhp": {
+    "inputs": [
+      "al",
+      "he",
+      "stl"
+    ],
+    "building": "hwp:12xal-1xhe-1xstl=>4xbhp",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:12xAL-1xHE-1xSTL=>4xBHP",
+    "tier": 3
+  },
+  "bid": {
+    "inputs": [
+      "cd",
+      "kv",
+      "sar"
+    ],
+    "building": "edm:2xcd-1xkv-2xsar=>2xbid",
+    "workforce_tier": 2,
+    "recipe_id": "EDM:2xCD-1xKV-2xSAR=>2xBID",
+    "tier": 2
+  },
+  "bl": {
+    "inputs": [
+      "f",
+      "o"
+    ],
+    "building": "lab:1xf-1xo=>2xbl",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:1xF-1xO=>2xBL",
+    "tier": 3
+  },
+  "ble": {
+    "inputs": [
+      "nab",
+      "o",
+      "s"
+    ],
+    "building": "lab:10xnab-2xo-3xs=>4xble",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:10xNAB-2xO-3xS=>4xBLE",
+    "tier": 3
+  },
+  "bmf": {
+    "inputs": [
+      "dcl",
+      "fan",
+      "mb",
+      "tpu"
+    ],
+    "building": "elp:1xdcl-1xfan-1xmb-1xtpu=>1xbmf",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:1xDCL-1xFAN-1xMB-1xTPU=>1xBMF",
+    "tier": 3
+  },
+  "bnd": {
+    "inputs": [
+      "nl",
+      "sil"
+    ],
+    "building": "phf:1xnl-1xsil=>20xbnd",
+    "workforce_tier": 3,
+    "recipe_id": "PHF:1xNL-1xSIL=>20xBND",
+    "tier": 3
+  },
+  "bor": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "bos": {
+    "inputs": [
+      "al",
+      "bor",
+      "si"
+    ],
+    "building": "aml:4xal-1xbor-1xsi=>4xbos",
+    "workforce_tier": 4,
+    "recipe_id": "AML:4xAL-1xBOR-1xSI=>4xBOS",
+    "tier": 4
+  },
+  "bpt": {
+    "inputs": [
+      "thf",
+      "thp"
+    ],
+    "building": "spp:20xthf-5xthp=>12xbpt",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:20xTHF-5xTHP=>12xBPT",
+    "tier": 4
+  },
+  "br1": {
+    "inputs": [
+      "com",
+      "fet",
+      "nv1",
+      "psl",
+      "psm",
+      "sar"
+    ],
+    "building": "upf:1xcom-10xfet-1xnv1-10xpsl-20xpsm-5xsar=>1xbr1",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:1xCOM-10xFET-1xNV1-10xPSL-20xPSM-5xSAR=>1xBR1",
+    "tier": 2
+  },
+  "br2": {
+    "inputs": [
+      "com",
+      "fet",
+      "nv2",
+      "psl",
+      "psm",
+      "sar"
+    ],
+    "building": "upf:1xcom-10xfet-1xnv2-10xpsl-20xpsm-10xsar=>1xbr2",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:1xCOM-10xFET-1xNV2-10xPSL-20xPSM-10xSAR=>1xBR2",
+    "tier": 2
+  },
+  "brm": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "bro": {
+    "inputs": [
+      "al",
+      "cu"
+    ],
+    "building": "fs:1xal-2xcu=>3xbro",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xAL-2xCU=>3xBRO",
+    "tier": 2
+  },
+  "brp": {
+    "inputs": [
+      "kv",
+      "lst"
+    ],
+    "building": "spp:2xkv-5xlst=>12xbrp",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:2xKV-5xLST=>12xBRP",
+    "tier": 4
+  },
+  "brs": {
+    "inputs": [
+      "psl",
+      "psm",
+      "rad",
+      "sar",
+      "ti"
+    ],
+    "building": "upf:10xpsl-20xpsm-4xrad-5xsar-10xti=>1xbrs",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:10xPSL-20xPSM-4xRAD-5xSAR-10xTI=>1xBRS",
+    "tier": 2
+  },
+  "bsc": {
+    "inputs": [
+      "dcm",
+      "mfk",
+      "sar"
+    ],
+    "building": "phf:1xdcm-1xmfk-1xsar=>1xbsc",
+    "workforce_tier": 3,
+    "recipe_id": "PHF:1xDCM-1xMFK-1xSAR=>1xBSC",
+    "tier": 3
+  },
+  "bse": {
+    "inputs": [
+      "fe",
+      "lst"
+    ],
+    "building": "pp1:1xfe-2xlst=>1xbse",
+    "workforce_tier": 1,
+    "recipe_id": "PP1:1xFE-2xLST=>1xBSE",
+    "tier": 1
+  },
+  "bta": {
+    "inputs": [
+      "fe",
+      "pe"
+    ],
+    "building": "pp1:1xfe-50xpe=>1xbta",
+    "workforce_tier": 1,
+    "recipe_id": "PP1:1xFE-50xPE=>1xBTA",
+    "tier": 1
+  },
+  "bts": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "bwh": {
+    "inputs": [
+      "cf",
+      "fal",
+      "he",
+      "kv"
+    ],
+    "building": "hwp:4xcf-2xfal-1xhe-1xkv=>10xbwh",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:4xCF-2xFAL-1xHE-1xKV=>10xBWH",
+    "tier": 3
+  },
+  "bws": {
+    "inputs": [
+      "dcm",
+      "hd",
+      "mb"
+    ],
+    "building": "elp:1xdcm-1xhd-1xmb=>1xbws",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:1xDCM-1xHD-1xMB=>1xBWS",
+    "tier": 3
+  },
+  "c": {
+    "inputs": [
+      "grn"
+    ],
+    "building": "inc:4xgrn=>4xc",
+    "workforce_tier": 1,
+    "recipe_id": "INC:4xGRN=>4xC",
+    "tier": 1
+  },
+  "ca": {
+    "inputs": [
+      "lst"
+    ],
+    "building": "chp:1xlst=>1xca",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xLST=>1xCA",
+    "tier": 2
+  },
+  "caf": {
+    "inputs": [
+      "h2o",
+      "ns"
+    ],
+    "building": "hyf:22xh2o-3xns=>2xcaf",
+    "workforce_tier": 2,
+    "recipe_id": "HYF:22xH2O-3xNS=>2xCAF",
+    "tier": 2
+  },
+  "cap": {
+    "inputs": [
+      "fe",
+      "si"
+    ],
+    "building": "clr:1xfe-1xsi=>15xcap",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xFE-1xSI=>15xCAP",
+    "tier": 3
+  },
+  "cbl": {
+    "inputs": [
+      "be",
+      "hcc",
+      "li",
+      "pg"
+    ],
+    "building": "eca:12xbe-60xhcc-12xli-150xpg=>1xcbl",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:12xBE-60xHCC-12xLI-150xPG=>1xCBL",
+    "tier": 3
+  },
+  "cbm": {
+    "inputs": [
+      "be",
+      "bgc",
+      "li",
+      "pg"
+    ],
+    "building": "eca:8xbe-40xbgc-8xli-120xpg=>1xcbm",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:8xBE-40xBGC-8xLI-120xPG=>1xCBM",
+    "tier": 3
+  },
+  "cbs": {
+    "inputs": [
+      "bco",
+      "be",
+      "li",
+      "pg"
+    ],
+    "building": "eca:20xbco-6xbe-6xli-60xpg=>1xcbs",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:20xBCO-6xBE-6xLI-60xPG=>1xCBS",
+    "tier": 3
+  },
+  "cbu": {
+    "inputs": [
+      "dw",
+      "lc",
+      "mea",
+      "med",
+      "nst",
+      "pe",
+      "pss",
+      "win",
+      "ws"
+    ],
+    "building": "pac:100xdw-2xlc-70xmea-5xmed-1xnst-280xpe-8xpss-10xwin-1xws=>1xcbu",
+    "workforce_tier": 2,
+    "recipe_id": "PAC:100xDW-2xLC-70xMEA-5xMED-1xNST-280xPE-8xPSS-10xWIN-1xWS=>1xCBU",
+    "tier": 2
+  },
+  "cc": {
+    "inputs": [
+      "fc",
+      "gv",
+      "pcb",
+      "sar",
+      "thf",
+      "wai"
+    ],
+    "building": "aaf:8xfc-100xgv-1xpcb-10xsar-20xthf-1xwai=>1xcc",
+    "workforce_tier": 5,
+    "recipe_id": "AAF:8xFC-100xGV-1xPCB-10xSAR-20xTHF-1xWAI=>1xCC",
+    "tier": 5
+  },
+  "ccd": {
+    "inputs": [
+      "bsc",
+      "dch"
+    ],
+    "building": "drs:1xbsc-1xdch=>1xccd",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xBSC-1xDCH=>1xCCD",
+    "tier": 4
+  },
+  "cd": {
+    "inputs": [
+      "bco",
+      "dis"
+    ],
+    "building": "elp:2xbco-1xdis=>1xcd",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:2xBCO-1xDIS=>1xCD",
+    "tier": 3
+  },
+  "cf": {
+    "inputs": [
+      "al",
+      "o",
+      "si"
+    ],
+    "building": "sme:4xal-2xo-1xsi=>1xcf",
+    "workforce_tier": 1,
+    "recipe_id": "SME:4xAL-2xO-1xSI=>1xCF",
+    "tier": 1
+  },
+  "cha": {
+    "inputs": [
+      "bos",
+      "gv",
+      "he"
+    ],
+    "building": "wel:10xbos-1xgv-1xhe=>1xcha",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:10xBOS-1xGV-1xHE=>1xCHA",
+    "tier": 1
+  },
+  "cl": {
+    "inputs": [
+      "h2o",
+      "hal"
+    ],
+    "building": "chp:1xh2o-3xhal=>1xcl-2xna",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xH2O-3xHAL=>1xCL-2xNA",
+    "tier": 2
+  },
+  "cli": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "cmk": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "cof": {
+    "inputs": [
+      "caf",
+      "dw"
+    ],
+    "building": "fp:1xcaf-3xdw=>3xcof",
+    "workforce_tier": 1,
+    "recipe_id": "FP:1xCAF-3xDW=>3xCOF",
+    "tier": 1
+  },
+  "com": {
+    "inputs": [
+      "aar",
+      "bws",
+      "rad"
+    ],
+    "building": "apf:1xaar-1xbws-4xrad=>1xcom",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xAAR-1xBWS-4xRAD=>1xCOM",
+    "tier": 4
+  },
+  "cot": {
+    "inputs": [
+      "rco"
+    ],
+    "building": "wpl:1xrco=>1xcot",
+    "workforce_tier": 2,
+    "recipe_id": "WPL:1xRCO=>1xCOT",
+    "tier": 2
+  },
+  "cql": {
+    "inputs": [
+      "dec",
+      "fet",
+      "lis",
+      "psl",
+      "psm",
+      "tcu"
+    ],
+    "building": "upf:20xdec-20xfet-1xlis-20xpsl-30xpsm-1xtcu=>1xcql",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:20xDEC-20xFET-1xLIS-20xPSL-30xPSM-1xTCU=>1xCQL",
+    "tier": 2
+  },
+  "cqm": {
+    "inputs": [
+      "dec",
+      "lis",
+      "psl",
+      "psm",
+      "tcu",
+      "ti"
+    ],
+    "building": "upf:10xdec-1xlis-10xpsl-20xpsm-1xtcu-10xti=>1xcqm",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:10xDEC-1xLIS-10xPSL-20xPSM-1xTCU-10xTI=>1xCQM",
+    "tier": 2
+  },
+  "cqs": {
+    "inputs": [
+      "dec",
+      "fal",
+      "lis",
+      "psl",
+      "psm",
+      "tcu"
+    ],
+    "building": "upf:2xdec-5xfal-1xlis-5xpsl-10xpsm-1xtcu=>1xcqs",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:2xDEC-5xFAL-1xLIS-5xPSL-10xPSM-1xTCU=>1xCQS",
+    "tier": 2
+  },
+  "cqt": {
+    "inputs": [
+      "al",
+      "bmf",
+      "dec",
+      "psl",
+      "psm",
+      "tcu"
+    ],
+    "building": "upf:5xal-1xbmf-1xdec-2xpsl-5xpsm-1xtcu=>1xcqt",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:5xAL-1xBMF-1xDEC-2xPSL-5xPSM-1xTCU=>1xCQT",
+    "tier": 2
+  },
+  "cru": {
+    "inputs": [
+      "cst",
+      "es",
+      "fc",
+      "flp",
+      "pcb",
+      "sar",
+      "wai"
+    ],
+    "building": "aaf:1xcst-10xes-3xfc-6xflp-1xpcb-1xsar-1xwai=>1xcru",
+    "workforce_tier": 5,
+    "recipe_id": "AAF:1xCST-10xES-3xFC-6xFLP-1xPCB-1xSAR-1xWAI=>1xCRU",
+    "tier": 5
+  },
+  "cst": {
+    "inputs": [
+      "dw",
+      "ns"
+    ],
+    "building": "lab:1xdw-1xns=>3xcst",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:1xDW-1xNS=>3xCST",
+    "tier": 3
+  },
+  "ctf": {
+    "inputs": [
+      "o",
+      "si",
+      "wal"
+    ],
+    "building": "asm:1xo-1xsi-2xwal=>1xctf",
+    "workforce_tier": 4,
+    "recipe_id": "ASM:1xO-1xSI-2xWAL=>1xCTF",
+    "tier": 4
+  },
+  "cu": {
+    "inputs": [
+      "cuo",
+      "o",
+      "sio"
+    ],
+    "building": "sme:5xcuo-10xo-1xsio=>3xcu",
+    "workforce_tier": 1,
+    "recipe_id": "SME:5xCUO-10xO-1xSIO=>3xCU",
+    "tier": 1
+  },
+  "cuo": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "da": {
+    "inputs": [
+      "ld",
+      "rom",
+      "sa",
+      "sal"
+    ],
+    "building": "se:1xld-1xrom-1xsa-1xsal=>1xda",
+    "workforce_tier": 4,
+    "recipe_id": "SE:1xLD-1xROM-1xSA-1xSAL=>1xDA",
+    "tier": 4
+  },
+  "dch": {
+    "inputs": [
+      "drf",
+      "mpc",
+      "pow",
+      "sol"
+    ],
+    "building": "drs:1xdrf-1xmpc-1xpow-1xsol=>1xdch",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xDRF-1xMPC-1xPOW-1xSOL=>1xDCH",
+    "tier": 4
+  },
+  "dcl": {
+    "inputs": [
+      "mfk",
+      "pg",
+      "psl"
+    ],
+    "building": "ppf:2xmfk-40xpg-2xpsl=>2xdcl",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:2xMFK-40xPG-2xPSL=>2xDCL",
+    "tier": 2
+  },
+  "dcm": {
+    "inputs": [
+      "pg",
+      "psm",
+      "sfk"
+    ],
+    "building": "ppf:20xpg-2xpsm-8xsfk=>2xdcm",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:20xPG-2xPSM-8xSFK=>2xDCM",
+    "tier": 2
+  },
+  "dcs": {
+    "inputs": [
+      "pg",
+      "pss",
+      "sfk"
+    ],
+    "building": "ppf:10xpg-1xpss-4xsfk=>2xdcs",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:10xPG-1xPSS-4xSFK=>2xDCS",
+    "tier": 2
+  },
+  "dd": {
+    "inputs": [
+      "ld",
+      "nf"
+    ],
+    "building": "se:1xld-1xnf=>1xdd",
+    "workforce_tier": 4,
+    "recipe_id": "SE:1xLD-1xNF=>1xDD",
+    "tier": 4
+  },
+  "ddt": {
+    "inputs": [
+      "c",
+      "cl",
+      "h"
+    ],
+    "building": "lab:1xc-1xcl-1xh=>3xddt",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:1xC-1xCL-1xH=>3xDDT",
+    "tier": 3
+  },
+  "dec": {
+    "inputs": [
+      "epo",
+      "pg"
+    ],
+    "building": "pol:70xepo-150xpg=>1xdec",
+    "workforce_tier": 2,
+    "recipe_id": "POL:70xEPO-150xPG=>1xDEC",
+    "tier": 2
+  },
+  "dis": {
+    "inputs": [
+      "gl",
+      "lcr"
+    ],
+    "building": "mca:3xgl-1xlcr=>1xdis",
+    "workforce_tier": 3,
+    "recipe_id": "MCA:3xGL-1xLCR=>1xDIS",
+    "tier": 3
+  },
+  "dou": {
+    "inputs": [
+      "com",
+      "psl",
+      "sar"
+    ],
+    "building": "upf:1xcom-10xpsl-4xsar=>1xdou",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:1xCOM-10xPSL-4xSAR=>1xDOU",
+    "tier": 2
+  },
+  "drf": {
+    "inputs": [
+      "dcs",
+      "nfi"
+    ],
+    "building": "drs:1xdcs-50xnfi=>1xdrf",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xDCS-50xNFI=>1xDRF",
+    "tier": 4
+  },
+  "dv": {
+    "inputs": [],
+    "building": "se:=>1xdv",
+    "workforce_tier": 4,
+    "recipe_id": "SE:=>1xDV",
+    "tier": 4
+  },
+  "dw": {
+    "inputs": [
+      "h2o",
+      "pg"
+    ],
+    "building": "fp:10xh2o-1xpg=>10xdw",
+    "workforce_tier": 1,
+    "recipe_id": "FP:10xH2O-1xPG=>10xDW",
+    "tier": 1
+  },
+  "ebu": {
+    "inputs": [
+      "dw",
+      "fim",
+      "gin",
+      "hss",
+      "med",
+      "pda",
+      "pe",
+      "pss",
+      "vg"
+    ],
+    "building": "pac:100xdw-70xfim-10xgin-2xhss-5xmed-1xpda-160xpe-4xpss-2xvg=>1xebu",
+    "workforce_tier": 2,
+    "recipe_id": "PAC:100xDW-70xFIM-10xGIN-2xHSS-5xMED-1xPDA-160xPE-4xPSS-2xVG=>1xEBU",
+    "tier": 2
+  },
+  "edc": {
+    "inputs": [],
+    "building": "se:=>1xedc",
+    "workforce_tier": 4,
+    "recipe_id": "SE:=>1xEDC",
+    "tier": 4
+  },
+  "ees": {
+    "inputs": [
+      "es",
+      "flx",
+      "rea"
+    ],
+    "building": "eep:1xes-4xflx-4xrea=>1xees",
+    "workforce_tier": 5,
+    "recipe_id": "EEP:1xES-4xFLX-4xREA=>1xEES",
+    "tier": 5
+  },
+  "eng": {
+    "inputs": [
+      "acs",
+      "ast",
+      "bfp",
+      "mfk",
+      "noz"
+    ],
+    "building": "spf:1xacs-10xast-4xbfp-1xmfk-4xnoz=>1xeng",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xACS-10xAST-4xBFP-1xMFK-4xNOZ=>1xENG",
+    "tier": 5
+  },
+  "epo": {
+    "inputs": [
+      "c",
+      "cl",
+      "h",
+      "o"
+    ],
+    "building": "pol:1xc-1xcl-1xh-1xo=>50xepo",
+    "workforce_tier": 2,
+    "recipe_id": "POL:1xC-1xCL-1xH-1xO=>50xEPO",
+    "tier": 2
+  },
+  "es": {
+    "inputs": [
+      "les"
+    ],
+    "building": "eep:1xles=>10xes",
+    "workforce_tier": 5,
+    "recipe_id": "EEP:1xLES=>10xES",
+    "tier": 5
+  },
+  "etc": {
+    "inputs": [
+      "flx",
+      "rea",
+      "tc"
+    ],
+    "building": "tnp:4xflx-4xrea-1xtc=>1xetc",
+    "workforce_tier": 3,
+    "recipe_id": "TNP:4xFLX-4xREA-1xTC=>1xETC",
+    "tier": 3
+  },
+  "exo": {
+    "inputs": [
+      "al",
+      "mfk",
+      "ove"
+    ],
+    "building": "bmp:1xal-1xmfk-10xove=>10xexo",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:1xAL-1xMFK-10xOVE=>10xEXO",
+    "tier": 1
+  },
+  "f": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "fal": {
+    "inputs": [
+      "al",
+      "fe"
+    ],
+    "building": "asm:3xal-3xfe=>6xfal",
+    "workforce_tier": 4,
+    "recipe_id": "ASM:3xAL-3xFE=>6xFAL",
+    "tier": 4
+  },
+  "fan": {
+    "inputs": [
+      "al",
+      "dcs",
+      "sfk"
+    ],
+    "building": "mca:1xal-8xdcs-2xsfk=>8xfan",
+    "workforce_tier": 3,
+    "recipe_id": "MCA:1xAL-8xDCS-2xSFK=>8xFAN",
+    "tier": 3
+  },
+  "fc": {
+    "inputs": [
+      "al",
+      "bse",
+      "he"
+    ],
+    "building": "wel:1xal-1xbse-1xhe=>1xfc",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:1xAL-1xBSE-1xHE=>1xFC",
+    "tier": 1
+  },
+  "fe": {
+    "inputs": [
+      "tai"
+    ],
+    "building": "aml:2xtai=>1xfe-1xta",
+    "workforce_tier": 4,
+    "recipe_id": "AML:2xTAI=>1xFE-1xTA",
+    "tier": 4
+  },
+  "feo": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "fet": {
+    "inputs": [
+      "fe",
+      "ti"
+    ],
+    "building": "asm:1xfe-3xti=>4xfet",
+    "workforce_tier": 4,
+    "recipe_id": "ASM:1xFE-3xTI=>4xFET",
+    "tier": 4
+  },
+  "ff": {
+    "inputs": [
+      "h",
+      "he3"
+    ],
+    "building": "ref:4xh-2xhe3=>100xff",
+    "workforce_tier": 2,
+    "recipe_id": "REF:4xH-2xHE3=>100xFF",
+    "tier": 2
+  },
+  "ffc": {
+    "inputs": [
+      "bmf",
+      "da",
+      "w",
+      "wai"
+    ],
+    "building": "apf:1xbmf-1xda-5xw-1xwai=>1xffc",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xBMF-1xDA-5xW-1xWAI=>1xFFC",
+    "tier": 4
+  },
+  "fim": {
+    "inputs": [
+      "her",
+      "rat"
+    ],
+    "building": "fp:1xher-2xrat=>2xfim",
+    "workforce_tier": 1,
+    "recipe_id": "FP:1xHER-2xRAT=>2xFIM",
+    "tier": 1
+  },
+  "fir": {
+    "inputs": [
+      "acs",
+      "afr",
+      "ctf",
+      "ees",
+      "rcs",
+      "wal"
+    ],
+    "building": "eca:1xacs-8xafr-10xctf-4xees-1xrcs-10xwal=>1xfir",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:1xACS-8xAFR-10xCTF-4xEES-1xRCS-10xWAL=>1xFIR",
+    "tier": 3
+  },
+  "flo": {
+    "inputs": [
+      "al",
+      "stl"
+    ],
+    "building": "fs:10xal-4xstl=>1xflo",
+    "workforce_tier": 2,
+    "recipe_id": "FS:10xAL-4xSTL=>1xFLO",
+    "tier": 2
+  },
+  "flp": {
+    "inputs": [
+      "al",
+      "fe",
+      "he"
+    ],
+    "building": "wel:1xal-1xfe-1xhe=>6xflp",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:1xAL-1xFE-1xHE=>6xFLP",
+    "tier": 1
+  },
+  "flx": {
+    "inputs": [
+      "lst"
+    ],
+    "building": "chp:1xlst=>10xflx",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xLST=>10xFLX",
+    "tier": 2
+  },
+  "fod": {
+    "inputs": [
+      "mai",
+      "nut",
+      "veg"
+    ],
+    "building": "fp:5xmai-5xnut-5xveg=>16xfod",
+    "workforce_tier": 1,
+    "recipe_id": "FP:5xMAI-5xNUT-5xVEG=>16xFOD",
+    "tier": 1
+  },
+  "fse": {
+    "inputs": [
+      "acs",
+      "bro",
+      "lfp",
+      "mfk",
+      "noz"
+    ],
+    "building": "spf:1xacs-25xbro-6xlfp-1xmfk-6xnoz=>1xfse",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xACS-25xBRO-6xLFP-1xMFK-6xNOZ=>1xFSE",
+    "tier": 5
+  },
+  "fun": {
+    "inputs": [
+      "bid",
+      "bws",
+      "pcb",
+      "psl"
+    ],
+    "building": "upf:1xbid-1xbws-4xpcb-8xpsl=>1xfun",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:1xBID-1xBWS-4xPCB-8xPSL=>1xFUN",
+    "tier": 2
+  },
+  "gal": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "gc": {
+    "inputs": [
+      "al",
+      "fe",
+      "he"
+    ],
+    "building": "wel:1xal-1xfe-1xhe=>10xgc",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:1xAL-1xFE-1xHE=>10xGC",
+    "tier": 1
+  },
+  "gch": {
+    "inputs": [
+      "gv",
+      "rg"
+    ],
+    "building": "gf:1xgv-20xrg=>1xgch",
+    "workforce_tier": 2,
+    "recipe_id": "GF:1xGV-20xRG=>1xGCH",
+    "tier": 2
+  },
+  "gen": {
+    "inputs": [
+      "gnz",
+      "lfp",
+      "mfk",
+      "ng",
+      "thf"
+    ],
+    "building": "gf:4xgnz-4xlfp-1xmfk-50xng-10xthf=>1xgen",
+    "workforce_tier": 2,
+    "recipe_id": "GF:4xGNZ-4xLFP-1xMFK-50xNG-10xTHF=>1xGEN",
+    "tier": 2
+  },
+  "gin": {
+    "inputs": [
+      "amm",
+      "dw",
+      "es",
+      "grn"
+    ],
+    "building": "fer:1xamm-2xdw-1xes-2xgrn=>4xgin",
+    "workforce_tier": 2,
+    "recipe_id": "FER:1xAMM-2xDW-1xES-2xGRN=>4xGIN",
+    "tier": 2
+  },
+  "gl": {
+    "inputs": [
+      "flx",
+      "na",
+      "sio"
+    ],
+    "building": "gf:1xflx-1xna-2xsio=>12xgl",
+    "workforce_tier": 2,
+    "recipe_id": "GF:1xFLX-1xNA-2xSIO=>12xGL",
+    "tier": 2
+  },
+  "gnz": {
+    "inputs": [
+      "gch",
+      "rg",
+      "ti"
+    ],
+    "building": "gf:1xgch-20xrg-1xti=>1xgnz",
+    "workforce_tier": 2,
+    "recipe_id": "GF:1xGCH-20xRG-1xTI=>1xGNZ",
+    "tier": 2
+  },
+  "gra": {
+    "inputs": [
+      "ddt",
+      "h2o",
+      "soi"
+    ],
+    "building": "orc:1xddt-30xh2o-3xsoi=>6xgra",
+    "workforce_tier": 3,
+    "recipe_id": "ORC:1xDDT-30xH2O-3xSOI=>6xGRA",
+    "tier": 3
+  },
+  "grn": {
+    "inputs": [
+      "h2o"
+    ],
+    "building": "frm:1xh2o=>4xgrn",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:1xH2O=>4xGRN",
+    "tier": 1
+  },
+  "gv": {
+    "inputs": [
+      "al",
+      "he"
+    ],
+    "building": "wel:1xal-1xhe=>1xgv",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:1xAL-1xHE=>1xGV",
+    "tier": 1
+  },
+  "h": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "h2o": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "hab": {
+    "inputs": [
+      "bbh",
+      "bde",
+      "bse",
+      "soi"
+    ],
+    "building": "upf:6xbbh-10xbde-10xbse-50xsoi=>1xhab",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:6xBBH-10xBDE-10xBSE-50xSOI=>1xHAB",
+    "tier": 2
+  },
+  "hal": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "hcb": {
+    "inputs": [
+      "mfk",
+      "wal"
+    ],
+    "building": "skf:100xmfk-600xwal=>1xhcb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:100xMFK-600xWAL=>1xHCB",
+    "tier": 3
+  },
+  "hcc": {
+    "inputs": [
+      "pe",
+      "rgo"
+    ],
+    "building": "fs:300xpe-1xrgo=>10xhcc",
+    "workforce_tier": 2,
+    "recipe_id": "FS:300xPE-1xRGO=>10xHCC",
+    "tier": 2
+  },
+  "hcp": {
+    "inputs": [
+      "h2o"
+    ],
+    "building": "frm:2xh2o=>4xhcp",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:2xH2O=>4xHCP",
+    "tier": 1
+  },
+  "hd": {
+    "inputs": [
+      "dcs",
+      "ldi",
+      "rg"
+    ],
+    "building": "mca:5xdcs-5xldi-1xrg=>5xhd",
+    "workforce_tier": 3,
+    "recipe_id": "MCA:5xDCS-5xLDI-1xRG=>5xHD",
+    "tier": 3
+  },
+  "he": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "he3": {
+    "inputs": [
+      "ts"
+    ],
+    "building": "ref:3xts=>2xhe3",
+    "workforce_tier": 2,
+    "recipe_id": "REF:3xTS=>2xHE3",
+    "tier": 2
+  },
+  "her": {
+    "inputs": [
+      "ddt",
+      "h2o"
+    ],
+    "building": "frm:1xddt-4xh2o=>4xher",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:1xDDT-4xH2O=>4xHER",
+    "tier": 1
+  },
+  "hex": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "hhp": {
+    "inputs": [
+      "al",
+      "ast",
+      "he"
+    ],
+    "building": "hwp:12xal-4xast-1xhe=>4xhhp",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:12xAL-4xAST-1xHE=>4xHHP",
+    "tier": 3
+  },
+  "hms": {
+    "inputs": [
+      "gc",
+      "ind",
+      "nl"
+    ],
+    "building": "clf:6xgc-1xind-1xnl=>10xhms",
+    "workforce_tier": 2,
+    "recipe_id": "CLF:6xGC-1xIND-1xNL=>10xHMS",
+    "tier": 2
+  },
+  "hnz": {
+    "inputs": [
+      "cha",
+      "mfk",
+      "wal"
+    ],
+    "building": "spf:1xcha-4xmfk-20xwal=>1xhnz",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xCHA-4xMFK-20xWAL=>1xHNZ",
+    "tier": 5
+  },
+  "hog": {
+    "inputs": [
+      "dcs",
+      "hd",
+      "ng"
+    ],
+    "building": "edm:1xdcs-1xhd-1xng=>1xhog",
+    "workforce_tier": 2,
+    "recipe_id": "EDM:1xDCS-1xHD-1xNG=>1xHOG",
+    "tier": 2
+  },
+  "hop": {
+    "inputs": [
+      "ddt",
+      "h2o",
+      "soi"
+    ],
+    "building": "orc:2xddt-40xh2o-4xsoi=>18xhop",
+    "workforce_tier": 3,
+    "recipe_id": "ORC:2xDDT-40xH2O-4xSOI=>18xHOP",
+    "tier": 3
+  },
+  "hpc": {
+    "inputs": [
+      "cd",
+      "dcs",
+      "mb"
+    ],
+    "building": "elp:1xcd-1xdcs-1xmb=>1xhpc",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:1xCD-1xDCS-1xMB=>1xHPC",
+    "tier": 3
+  },
+  "hpr": {
+    "inputs": [
+      "cbm",
+      "fir",
+      "stl"
+    ],
+    "building": "spf:1xcbm-1xfir-20xstl=>1xhpr",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xCBM-1xFIR-20xSTL=>1xHPR",
+    "tier": 5
+  },
+  "hse": {
+    "inputs": [
+      "lse",
+      "tcs"
+    ],
+    "building": "pp3:2xlse-1xtcs=>2xhse",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:2xLSE-1xTCS=>2xHSE",
+    "tier": 3
+  },
+  "hss": {
+    "inputs": [
+      "ble",
+      "nl",
+      "pcb",
+      "sen"
+    ],
+    "building": "clf:1xble-5xnl-5xpcb-5xsen=>20xhss",
+    "workforce_tier": 2,
+    "recipe_id": "CLF:1xBLE-5xNL-5xPCB-5xSEN=>20xHSS",
+    "tier": 2
+  },
+  "hte": {
+    "inputs": [
+      "acs",
+      "afp",
+      "hnz",
+      "mfk",
+      "wal"
+    ],
+    "building": "spf:1xacs-8xafp-4xhnz-1xmfk-20xwal=>1xhte",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xACS-8xAFP-4xHNZ-1xMFK-20xWAL=>1xHTE",
+    "tier": 5
+  },
+  "hyr": {
+    "inputs": [
+      "cbl",
+      "fir",
+      "wal"
+    ],
+    "building": "spf:1xcbl-2xfir-20xwal=>1xhyr",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xCBL-2xFIR-20xWAL=>1xHYR",
+    "tier": 5
+  },
+  "i": {
+    "inputs": [
+      "cli"
+    ],
+    "building": "bmp:3xcli=>1xi",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:3xCLI=>1xI",
+    "tier": 1
+  },
+  "idc": {
+    "inputs": [],
+    "building": "sl:=>1xidc",
+    "workforce_tier": 5,
+    "recipe_id": "SL:=>1xIDC",
+    "tier": 5
+  },
+  "imm": {
+    "inputs": [
+      "da",
+      "dd"
+    ],
+    "building": "sl:1xda-1xdd=>1ximm",
+    "workforce_tier": 5,
+    "recipe_id": "SL:1xDA-1xDD=>1xIMM",
+    "tier": 5
+  },
+  "ind": {
+    "inputs": [
+      "cu",
+      "mg",
+      "s"
+    ],
+    "building": "chp:1xcu-1xmg-1xs=>1xind",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xCU-1xMG-1xS=>1xIND",
+    "tier": 2
+  },
+  "ins": {
+    "inputs": [
+      "ar",
+      "pe",
+      "thf"
+    ],
+    "building": "pp3:1xar-100xpe-1xthf=>24xins",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:1xAR-100xPE-1xTHF=>24xINS",
+    "tier": 3
+  },
+  "jui": {
+    "inputs": [
+      "bl",
+      "cst",
+      "hex",
+      "pk"
+    ],
+    "building": "lab:5xbl-5xcst-10xhex-1xpk=>30xjui",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:5xBL-5xCST-10xHEX-1xPK=>30xJUI",
+    "tier": 3
+  },
+  "kom": {
+    "inputs": [
+      "amm",
+      "dw",
+      "her"
+    ],
+    "building": "fer:1xamm-4xdw-1xher=>6xkom",
+    "workforce_tier": 2,
+    "recipe_id": "FER:1xAMM-4xDW-1xHER=>6xKOM",
+    "tier": 2
+  },
+  "kv": {
+    "inputs": [
+      "pg",
+      "tcl"
+    ],
+    "building": "wpl:75xpg-5xtcl=>1xkv",
+    "workforce_tier": 2,
+    "recipe_id": "WPL:75xPG-5xTCL=>1xKV",
+    "tier": 2
+  },
+  "lbh": {
+    "inputs": [
+      "al",
+      "pe"
+    ],
+    "building": "pp2:3xal-35xpe=>1xlbh",
+    "workforce_tier": 2,
+    "recipe_id": "PP2:3xAL-35xPE=>1xLBH",
+    "tier": 2
+  },
+  "lc": {
+    "inputs": [
+      "ble",
+      "hd",
+      "pcb",
+      "sil"
+    ],
+    "building": "clf:1xble-10xhd-10xpcb-2xsil=>10xlc",
+    "workforce_tier": 2,
+    "recipe_id": "CLF:1xBLE-10xHD-10xPCB-2xSIL=>10xLC",
+    "tier": 2
+  },
+  "lcb": {
+    "inputs": [
+      "ast",
+      "mfk"
+    ],
+    "building": "skf:200xast-20xmfk=>1xlcb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:200xAST-20xMFK=>1xLCB",
+    "tier": 3
+  },
+  "lcr": {
+    "inputs": [
+      "o",
+      "si"
+    ],
+    "building": "chp:1xo-1xsi=>1xlcr",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xO-1xSI=>1xLCR",
+    "tier": 2
+  },
+  "ld": {
+    "inputs": [],
+    "building": "sd:=>1xld",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xLD",
+    "tier": 3
+  },
+  "lde": {
+    "inputs": [
+      "al",
+      "nl"
+    ],
+    "building": "pp2:3xal-1xnl=>1xlde",
+    "workforce_tier": 2,
+    "recipe_id": "PP2:3xAL-1xNL=>1xLDE",
+    "tier": 2
+  },
+  "ldi": {
+    "inputs": [
+      "gal",
+      "si"
+    ],
+    "building": "clr:1xgal-1xsi=>6xldi",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xGAL-1xSI=>6xLDI",
+    "tier": 3
+  },
+  "les": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "lfe": {
+    "inputs": [
+      "cbl",
+      "ctf"
+    ],
+    "building": "elp:1xcbl-3xctf=>1xlfe",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:1xCBL-3xCTF=>1xLFE",
+    "tier": 3
+  },
+  "lfl": {
+    "inputs": [
+      "mfk",
+      "zr"
+    ],
+    "building": "skf:8xmfk-20xzr=>1xlfl",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:8xMFK-20xZR=>1xLFL",
+    "tier": 3
+  },
+  "lfp": {
+    "inputs": [
+      "pg",
+      "sfk",
+      "thf"
+    ],
+    "building": "ppf:50xpg-1xsfk-10xthf=>1xlfp",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:50xPG-1xSFK-10xTHF=>1xLFP",
+    "tier": 2
+  },
+  "lhp": {
+    "inputs": [
+      "al",
+      "he"
+    ],
+    "building": "hwp:12xal-1xhe=>4xlhp",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:12xAL-1xHE=>4xLHP",
+    "tier": 3
+  },
+  "li": {
+    "inputs": [
+      "hal",
+      "lio"
+    ],
+    "building": "sme:4xhal-10xlio=>4xli",
+    "workforce_tier": 1,
+    "recipe_id": "SME:4xHAL-10xLIO=>4xLI",
+    "tier": 1
+  },
+  "lio": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "lis": {
+    "inputs": [
+      "air",
+      "bmf",
+      "wai",
+      "wr"
+    ],
+    "building": "apf:1xair-1xbmf-1xwai-1xwr=>1xlis",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xAIR-1xBMF-1xWAI-1xWR=>1xLIS",
+    "tier": 4
+  },
+  "lit": {
+    "inputs": [
+      "ne",
+      "rg"
+    ],
+    "building": "gf:16xne-8xrg=>1xlit",
+    "workforce_tier": 2,
+    "recipe_id": "GF:16xNE-8xRG=>1xLIT",
+    "tier": 2
+  },
+  "log": {
+    "inputs": [
+      "bmf",
+      "ld",
+      "sal"
+    ],
+    "building": "apf:1xbmf-1xld-1xsal=>1xlog",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xBMF-1xLD-1xSAL=>1xLOG",
+    "tier": 4
+  },
+  "lse": {
+    "inputs": [
+      "al",
+      "pg"
+    ],
+    "building": "pp2:3xal-120xpg=>1xlse",
+    "workforce_tier": 2,
+    "recipe_id": "PP2:3xAL-120xPG=>1xLSE",
+    "tier": 2
+  },
+  "lsl": {
+    "inputs": [
+      "fet",
+      "mfk"
+    ],
+    "building": "skf:125xfet-8xmfk=>1xlsl",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:125xFET-8xMFK=>1xLSL",
+    "tier": 3
+  },
+  "lst": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "lta": {
+    "inputs": [
+      "al",
+      "gl"
+    ],
+    "building": "pp2:1xal-5xgl=>1xlta",
+    "workforce_tier": 2,
+    "recipe_id": "PP2:1xAL-5xGL=>1xLTA",
+    "tier": 2
+  },
+  "lu": {
+    "inputs": [
+      "da",
+      "psl",
+      "psm",
+      "ws"
+    ],
+    "building": "upf:1xda-10xpsl-6xpsm-1xws=>1xlu",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:1xDA-10xPSL-6xPSM-1xWS=>1xLU",
+    "tier": 2
+  },
+  "mag": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "mai": {
+    "inputs": [
+      "h2o"
+    ],
+    "building": "frm:4xh2o=>12xmai",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:4xH2O=>12xMAI",
+    "tier": 1
+  },
+  "mb": {
+    "inputs": [
+      "mpc",
+      "psm",
+      "ram",
+      "sfk"
+    ],
+    "building": "mca:4xmpc-4xpsm-4xram-4xsfk=>4xmb",
+    "workforce_tier": 3,
+    "recipe_id": "MCA:4xMPC-4xPSM-4xRAM-4xSFK=>4xMB",
+    "tier": 3
+  },
+  "mcb": {
+    "inputs": [
+      "ast",
+      "mfk"
+    ],
+    "building": "skf:100xast-16xmfk=>1xmcb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:100xAST-16xMFK=>1xMCB",
+    "tier": 3
+  },
+  "mcg": {
+    "inputs": [
+      "lst",
+      "sio"
+    ],
+    "building": "bmp:4xlst-2xsio=>50xmcg",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:4xLST-2xSIO=>50xMCG",
+    "tier": 1
+  },
+  "mea": {
+    "inputs": [
+      "fim",
+      "mtp"
+    ],
+    "building": "fp:2xfim-1xmtp=>2xmea",
+    "workforce_tier": 1,
+    "recipe_id": "FP:2xFIM-1xMTP=>2xMEA",
+    "tier": 1
+  },
+  "med": {
+    "inputs": [
+      "al",
+      "cot",
+      "her",
+      "pe"
+    ],
+    "building": "chp:1xal-4xcot-1xher-50xpe=>16xmed",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xAL-4xCOT-1xHER-50xPE=>16xMED",
+    "tier": 2
+  },
+  "mfe": {
+    "inputs": [
+      "cbm",
+      "cf"
+    ],
+    "building": "clr:1xcbm-4xcf=>1xmfe",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xCBM-4xCF=>1xMFE",
+    "tier": 3
+  },
+  "mfk": {
+    "inputs": [
+      "stl"
+    ],
+    "building": "fs:1xstl=>8xmfk",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xSTL=>8xMFK",
+    "tier": 2
+  },
+  "mfl": {
+    "inputs": [
+      "mfk",
+      "zr"
+    ],
+    "building": "skf:4xmfk-10xzr=>1xmfl",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:4xMFK-10xZR=>1xMFL",
+    "tier": 3
+  },
+  "mg": {
+    "inputs": [
+      "mgs"
+    ],
+    "building": "bmp:1xmgs=>6xmg",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:1xMGS=>6xMG",
+    "tier": 1
+  },
+  "mgc": {
+    "inputs": [
+      "lde",
+      "mag"
+    ],
+    "building": "pp3:1xlde-1xmag=>1xmgc",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:1xLDE-1xMAG=>1xMGC",
+    "tier": 3
+  },
+  "mgs": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "mhl": {
+    "inputs": [
+      "fe",
+      "he",
+      "i"
+    ],
+    "building": "wel:1xfe-1xhe-1xi=>1xmhl",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:1xFE-1xHE-1xI=>1xMHL",
+    "tier": 1
+  },
+  "mhp": {
+    "inputs": [
+      "pcb",
+      "tra"
+    ],
+    "building": "edm:1xpcb-1xtra=>1xmhp",
+    "workforce_tier": 2,
+    "recipe_id": "EDM:1xPCB-1xTRA=>1xMHP",
+    "tier": 2
+  },
+  "mli": {
+    "inputs": [],
+    "building": "sd:=>1xmli",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xMLI",
+    "tier": 3
+  },
+  "mpc": {
+    "inputs": [
+      "bco",
+      "swf",
+      "trn"
+    ],
+    "building": "sca:10xbco-10xswf-10xtrn=>10xmpc",
+    "workforce_tier": 3,
+    "recipe_id": "SCA:10xBCO-10xSWF-10xTRN=>10xMPC",
+    "tier": 3
+  },
+  "msl": {
+    "inputs": [
+      "fet",
+      "mfk"
+    ],
+    "building": "skf:50xfet-4xmfk=>1xmsl",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:50xFET-4xMFK=>1xMSL",
+    "tier": 3
+  },
+  "mtc": {
+    "inputs": [
+      "ncs"
+    ],
+    "building": "clr:2xncs=>2xmtc",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:2xNCS=>2xMTC",
+    "tier": 3
+  },
+  "mtp": {
+    "inputs": [
+      "hcp",
+      "ns",
+      "ppa"
+    ],
+    "building": "ivp:1xhcp-1xns-1xppa=>4xmtp",
+    "workforce_tier": 3,
+    "recipe_id": "IVP:1xHCP-1xNS-1xPPA=>4xMTP",
+    "tier": 3
+  },
+  "mus": {
+    "inputs": [
+      "ns"
+    ],
+    "building": "hyf:1xns=>4xmus",
+    "workforce_tier": 2,
+    "recipe_id": "HYF:1xNS=>4xMUS",
+    "tier": 2
+  },
+  "mwf": {
+    "inputs": [
+      "al",
+      "si"
+    ],
+    "building": "clr:2xal-2xsi=>20xmwf",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:2xAL-2xSI=>20xMWF",
+    "tier": 3
+  },
+  "n": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "na": {
+    "inputs": [
+      "h2o",
+      "hal"
+    ],
+    "building": "chp:1xh2o-3xhal=>1xcl-2xna",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xH2O-3xHAL=>1xCL-2xNA",
+    "tier": 2
+  },
+  "nab": {
+    "inputs": [
+      "bor",
+      "h",
+      "na"
+    ],
+    "building": "chp:1xbor-5xh-1xna=>20xnab",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:1xBOR-5xH-1xNA=>20xNAB",
+    "tier": 2
+  },
+  "ncs": {
+    "inputs": [
+      "c"
+    ],
+    "building": "clr:1xc=>100xncs",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xC=>100xNCS",
+    "tier": 3
+  },
+  "ne": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "nf": {
+    "inputs": [],
+    "building": "sd:=>1xnf",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xNF",
+    "tier": 3
+  },
+  "nfi": {
+    "inputs": [
+      "c",
+      "si"
+    ],
+    "building": "clr:10xc-2xsi=>1200xnfi",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:10xC-2xSI=>1200xNFI",
+    "tier": 3
+  },
+  "ng": {
+    "inputs": [
+      "gl",
+      "ncs"
+    ],
+    "building": "gf:10xgl-10xncs=>10xng",
+    "workforce_tier": 2,
+    "recipe_id": "GF:10xGL-10xNCS=>10xNG",
+    "tier": 2
+  },
+  "nl": {
+    "inputs": [
+      "pg"
+    ],
+    "building": "wpl:50xpg=>1xnl",
+    "workforce_tier": 2,
+    "recipe_id": "WPL:50xPG=>1xNL",
+    "tier": 2
+  },
+  "nn": {
+    "inputs": [
+      "bai",
+      "mli"
+    ],
+    "building": "se:1xbai-1xmli=>1xnn",
+    "workforce_tier": 4,
+    "recipe_id": "SE:1xBAI-1xMLI=>1xNN",
+    "tier": 4
+  },
+  "noz": {
+    "inputs": [
+      "cha",
+      "fal",
+      "mfk"
+    ],
+    "building": "spf:1xcha-10xfal-2xmfk=>1xnoz",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:1xCHA-10xFAL-2xMFK=>1xNOZ",
+    "tier": 5
+  },
+  "nr": {
+    "inputs": [
+      "epo",
+      "ncs"
+    ],
+    "building": "lab:50xepo-75xncs=>50xnr",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:50xEPO-75xNCS=>50xNR",
+    "tier": 3
+  },
+  "ns": {
+    "inputs": [
+      "h2o",
+      "lst",
+      "n"
+    ],
+    "building": "chp:2xh2o-1xlst-2xn=>4xns",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:2xH2O-1xLST-2xN=>4xNS",
+    "tier": 2
+  },
+  "nst": {
+    "inputs": [
+      "alg",
+      "es",
+      "thf"
+    ],
+    "building": "lab:1xalg-1xes-1xthf=>4xnst",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:1xALG-1xES-1xTHF=>4xNST",
+    "tier": 3
+  },
+  "nut": {
+    "inputs": [
+      "h2o"
+    ],
+    "building": "frm:1xh2o=>12xnut",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:1xH2O=>12xNUT",
+    "tier": 1
+  },
+  "nv1": {
+    "inputs": [
+      "snm",
+      "ws"
+    ],
+    "building": "apf:1xsnm-1xws=>1xnv1",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xSNM-1xWS=>1xNV1",
+    "tier": 4
+  },
+  "nv2": {
+    "inputs": [
+      "bmf",
+      "snm"
+    ],
+    "building": "aaf:1xbmf-1xsnm=>1xnv2",
+    "workforce_tier": 5,
+    "recipe_id": "AAF:1xBMF-1xSNM=>1xNV2",
+    "tier": 5
+  },
+  "o": {
+    "inputs": [
+      "tco"
+    ],
+    "building": "tnp:1xtco=>1xo-1xtc",
+    "workforce_tier": 3,
+    "recipe_id": "TNP:1xTCO=>1xO-1xTC",
+    "tier": 3
+  },
+  "off": {
+    "inputs": [
+      "epo",
+      "pg"
+    ],
+    "building": "bmp:20xepo-20xpg=>50xoff",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:20xEPO-20xPG=>50xOFF",
+    "tier": 1
+  },
+  "olf": {
+    "inputs": [
+      "rea",
+      "veg"
+    ],
+    "building": "chp:10xrea-6xveg=>6xolf",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:10xREA-6xVEG=>6xOLF",
+    "tier": 2
+  },
+  "os": {
+    "inputs": [
+      "ld",
+      "rom",
+      "wm"
+    ],
+    "building": "se:1xld-1xrom-1xwm=>1xos",
+    "workforce_tier": 4,
+    "recipe_id": "SE:1xLD-1xROM-1xWM=>1xOS",
+    "tier": 4
+  },
+  "ove": {
+    "inputs": [
+      "pe",
+      "pg"
+    ],
+    "building": "bmp:100xpe-25xpg=>20xove",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:100xPE-25xPG=>20xOVE",
+    "tier": 1
+  },
+  "pbu": {
+    "inputs": [
+      "cof",
+      "dw",
+      "ove",
+      "pe",
+      "pwo",
+      "rat"
+    ],
+    "building": "pac:5xcof-40xdw-5xove-50xpe-2xpwo-40xrat=>1xpbu",
+    "workforce_tier": 2,
+    "recipe_id": "PAC:5xCOF-40xDW-5xOVE-50xPE-2xPWO-40xRAT=>1xPBU",
+    "tier": 2
+  },
+  "pcb": {
+    "inputs": [
+      "bco",
+      "bgo",
+      "pe",
+      "swf"
+    ],
+    "building": "sca:5xbco-1xbgo-60xpe-10xswf=>5xpcb",
+    "workforce_tier": 3,
+    "recipe_id": "SCA:5xBCO-1xBGO-60xPE-10xSWF=>5xPCB",
+    "tier": 3
+  },
+  "pda": {
+    "inputs": [
+      "hpc",
+      "ld"
+    ],
+    "building": "apf:2xhpc-1xld=>32xpda",
+    "workforce_tier": 4,
+    "recipe_id": "APF:2xHPC-1xLD=>32xPDA",
+    "tier": 4
+  },
+  "pe": {
+    "inputs": [
+      "c",
+      "h"
+    ],
+    "building": "bmp:1xc-2xh=>200xpe",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:1xC-2xH=>200xPE",
+    "tier": 1
+  },
+  "pfe": {
+    "inputs": [
+      "amm",
+      "rea"
+    ],
+    "building": "chp:10xamm-4xrea=>10xpfe",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:10xAMM-4xREA=>10xPFE",
+    "tier": 2
+  },
+  "pg": {
+    "inputs": [
+      "c",
+      "h",
+      "mg"
+    ],
+    "building": "pol:1xc-1xh-1xmg=>50xpg",
+    "workforce_tier": 2,
+    "recipe_id": "POL:1xC-1xH-1xMG=>50xPG",
+    "tier": 2
+  },
+  "pib": {
+    "inputs": [
+      "ddt",
+      "h2o",
+      "soi"
+    ],
+    "building": "orc:1xddt-20xh2o-2xsoi=>12xpib",
+    "workforce_tier": 3,
+    "recipe_id": "ORC:1xDDT-20xH2O-2xSOI=>12xPIB",
+    "tier": 3
+  },
+  "pk": {
+    "inputs": [
+      "ca",
+      "li",
+      "rea"
+    ],
+    "building": "phf:2xca-4xli-10xrea=>10xpk",
+    "workforce_tier": 3,
+    "recipe_id": "PHF:2xCA-4xLI-10xREA=>10xPK",
+    "tier": 3
+  },
+  "pow": {
+    "inputs": [
+      "li",
+      "ncs"
+    ],
+    "building": "eca:4xli-1xncs=>1xpow",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:4xLI-1xNCS=>1xPOW",
+    "tier": 3
+  },
+  "ppa": {
+    "inputs": [
+      "alg",
+      "bea",
+      "h2o"
+    ],
+    "building": "fp:1xalg-1xbea-1xh2o=>6xppa",
+    "workforce_tier": 1,
+    "recipe_id": "FP:1xALG-1xBEA-1xH2O=>6xPPA",
+    "tier": 1
+  },
+  "psh": {
+    "inputs": [
+      "nfi",
+      "ti"
+    ],
+    "building": "pp3:250xnfi-1xti=>1xpsh",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:250xNFI-1xTI=>1xPSH",
+    "tier": 3
+  },
+  "psl": {
+    "inputs": [
+      "pg"
+    ],
+    "building": "ppf:40xpg=>1xpsl",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:40xPG=>1xPSL",
+    "tier": 2
+  },
+  "psm": {
+    "inputs": [
+      "pg"
+    ],
+    "building": "ppf:20xpg=>1xpsm",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:20xPG=>1xPSM",
+    "tier": 2
+  },
+  "pss": {
+    "inputs": [
+      "pg"
+    ],
+    "building": "ppf:10xpg=>1xpss",
+    "workforce_tier": 2,
+    "recipe_id": "PPF:10xPG=>1xPSS",
+    "tier": 2
+  },
+  "pt": {
+    "inputs": [
+      "stl",
+      "trn"
+    ],
+    "building": "bmp:1xstl-1xtrn=>7xpt",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:1xSTL-1xTRN=>7xPT",
+    "tier": 1
+  },
+  "pwo": {
+    "inputs": [
+      "cot",
+      "pg"
+    ],
+    "building": "bmp:1xcot-50xpg=>20xpwo",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:1xCOT-50xPG=>20xPWO",
+    "tier": 1
+  },
+  "qcr": {
+    "inputs": [
+      "bgo",
+      "cbs",
+      "rag"
+    ],
+    "building": "spf:20xbgo-1xcbs-1xrag=>1xqcr",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:20xBGO-1xCBS-1xRAG=>1xQCR",
+    "tier": 5
+  },
+  "rad": {
+    "inputs": [
+      "dcs",
+      "pow",
+      "sfk"
+    ],
+    "building": "edm:1xdcs-1xpow-1xsfk=>1xrad",
+    "workforce_tier": 2,
+    "recipe_id": "EDM:1xDCS-1xPOW-1xSFK=>1xRAD",
+    "tier": 2
+  },
+  "rag": {
+    "inputs": [
+      "acs",
+      "ast",
+      "bfr",
+      "cf",
+      "etc",
+      "rcs"
+    ],
+    "building": "eca:1xacs-8xast-4xbfr-6xcf-4xetc-1xrcs=>1xrag",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:1xACS-8xAST-4xBFR-6xCF-4xETC-1xRCS=>1xRAG",
+    "tier": 3
+  },
+  "ram": {
+    "inputs": [
+      "bco",
+      "cap",
+      "pss"
+    ],
+    "building": "sca:6xbco-6xcap-6xpss=>6xram",
+    "workforce_tier": 3,
+    "recipe_id": "SCA:6xBCO-6xCAP-6xPSS=>6xRAM",
+    "tier": 3
+  },
+  "rat": {
+    "inputs": [
+      "alg",
+      "grn",
+      "nut"
+    ],
+    "building": "fp:1xalg-1xgrn-1xnut=>10xrat",
+    "workforce_tier": 1,
+    "recipe_id": "FP:1xALG-1xGRN-1xNUT=>10xRAT",
+    "tier": 1
+  },
+  "rbh": {
+    "inputs": [
+      "bbh",
+      "epo",
+      "stl"
+    ],
+    "building": "pp3:1xbbh-50xepo-1xstl=>1xrbh",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:1xBBH-50xEPO-1xSTL=>1xRBH",
+    "tier": 3
+  },
+  "rco": {
+    "inputs": [
+      "h2o",
+      "ns"
+    ],
+    "building": "frm:2xh2o-4xns=>2xrco",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:2xH2O-4xNS=>2xRCO",
+    "tier": 1
+  },
+  "rcs": {
+    "inputs": [
+      "bws",
+      "da",
+      "os",
+      "sar"
+    ],
+    "building": "apf:1xbws-1xda-1xos-1xsar=>1xrcs",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xBWS-1xDA-1xOS-1xSAR=>1xRCS",
+    "tier": 4
+  },
+  "rct": {
+    "inputs": [
+      "ast",
+      "cbs",
+      "rag"
+    ],
+    "building": "spf:10xast-1xcbs-1xrag=>1xrct",
+    "workforce_tier": 5,
+    "recipe_id": "SPF:10xAST-1xCBS-1xRAG=>1xRCT",
+    "tier": 5
+  },
+  "rde": {
+    "inputs": [
+      "epo",
+      "kv",
+      "lde"
+    ],
+    "building": "pp3:100xepo-1xkv-1xlde=>2xrde",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:100xEPO-1xKV-1xLDE=>2xRDE",
+    "tier": 3
+  },
+  "rdl": {
+    "inputs": [
+      "psl",
+      "psm",
+      "srd"
+    ],
+    "building": "upf:30xpsl-50xpsm-8xsrd=>1xrdl",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:30xPSL-50xPSM-8xSRD=>1xRDL",
+    "tier": 2
+  },
+  "rds": {
+    "inputs": [
+      "psl",
+      "psm",
+      "srd"
+    ],
+    "building": "upf:20xpsl-30xpsm-4xsrd=>1xrds",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:20xPSL-30xPSM-4xSRD=>1xRDS",
+    "tier": 2
+  },
+  "rea": {
+    "inputs": [
+      "brm"
+    ],
+    "building": "chp:25xbrm=>10xrea",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:25xBRM=>10xREA",
+    "tier": 2
+  },
+  "red": {
+    "inputs": [
+      "dch",
+      "sar"
+    ],
+    "building": "drs:1xdch-1xsar=>1xred",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xDCH-1xSAR=>1xRED",
+    "tier": 4
+  },
+  "rep": {
+    "inputs": [
+      "ins",
+      "mfk",
+      "sfk"
+    ],
+    "building": "bmp:10xins-1xmfk-1xsfk=>4xrep",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:10xINS-1xMFK-1xSFK=>4xREP",
+    "tier": 1
+  },
+  "rg": {
+    "inputs": [
+      "gl",
+      "pg",
+      "sen"
+    ],
+    "building": "gf:10xgl-15xpg-1xsen=>10xrg",
+    "workforce_tier": 2,
+    "recipe_id": "GF:10xGL-15xPG-1xSEN=>10xRG",
+    "tier": 2
+  },
+  "rgo": {
+    "inputs": [
+      "au",
+      "cu"
+    ],
+    "building": "fs:4xau-1xcu=>5xrgo",
+    "workforce_tier": 2,
+    "recipe_id": "FS:4xAU-1xCU=>5xRGO",
+    "tier": 2
+  },
+  "rhp": {
+    "inputs": [
+      "al",
+      "he",
+      "ti"
+    ],
+    "building": "hwp:12xal-1xhe-4xti=>4xrhp",
+    "workforce_tier": 3,
+    "recipe_id": "HWP:12xAL-1xHE-4xTI=>4xRHP",
+    "tier": 3
+  },
+  "rom": {
+    "inputs": [
+      "bgc",
+      "pss",
+      "si"
+    ],
+    "building": "sca:10xbgc-10xpss-10xsi=>10xrom",
+    "workforce_tier": 3,
+    "recipe_id": "SCA:10xBGC-10xPSS-10xSI=>10xROM",
+    "tier": 3
+  },
+  "rse": {
+    "inputs": [
+      "bse",
+      "epo",
+      "stl"
+    ],
+    "building": "pp3:2xbse-225xepo-1xstl=>2xrse",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:2xBSE-225xEPO-1xSTL=>2xRSE",
+    "tier": 3
+  },
+  "rsh": {
+    "inputs": [
+      "lst",
+      "stl",
+      "ta"
+    ],
+    "building": "pp4:1xlst-1xstl-1xta=>1xrsh",
+    "workforce_tier": 4,
+    "recipe_id": "PP4:1xLST-1xSTL-1xTA=>1xRSH",
+    "tier": 4
+  },
+  "rsi": {
+    "inputs": [
+      "h2o",
+      "hcp",
+      "ns"
+    ],
+    "building": "ivp:16xh2o-1xhcp-1xns=>8xrsi",
+    "workforce_tier": 3,
+    "recipe_id": "IVP:16xH2O-1xHCP-1xNS=>8xRSI",
+    "tier": 3
+  },
+  "rta": {
+    "inputs": [
+      "lta",
+      "rg"
+    ],
+    "building": "pp3:1xlta-6xrg=>1xrta",
+    "workforce_tier": 3,
+    "recipe_id": "PP3:1xLTA-6xRG=>1xRTA",
+    "tier": 3
+  },
+  "s": {
+    "inputs": [
+      "o",
+      "scr"
+    ],
+    "building": "sme:1xo-1xscr=>6xs",
+    "workforce_tier": 1,
+    "recipe_id": "SME:1xO-1xSCR=>6xS",
+    "tier": 1
+  },
+  "sa": {
+    "inputs": [],
+    "building": "sd:=>1xsa",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xSA",
+    "tier": 3
+  },
+  "sal": {
+    "inputs": [],
+    "building": "sd:=>1xsal",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xSAL",
+    "tier": 3
+  },
+  "sar": {
+    "inputs": [
+      "pcb",
+      "sen"
+    ],
+    "building": "elp:4xpcb-16xsen=>1xsar",
+    "workforce_tier": 3,
+    "recipe_id": "ELP:4xPCB-16xSEN=>1xSAR",
+    "tier": 3
+  },
+  "sbu": {
+    "inputs": [
+      "dw",
+      "exo",
+      "kom",
+      "pe",
+      "pt",
+      "rat",
+      "rep"
+    ],
+    "building": "pac:50xdw-5xexo-10xkom-100xpe-5xpt-60xrat-2xrep=>1xsbu",
+    "workforce_tier": 2,
+    "recipe_id": "PAC:50xDW-5xEXO-10xKOM-100xPE-5xPT-60xRAT-2xREP=>1xSBU",
+    "tier": 2
+  },
+  "sc": {
+    "inputs": [
+      "ca",
+      "mg",
+      "ta"
+    ],
+    "building": "chp:2xca-1xmg-1xta=>20xsc",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:2xCA-1xMG-1xTA=>20xSC",
+    "tier": 2
+  },
+  "scb": {
+    "inputs": [
+      "fal",
+      "mfk"
+    ],
+    "building": "skf:50xfal-12xmfk=>1xscb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:50xFAL-12xMFK=>1xSCB",
+    "tier": 3
+  },
+  "scn": {
+    "inputs": [
+      "cu",
+      "pe"
+    ],
+    "building": "edm:4xcu-100xpe=>8xscn",
+    "workforce_tier": 2,
+    "recipe_id": "EDM:4xCU-100xPE=>8xSCN",
+    "tier": 2
+  },
+  "scr": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "sdr": {
+    "inputs": [
+      "bsc",
+      "dch",
+      "seq"
+    ],
+    "building": "drs:1xbsc-1xdch-1xseq=>1xsdr",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xBSC-1xDCH-1xSEQ=>1xSDR",
+    "tier": 4
+  },
+  "sea": {
+    "inputs": [
+      "pg",
+      "s",
+      "si"
+    ],
+    "building": "bmp:30xpg-1xs-1xsi=>30xsea",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:30xPG-1xS-1xSI=>30xSEA",
+    "tier": 1
+  },
+  "sen": {
+    "inputs": [
+      "h",
+      "n",
+      "trn"
+    ],
+    "building": "sca:10xh-10xn-20xtrn=>20xsen",
+    "workforce_tier": 3,
+    "recipe_id": "SCA:10xH-10xN-20xTRN=>20xSEN",
+    "tier": 3
+  },
+  "seq": {
+    "inputs": [
+      "hog",
+      "stl",
+      "ti"
+    ],
+    "building": "fs:1xhog-2xstl-2xti=>1xseq",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xHOG-2xSTL-2xTI=>1xSEQ",
+    "tier": 2
+  },
+  "sf": {
+    "inputs": [
+      "amm",
+      "gal",
+      "h"
+    ],
+    "building": "ref:1xamm-2xgal-3xh=>100xsf",
+    "workforce_tier": 2,
+    "recipe_id": "REF:1xAMM-2xGAL-3xH=>100xSF",
+    "tier": 2
+  },
+  "sfe": {
+    "inputs": [
+      "cbs",
+      "cf"
+    ],
+    "building": "clr:1xcbs-2xcf=>1xsfe",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xCBS-2xCF=>1xSFE",
+    "tier": 3
+  },
+  "sfk": {
+    "inputs": [
+      "fe"
+    ],
+    "building": "fs:1xfe=>16xsfk",
+    "workforce_tier": 2,
+    "recipe_id": "FS:1xFE=>16xSFK",
+    "tier": 2
+  },
+  "sfl": {
+    "inputs": [
+      "mfk",
+      "zr"
+    ],
+    "building": "skf:1xmfk-5xzr=>1xsfl",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:1xMFK-5xZR=>1xSFL",
+    "tier": 3
+  },
+  "si": {
+    "inputs": [
+      "al",
+      "sio"
+    ],
+    "building": "sme:1xal-3xsio=>1xsi",
+    "workforce_tier": 1,
+    "recipe_id": "SME:1xAL-3xSIO=>1xSI",
+    "tier": 1
+  },
+  "sil": {
+    "inputs": [
+      "rsi"
+    ],
+    "building": "wpl:1xrsi=>1xsil",
+    "workforce_tier": 2,
+    "recipe_id": "WPL:1xRSI=>1xSIL",
+    "tier": 2
+  },
+  "sio": {
+    "inputs": [
+      "ber"
+    ],
+    "building": "aml:2xber=>1xal-1xbe-1xsio",
+    "workforce_tier": 4,
+    "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
+    "tier": 4
+  },
+  "snm": {
+    "inputs": [
+      "dv",
+      "imm",
+      "wai"
+    ],
+    "building": "sl:1xdv-1ximm-1xwai=>2xsnm",
+    "workforce_tier": 5,
+    "recipe_id": "SL:1xDV-1xIMM-1xWAI=>2xSNM",
+    "tier": 5
+  },
+  "soi": {
+    "inputs": [
+      "brm",
+      "cli"
+    ],
+    "building": "chp:20xbrm-10xcli=>16xsoi",
+    "workforce_tier": 2,
+    "recipe_id": "CHP:20xBRM-10xCLI=>16xSOI",
+    "tier": 2
+  },
+  "sol": {
+    "inputs": [
+      "bco",
+      "bro",
+      "cu",
+      "si"
+    ],
+    "building": "eca:4xbco-1xbro-2xcu-2xsi=>12xsol",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:4xBCO-1xBRO-2xCU-2xSI=>12xSOL",
+    "tier": 3
+  },
+  "sp": {
+    "inputs": [
+      "gl",
+      "sol"
+    ],
+    "building": "eca:8xgl-24xsol=>12xsp",
+    "workforce_tier": 3,
+    "recipe_id": "ECA:8xGL-24xSOL=>12xSP",
+    "tier": 3
+  },
+  "srd": {
+    "inputs": [
+      "dch",
+      "sar",
+      "uts"
+    ],
+    "building": "drs:1xdch-1xsar-2xuts=>1xsrd",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xDCH-1xSAR-2xUTS=>1xSRD",
+    "tier": 4
+  },
+  "srp": {
+    "inputs": [
+      "lst",
+      "ta",
+      "w"
+    ],
+    "building": "spp:5xlst-5xta-5xw=>10xsrp",
+    "workforce_tier": 4,
+    "recipe_id": "SPP:5xLST-5xTA-5xW=>10xSRP",
+    "tier": 4
+  },
+  "ssc": {
+    "inputs": [
+      "al",
+      "he",
+      "nfi"
+    ],
+    "building": "wel:2xal-1xhe-20xnfi=>6xssc",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:2xAL-1xHE-20xNFI=>6xSSC",
+    "tier": 1
+  },
+  "ssl": {
+    "inputs": [
+      "mfk",
+      "ti"
+    ],
+    "building": "skf:2xmfk-20xti=>1xssl",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:2xMFK-20xTI=>1xSSL",
+    "tier": 3
+  },
+  "stl": {
+    "inputs": [
+      "fe",
+      "o"
+    ],
+    "building": "sme:2xfe-8xo=>2xstl",
+    "workforce_tier": 1,
+    "recipe_id": "SME:2xFE-8xO=>2xSTL",
+    "tier": 1
+  },
+  "str": {
+    "inputs": [
+      "al",
+      "pe"
+    ],
+    "building": "bmp:4xal-50xpe=>2xstr",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:4xAL-50xPE=>2xSTR",
+    "tier": 1
+  },
+  "sts": {
+    "inputs": [
+      "tpu",
+      "wai"
+    ],
+    "building": "aaf:1xtpu-1xwai=>1xsts",
+    "workforce_tier": 5,
+    "recipe_id": "AAF:1xTPU-1xWAI=>1xSTS",
+    "tier": 5
+  },
+  "su": {
+    "inputs": [
+      "bsc",
+      "ng",
+      "psl",
+      "psm",
+      "seq"
+    ],
+    "building": "upf:2xbsc-10xng-12xpsl-8xpsm-4xseq=>1xsu",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:2xBSC-10xNG-12xPSL-8xPSM-4xSEQ=>1xSU",
+    "tier": 2
+  },
+  "sud": {
+    "inputs": [
+      "bsc",
+      "dch",
+      "sar"
+    ],
+    "building": "drs:1xbsc-1xdch-1xsar=>1xsud",
+    "workforce_tier": 4,
+    "recipe_id": "DRS:1xBSC-1xDCH-1xSAR=>1xSUD",
+    "tier": 4
+  },
+  "sun": {
+    "inputs": [
+      "c",
+      "ove"
+    ],
+    "building": "bmp:10xc-20xove=>20xsun",
+    "workforce_tier": 1,
+    "recipe_id": "BMP:10xC-20xOVE=>20xSUN",
+    "tier": 1
+  },
+  "swf": {
+    "inputs": [
+      "al",
+      "si"
+    ],
+    "building": "clr:1xal-1xsi=>30xswf",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xAL-1xSI=>30xSWF",
+    "tier": 3
+  },
+  "ta": {
+    "inputs": [
+      "tai"
+    ],
+    "building": "aml:2xtai=>1xfe-1xta",
+    "workforce_tier": 4,
+    "recipe_id": "AML:2xTAI=>1xFE-1xTA",
+    "tier": 4
+  },
+  "tac": {
+    "inputs": [
+      "bmf",
+      "da",
+      "sa"
+    ],
+    "building": "aaf:1xbmf-1xda-1xsa=>1xtac",
+    "workforce_tier": 5,
+    "recipe_id": "AAF:1xBMF-1xDA-1xSA=>1xTAC",
+    "tier": 5
+  },
+  "tai": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "tbu": {
+    "inputs": [
+      "ale",
+      "dw",
+      "hms",
+      "med",
+      "pe",
+      "pss",
+      "rat",
+      "sc",
+      "scn"
+    ],
+    "building": "pac:10xale-75xdw-5xhms-5xmed-40xpe-1xpss-70xrat-1xsc-1xscn=>1xtbu",
+    "workforce_tier": 2,
+    "recipe_id": "PAC:10xALE-75xDW-5xHMS-5xMED-40xPE-1xPSS-70xRAT-1xSC-1xSCN=>1xTBU",
+    "tier": 2
+  },
+  "tc": {
+    "inputs": [
+      "tco"
+    ],
+    "building": "tnp:1xtco=>1xo-1xtc",
+    "workforce_tier": 3,
+    "recipe_id": "TNP:1xTCO=>1xO-1xTC",
+    "tier": 3
+  },
+  "tcb": {
+    "inputs": [
+      "fe",
+      "mfk"
+    ],
+    "building": "skf:20xfe-4xmfk=>1xtcb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:20xFE-4xMFK=>1xTCB",
+    "tier": 3
+  },
+  "tcl": {
+    "inputs": [
+      "cl",
+      "h",
+      "o"
+    ],
+    "building": "lab:1xcl-1xh-1xo=>3xtcl",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:1xCL-1xH-1xO=>3xTCL",
+    "tier": 3
+  },
+  "tco": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "tcs": {
+    "inputs": [
+      "tc"
+    ],
+    "building": "tnp:1xtc=>3xtcs",
+    "workforce_tier": 3,
+    "recipe_id": "TNP:1xTC=>3xTCS",
+    "tier": 3
+  },
+  "tcu": {
+    "inputs": [
+      "adr",
+      "psl",
+      "psm"
+    ],
+    "building": "upf:1xadr-12xpsl-8xpsm=>1xtcu",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:1xADR-12xPSL-8xPSM=>1xTCU",
+    "tier": 2
+  },
+  "thf": {
+    "inputs": [
+      "amm",
+      "h2o",
+      "na"
+    ],
+    "building": "lab:4xamm-4xh2o-4xna=>20xthf",
+    "workforce_tier": 3,
+    "recipe_id": "LAB:4xAMM-4xH2O-4xNA=>20xTHF",
+    "tier": 3
+  },
+  "thp": {
+    "inputs": [
+      "be",
+      "cf",
+      "he"
+    ],
+    "building": "wel:2xbe-2xcf-1xhe=>4xthp",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:2xBE-2xCF-1xHE=>4xTHP",
+    "tier": 1
+  },
+  "ti": {
+    "inputs": [
+      "c",
+      "o",
+      "tio"
+    ],
+    "building": "sme:1xc-1xo-4xtio=>2xti",
+    "workforce_tier": 1,
+    "recipe_id": "SME:1xC-1xO-4xTIO=>2xTI",
+    "tier": 1
+  },
+  "tio": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "tk": {
+    "inputs": [
+      "kv",
+      "tc"
+    ],
+    "building": "wpl:1xkv-1xtc=>1xtk",
+    "workforce_tier": 2,
+    "recipe_id": "WPL:1xKV-1xTC=>1xTK",
+    "tier": 2
+  },
+  "tpu": {
+    "inputs": [
+      "cap",
+      "hcc",
+      "mwf",
+      "trn"
+    ],
+    "building": "sca:4xcap-4xhcc-4xmwf-4xtrn=>4xtpu",
+    "workforce_tier": 3,
+    "recipe_id": "SCA:4xCAP-4xHCC-4xMWF-4xTRN=>4xTPU",
+    "tier": 3
+  },
+  "tra": {
+    "inputs": [
+      "cap",
+      "swf",
+      "trn"
+    ],
+    "building": "clr:1xcap-1xswf-1xtrn=>1xtra",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xCAP-1xSWF-1xTRN=>1xTRA",
+    "tier": 3
+  },
+  "trn": {
+    "inputs": [
+      "al",
+      "si"
+    ],
+    "building": "clr:1xal-1xsi=>10xtrn",
+    "workforce_tier": 3,
+    "recipe_id": "CLR:1xAL-1xSI=>10xTRN",
+    "tier": 3
+  },
+  "tru": {
+    "inputs": [
+      "al",
+      "he"
+    ],
+    "building": "wel:2xal-1xhe=>6xtru",
+    "workforce_tier": 1,
+    "recipe_id": "WEL:2xAL-1xHE=>6xTRU",
+    "tier": 1
+  },
+  "ts": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "tsh": {
+    "inputs": [
+      "lbh",
+      "pe",
+      "thp"
+    ],
+    "building": "pp4:2xlbh-150xpe-2xthp=>1xtsh",
+    "workforce_tier": 4,
+    "recipe_id": "PP4:2xLBH-150xPE-2xTHP=>1xTSH",
+    "tier": 4
+  },
+  "tub": {
+    "inputs": [
+      "gl"
+    ],
+    "building": "gf:10xgl=>20xtub",
+    "workforce_tier": 2,
+    "recipe_id": "GF:10xGL=>20xTUB",
+    "tier": 2
+  },
+  "uts": {
+    "inputs": [
+      "fe",
+      "sfk"
+    ],
+    "building": "fs:6xfe-2xsfk=>1xuts",
+    "workforce_tier": 2,
+    "recipe_id": "FS:6xFE-2xSFK=>1xUTS",
+    "tier": 2
+  },
+  "vcb": {
+    "inputs": [
+      "fet",
+      "mfk"
+    ],
+    "building": "skf:200xfet-20xmfk=>1xvcb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:200xFET-20xMFK=>1xVCB",
+    "tier": 3
+  },
+  "veg": {
+    "inputs": [
+      "h2o"
+    ],
+    "building": "frm:3xh2o=>4xveg",
+    "workforce_tier": 1,
+    "recipe_id": "FRM:3xH2O=>4xVEG",
+    "tier": 1
+  },
+  "vg": {
+    "inputs": [
+      "bac",
+      "bl",
+      "rea",
+      "vit"
+    ],
+    "building": "ivp:2xbac-2xbl-4xrea-2xvit=>20xvg",
+    "workforce_tier": 3,
+    "recipe_id": "IVP:2xBAC-2xBL-4xREA-2xVIT=>20xVG",
+    "tier": 3
+  },
+  "vit": {
+    "inputs": [
+      "amm",
+      "ca",
+      "dw",
+      "i",
+      "pib"
+    ],
+    "building": "fer:1xamm-1xca-10xdw-1xi-4xpib=>20xvit",
+    "workforce_tier": 2,
+    "recipe_id": "FER:1xAMM-1xCA-10xDW-1xI-4xPIB=>20xVIT",
+    "tier": 2
+  },
+  "vsc": {
+    "inputs": [
+      "fe",
+      "mfk"
+    ],
+    "building": "skf:35xfe-8xmfk=>1xvsc",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:35xFE-8xMFK=>1xVSC",
+    "tier": 3
+  },
+  "w": {
+    "inputs": [
+      "bts"
+    ],
+    "building": "aml:5xbts=>1xw",
+    "workforce_tier": 4,
+    "recipe_id": "AML:5xBTS=>1xW",
+    "tier": 4
+  },
+  "wai": {
+    "inputs": [
+      "nn",
+      "rom"
+    ],
+    "building": "sl:1xnn-1xrom=>1xwai",
+    "workforce_tier": 5,
+    "recipe_id": "SL:1xNN-1xROM=>1xWAI",
+    "tier": 5
+  },
+  "wal": {
+    "inputs": [
+      "al",
+      "w"
+    ],
+    "building": "asm:3xal-1xw=>4xwal",
+    "workforce_tier": 4,
+    "recipe_id": "ASM:3xAL-1xW=>4xWAL",
+    "tier": 4
+  },
+  "wcb": {
+    "inputs": [
+      "ast",
+      "fet",
+      "mfk"
+    ],
+    "building": "skf:100xast-100xfet-20xmfk=>1xwcb",
+    "workforce_tier": 3,
+    "recipe_id": "SKF:100xAST-100xFET-20xMFK=>1xWCB",
+    "tier": 3
+  },
+  "win": {
+    "inputs": [
+      "amm",
+      "dw",
+      "gra",
+      "rea"
+    ],
+    "building": "fer:1xamm-20xdw-15xgra-15xrea=>10xwin",
+    "workforce_tier": 2,
+    "recipe_id": "FER:1xAMM-20xDW-15xGRA-15xREA=>10xWIN",
+    "tier": 2
+  },
+  "wm": {
+    "inputs": [],
+    "building": "sd:=>1xwm",
+    "workforce_tier": 3,
+    "recipe_id": "SD:=>1xWM",
+    "tier": 3
+  },
+  "wor": {
+    "inputs": [
+      "psl",
+      "psm",
+      "uts"
+    ],
+    "building": "upf:20xpsl-12xpsm-6xuts=>1xwor",
+    "workforce_tier": 2,
+    "recipe_id": "UPF:20xPSL-12xPSM-6xUTS=>1xWOR",
+    "tier": 2
+  },
+  "wr": {
+    "inputs": [
+      "awf",
+      "fc",
+      "flp",
+      "pcb",
+      "sen",
+      "wai"
+    ],
+    "building": "apf:1xawf-1xfc-12xflp-1xpcb-1xsen-1xwai=>1xwr",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xAWF-1xFC-12xFLP-1xPCB-1xSEN-1xWAI=>1xWR",
+    "tier": 4
+  },
+  "ws": {
+    "inputs": [
+      "bws",
+      "da"
+    ],
+    "building": "apf:1xbws-1xda=>20xws",
+    "workforce_tier": 4,
+    "recipe_id": "APF:1xBWS-1xDA=>20xWS",
+    "tier": 4
+  },
+  "zir": {
+    "inputs": [],
+    "building": null,
+    "workforce_tier": null,
+    "recipe_id": null,
+    "tier": 0
+  },
+  "zr": {
+    "inputs": [
+      "zir"
+    ],
+    "building": "aml:2xzir=>2xsio-1xzr",
+    "workforce_tier": 4,
+    "recipe_id": "AML:2xZIR=>2xSIO-1xZR",
+    "tier": 4
+  }
+}

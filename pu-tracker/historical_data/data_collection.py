@@ -3,10 +3,15 @@ import numpy as np
 import json
 import os
 import logging
+import requests
 from datetime import datetime, timezone, timedelta
 from historical_data.config import CACHE_DIR, REFRESH_INTERVAL_HOURS, TARGET_SPREADSHEET_ID
 from historical_data.sheets_api import authenticate_sheets
-from historical_data.data_collection import TIER_0_RESOURCES, VALID_EXCHANGES
+from historical_data.config import TIER_0_RESOURCES, VALID_EXCHANGES
+from io import StringIO
+from .rate_limiter import rate_limited_api_call, safe_api_request
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -186,3 +191,154 @@ def analyze_data(processed_df, chains=None, tickers=None, tiers=None):
     except Exception as e:
         logger.error(f"Error analyzing data: {e}")
         return {cx: pd.DataFrame(columns=EXPECTED_HEADERS) for cx in VALID_EXCHANGES}, {}, []
+
+@rate_limited_api_call
+def fetch_csv_data(url):
+    """Fetch CSV data from URL with rate limiting."""
+    logger.info(f"Fetching data from: {url}")
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return pd.read_csv(StringIO(response.text))
+
+def fetch_and_cache_market_data():
+    """Fetch market data with rate limiting."""
+    cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache')
+    cache_file = os.path.join(cache_dir, 'market_data.csv')
+    
+    try:
+        # Try to fetch fresh data
+        df = fetch_csv_data("https://rest.fnar.net/csv/prices")
+        
+        # Cache the data
+        os.makedirs(cache_dir, exist_ok=True)
+        df.to_csv(cache_file, index=False)
+        logger.info(f"Successfully fetched and cached {len(df)} market data records")
+        return df
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch market data: {e}")
+        
+        # Try to load from cache as fallback
+        if os.path.exists(cache_file):
+            logger.info("Loading market data from cache as fallback")
+            return pd.read_csv(cache_file)
+        else:
+            logger.error("No cached market data available")
+            return pd.DataFrame()
+
+def fetch_and_cache_buildings():
+    """Fetch buildings data with rate limiting."""
+    cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache')
+    cache_file = os.path.join(cache_dir, 'buildings.json')
+    
+    try:
+        # Fetch buildings data
+        df = fetch_csv_data("https://rest.fnar.net/csv/buildings")
+        
+        # Convert to dictionary
+        buildings_dict = {}
+        for _, row in df.iterrows():
+            ticker = str(row.get('Ticker', '')).lower()
+            if ticker:
+                buildings_dict[ticker] = {
+                    'name': row.get('Name', ''),
+                    'expertise': row.get('Expertise', ''),
+                    'pioneers': row.get('Pioneers', 0),
+                    'settlers': row.get('Settlers', 0),
+                    'technicians': row.get('Technicians', 0),
+                    'engineers': row.get('Engineers', 0),
+                    'scientists': row.get('Scientists', 0)
+                }
+        
+        # Cache the data
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(buildings_dict, f, indent=2)
+        
+        logger.info(f"Successfully fetched and cached {len(buildings_dict)} buildings")
+        return buildings_dict
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch buildings data: {e}")
+        
+        # Try to load from cache as fallback
+        if os.path.exists(cache_file):
+            logger.info("Loading buildings data from cache as fallback")
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        else:
+            logger.error("No cached buildings data available")
+            return {}
+
+def fetch_and_cache_chains():
+    """Fetch chains data with rate limiting."""
+    cache_dir = os.path.join(os.path.dirname(__file__), '..', 'cache')
+    cache_file = os.path.join(cache_dir, 'chains.json')
+    
+    try:
+        # Fetch required data with delays between requests
+        logger.info("Fetching materials data...")
+        materials_df = fetch_csv_data("https://rest.fnar.net/csv/materials")
+        
+        logger.info("Fetching buildings data...")
+        buildings_df = fetch_csv_data("https://rest.fnar.net/csv/buildings")
+        
+        logger.info("Fetching recipe inputs...")
+        recipe_inputs_df = fetch_csv_data("https://rest.fnar.net/csv/recipeinputs")
+        
+        logger.info("Fetching recipe outputs...")
+        recipe_outputs_df = fetch_csv_data("https://rest.fnar.net/csv/recipeoutputs")
+        
+        logger.info("Fetching building workforces...")
+        workforces_df = fetch_csv_data("https://rest.fnar.net/csv/buildingworkforces")
+        
+        # Process the data to create chains
+        chains = {}
+        
+        # Process recipe outputs to get basic recipe info
+        for _, output_row in recipe_outputs_df.iterrows():
+            ticker = str(output_row.get('Ticker', '')).lower()
+            if ticker:
+                chains[ticker] = {
+                    'inputs': {},
+                    'tier': 0,
+                    'time': 24,  # Default production time
+                    'building': ''
+                }
+        
+        # Add input materials
+        for _, input_row in recipe_inputs_df.iterrows():
+            ticker = str(input_row.get('Ticker', '')).lower()
+            material_ticker = str(input_row.get('MaterialTicker', '')).lower()
+            amount = input_row.get('Amount', 1)
+            
+            if ticker in chains:
+                chains[ticker]['inputs'][material_ticker] = amount
+        
+        # Add tier information from materials
+        for _, material_row in materials_df.iterrows():
+            ticker = str(material_row.get('Ticker', '')).lower()
+            tier = material_row.get('Tier', 0)
+            
+            if ticker in chains:
+                chains[ticker]['tier'] = tier
+        
+        # Cache the data
+        os.makedirs(cache_dir, exist_ok=True)
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(chains, f, indent=2)
+        
+        logger.info(f"Successfully processed and cached {len(chains)} chains")
+        return chains
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch chains data: {e}")
+        
+        # Try to load from cache as fallback
+        if os.path.exists(cache_file):
+            logger.info("Loading chains data from cache as fallback")
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        else:
+            logger.error("No cached chains data available")
+            return {}

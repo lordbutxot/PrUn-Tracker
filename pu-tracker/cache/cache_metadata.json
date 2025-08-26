@@ -1,0 +1,32 @@
+{
+  "api_data_market_data": {
+    "timestamp": "2025-08-25T19:13:08.969381",
+    "file_path": "c:\\Users\\Usuario\\Documents\\GitHub\\PrUn-Tracker\\pu-tracker\\cache\\market_data.csv",
+    "file_hash": "8cbe83b6471d278cc11fe1401aecfee8"
+  },
+  "api_data_materials": {
+    "timestamp": "2025-08-25T18:44:33.786445",
+    "file_path": "c:\\Users\\Usuario\\Documents\\GitHub\\PrUn-Tracker\\pu-tracker\\cache\\materials.csv",
+    "file_hash": "81b455f4644938b0c3076ce98eccdd1a"
+  },
+  "api_data_buildings": {
+    "timestamp": "2025-08-25T18:44:35.242732",
+    "file_path": "c:\\Users\\Usuario\\Documents\\GitHub\\PrUn-Tracker\\pu-tracker\\cache\\buildings.csv",
+    "file_hash": "b2f33486b01d8edb36db8f2b4b0399cf"
+  },
+  "api_data_recipe_inputs": {
+    "timestamp": "2025-08-25T18:44:34.856981",
+    "file_path": "c:\\Users\\Usuario\\Documents\\GitHub\\PrUn-Tracker\\pu-tracker\\cache\\recipe_inputs.csv",
+    "file_hash": "6402583f98ea11319dfe748ed50027f8"
+  },
+  "api_data_recipe_outputs": {
+    "timestamp": "2025-08-25T18:44:34.224643",
+    "file_path": "c:\\Users\\Usuario\\Documents\\GitHub\\PrUn-Tracker\\pu-tracker\\cache\\recipe_outputs.csv",
+    "file_hash": "d86970d91d5b080a58ecd30e8a09992b"
+  },
+  "api_data_workforces": {
+    "timestamp": "2025-08-25T18:44:35.803250",
+    "file_path": "c:\\Users\\Usuario\\Documents\\GitHub\\PrUn-Tracker\\pu-tracker\\cache\\workforces.csv",
+    "file_hash": "1364cf01bc559d50ce4b561b7463006d"
+  }
+}
