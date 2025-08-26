@@ -1,0 +1,199 @@
+# ===============================
+# PrUn-Tracker .gitignore
+# ===============================
+
+# ============= CREDENTIALS & SECRETS =============
+# Google Service Account credentials (NEVER commit these!)
+**/prun-profit*.json
+**/*credentials*.json
+**/*service-account*.json
+**/google-*.json
+
+# Environment configuration files
+.env
+.env.local
+.env.production
+.env.staging
+config.json
+secrets.json
+
+# API Keys and tokens
+api_keys.txt
+tokens.txt
+*.key
+*.pem
+
+# ============= PYTHON ENVIRONMENT =============
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.virtualenv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# ============= DATA & CACHE FILES =============
+# Cache directories
+cache/
+Cache/
+**/cache/*.csv
+**/cache/*.json
+**/cache/*.db
+**/cache/*.sqlite
+**/cache/*.sqlite3
+
+# Data files (may contain sensitive information)
+data/
+Data/
+**/data/*.db
+**/data/*.sqlite
+**/data/*.sqlite3
+**/data/*.csv
+
+# Logs
+logs/
+*.log
+*.log.*
+*.out
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+prosperous_universe.db
+
+# ============= TEMPORARY & SYSTEM FILES =============
+# Temporary files
+*.tmp
+*.temp
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+*.lnk
+
+# Linux
+*~
+
+# ============= DEVELOPMENT & IDE =============
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/tasks.json
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# ============= SPREADSHEET & DOCUMENTS =============
+# Excel files (may contain sensitive data)
+*.xlsx
+*.xls
+*.xlsm
+
+# CSV files with sensitive data
+prices_all.csv
+market_data.csv
+processed_data.csv
+daily_*.csv
+
+# ============= PROJECT SPECIFIC =============
+# Test files (often contain test credentials)
+test_*.py
+**/test_*.py
+debug_*.py
+**/debug_*.py
+
+# Backup files
+*.bak
+*.backup
+backup/
+backups/
+
+# Configuration backups
+config.py.bak
+*.conf.bak
+
+# ============= VERSION CONTROL =============
+# Git
+.git/
+.gitattributes
+
+# ============= NOTES =============
+# This .gitignore protects:
+# 1. Google Service Account credentials
+# 2. Python virtual environments  
+# 3. Cache and data files
+# 4. Temporary and system files
+# 5. Development configurations
+# 6. Sensitive CSV data files
+#
+# Remember to:
+# - Never commit credential files
+# - Keep environment files local only
+# - Protect any files containing API keys
+# - Review before committing new file types

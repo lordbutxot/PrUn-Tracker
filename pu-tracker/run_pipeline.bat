@@ -24,13 +24,18 @@ if %errorlevel% neq 0 (
 )
 echo.
 
-echo [STEP 3/3] Running Data Upload/Validation
+echo [STEP 3/3] Running Ultra-Optimized Data Upload
 echo ----------------------------------------
-python main.py upload
+python ultra_all_exchanges_upload.py
 if %errorlevel% neq 0 (
-    echo ERROR in data upload - Stopping pipeline
-    pause
-    exit /b 1
+    echo ERROR in ultra-optimized upload - Trying fallback
+    echo Running standard upload as fallback...
+    python main.py upload
+    if %errorlevel% neq 0 (
+        echo ERROR in fallback upload - Stopping pipeline
+        pause
+        exit /b 1
+    )
 )
 echo.
 
