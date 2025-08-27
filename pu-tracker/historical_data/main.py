@@ -1,84 +1,78 @@
 """
-main.py
-Main entry point for PrUn-Tracker pipeline located in historical_data folder.
-This allows for proper relative imports within the package.
+PrUn-Tracker Unified Pipeline
 """
-
 import sys
-import os
+from pathlib import Path
+import subprocess
 
-def run_catch_data():
-    """Run data collection."""
-    print("=== RUNNING DATA COLLECTION ===")
-    from . import catch_data
-    catch_data.main()
+# Add current directory to path
+current_dir = Path(__file__).parent
+sys.path.insert(0, str(current_dir))
 
-def run_process_data():
-    """Run data processing."""
-    print("=== RUNNING DATA PROCESSING ===")
-    from . import process_data
-    process_data.main()
+CACHE_DIR = current_dir.parent / "cache"
 
-def run_upload_data():
-    """Run data upload."""
-    print("=== RUNNING DATA UPLOAD ===")
-    from . import upload_data
-    upload_data.main()
+def is_market_data_ready():
+    market_file = CACHE_DIR / "market_data.csv"
+    prices_file = CACHE_DIR / "prices_all.csv"
+    for f in [market_file, prices_file]:
+        if f.exists() and f.stat().st_size > 0:
+            return True
+    return False
 
-def run_full_pipeline():
-    """Run the complete pipeline."""
-    print("="*60)
-    print("🚀 STARTING PRUN-TRACKER FULL PIPELINE")
-    print("="*60)
-    
-    try:
-        # Step 1: Catch Data
-        print("\n🔄 STEP 1: DATA COLLECTION")
-        run_catch_data()
-        print("✅ Data collection completed")
-        
-        # Step 2: Process Data
-        print("\n🔄 STEP 2: DATA PROCESSING")
-        run_process_data()
-        print("✅ Data processing completed")
-        
-        # Step 3: Upload Data
-        print("\n🔄 STEP 3: DATA UPLOAD")
-        run_upload_data()
-        print("✅ Data upload completed")
-        
-        print("\n" + "="*60)
-        print("🎉 FULL PIPELINE COMPLETED SUCCESSFULLY!")
-        print("="*60)
-        
-    except Exception as e:
-        print(f"\n❌ PIPELINE FAILED: {e}")
-        print("="*60)
-        raise
+def run_script(script_name, description=None):
+    if description:
+        print(f"\n\033[1;36m[STEP]\033[0m {description}")
+    print(f"\033[1;33m[RUNNING]\033[0m {script_name}")
+    result = subprocess.run([sys.executable, script_name], cwd=current_dir, capture_output=True, text=True)
+    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stderr)
+        print(f"\033[1;31m[ERROR]\033[0m {script_name} failed.")
+        return False
+    print(f"\033[1;32m[SUCCESS]\033[0m {script_name} completed.")
+    return True
 
-def main():
-    """Main entry point with command line options."""
-    if len(sys.argv) < 2:
-        print("Usage: python -m historical_data.main [catch|process|upload|full]")
-        print("  catch   - Run data collection only")
-        print("  process - Run data processing only") 
-        print("  upload  - Run data upload only")
-        print("  full    - Run complete pipeline")
-        return
-    
-    command = sys.argv[1].lower()
-    
-    if command == "catch":
-        run_catch_data()
-    elif command == "process":
-        run_process_data()
-    elif command == "upload":
-        run_upload_data()
-    elif command == "full":
-        run_full_pipeline()
+def main(mode='full'):
+    print("\n\033[1;35m========================================\033[0m")
+    print("\033[1;35m   PrUn-Tracker Unified Pipeline\033[0m")
+    print("\033[1;35m========================================\033[0m")
+    print(f"Starting at {Path(__file__).parent} | Mode: {mode}\n")
+
+    # 1. Ensure market data is present
+    if not is_market_data_ready():
+        print("\033[1;36m[STEP]\033[0m Market data missing. Fetching market data...")
+        fetchers = ["fetch_all_tickers.py", "catch_data.py"]
+        for fetcher in fetchers:
+            fetcher_path = current_dir / fetcher
+            if fetcher_path.exists():
+                if not run_script(fetcher, f"Fetching data with {fetcher}"):
+                    print(f"\033[1;31m[ERROR]\033[0m {fetcher} failed. Cannot proceed.")
+                    return 1
+                if is_market_data_ready():
+                    break
+        if not is_market_data_ready():
+            print("\033[1;31m[FATAL]\033[0m Market data still missing after fetch attempts. Exiting.")
+            return 1
     else:
-        print(f"Unknown command: {command}")
-        print("Valid commands: catch, process, upload, full")
+        print("\033[1;32m[INFO]\033[0m Market data found.")
+
+    # 2. Process data
+    if not run_script("unified_processor.py", "Processing and merging all data"):
+        print("\033[1;31m[FATAL]\033[0m Data processing failed. Exiting.")
+        return 1
+
+    # 3. Run enhanced analysis
+    if not run_script("data_analyzer.py", "Generating enhanced analysis for upload"):
+        print("\033[1;31m[FATAL]\033[0m Enhanced analysis failed. Exiting.")
+        return 1
+
+    # 4. Upload to Google Sheets
+    if not run_script("upload_enhanced_analysis.py", "Uploading to Google Sheets"):
+        print("\033[1;31m[FATAL]\033[0m Upload failed. Exiting.")
+        return 1
+
+    print("\n\033[1;32m[SUCCESS]\033[0m Pipeline completed and data uploaded to Google Sheets.")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

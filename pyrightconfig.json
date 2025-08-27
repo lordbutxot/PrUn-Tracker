@@ -1,0 +1,13 @@
+{
+    "include": [
+        "pu-tracker"
+    ],
+    "extraPaths": [
+        "pu-tracker/historical_data",
+        "pu-tracker/configuration",
+        "pu-tracker/core"
+    ],
+    "pythonVersion": "3.13",
+    "typeCheckingMode": "basic",
+    "reportMissingImports": "warning"
+}
