@@ -39,121 +39,26 @@ def summary_section(df):
     ]
     return section_header("Summary") + rows
 
-def arbitrage_section(all_df, exch, top_n=20, orders_df=None):
-    rows = []
-    subheader = [
-        "Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit",
-        "Buy Exchange", "Sell Exchange", "ROI", "Opportunity Size", "Opportunity Level"
-    ]
-    if orders_df is not None:
-        for ticker in orders_df['Ticker'].unique():
-            ticker_orders = orders_df[orders_df['Ticker'] == ticker]
-            for buy_exch in ticker_orders['Exchange'].unique():
-                buy_orders = ticker_orders[(ticker_orders['Exchange'] == buy_exch) & (ticker_orders['Type'] == 'Ask')]
-                if buy_orders.empty:
-                    continue
-                for sell_exch in ticker_orders['Exchange'].unique():
-                    if sell_exch == buy_exch:
-                        continue
-                    sell_orders = ticker_orders[(ticker_orders['Exchange'] == sell_exch) & (ticker_orders['Type'] == 'Bid')]
-                    if sell_orders.empty:
-                        continue
-                    # Sort buy asks ascending, sell bids descending
-                    buy_orders_sorted = buy_orders.sort_values('Price')
-                    sell_orders_sorted = sell_orders.sort_values('Price', ascending=False)
-                    buy_idx, sell_idx = 0, 0
-                    total_units = 0
-                    total_profit = 0
-                    total_cost = 0
-                    while buy_idx < len(buy_orders_sorted) and sell_idx < len(sell_orders_sorted):
-                        buy_row = buy_orders_sorted.iloc[buy_idx]
-                        sell_row = sell_orders_sorted.iloc[sell_idx]
-                        buy_price = buy_row['Price']
-                        sell_price = sell_row['Price']
-                        if sell_price <= buy_price:
-                            break
-                        units = min(buy_row['Available'], sell_row['Available'])
-                        profit = (sell_price - buy_price) * units
-                        total_units += units
-                        total_profit += profit
-                        total_cost += buy_price * units
-                        buy_orders_sorted.at[buy_row.name, 'Available'] -= units
-                        sell_orders_sorted.at[sell_row.name, 'Available'] -= units
-                        if buy_orders_sorted.at[buy_row.name, 'Available'] == 0:
-                            buy_idx += 1
-                        if sell_orders_sorted.at[sell_row.name, 'Available'] == 0:
-                            sell_idx += 1
-                    if total_units > 0 and (buy_exch == exch or sell_exch == exch):
-                        avg_buy = total_cost / total_units if total_units else 0
-                        avg_sell = (total_profit + total_cost) / total_units if total_units else 0
-                        avg_roi = (avg_sell - avg_buy) / avg_buy * 100 if avg_buy else 0
-                        opp_level = "High" if total_units > 1000 else "Medium" if total_units > 100 else "Low"
-                        rows.append([
-                            ticker,
-                            buy_row.get('Material Name', ticker),
-                            buy_row.get('Product', ''),
-                            f"{avg_buy:,.2f}",
-                            f"{avg_sell:,.2f}",
-                            f"{total_profit:,.2f}",
-                            buy_exch,
-                            sell_exch,
-                            f"{avg_roi:.2f}%",
-                            int(total_units),
-                            opp_level
-                        ])
-    else:
-        # fallback to summary data (current logic)
-        tickers = all_df['Ticker'].unique()
-        for ticker in tickers:
-            ticker_rows = all_df[all_df['Ticker'] == ticker]
-            valid_rows = ticker_rows.dropna(subset=['Ask Price', 'Bid Price', 'Exchange', 'Supply', 'Demand'])
-            if valid_rows.empty:
-                continue
-            for buy_exch in valid_rows['Exchange'].unique():
-                buy_row = valid_rows[valid_rows['Exchange'] == buy_exch].iloc[0]
-                buy_price = buy_row['Ask Price']
-                buy_available = buy_row['Supply'] if 'Supply' in buy_row else 0
-                if pd.isna(buy_price) or buy_price <= 0 or pd.isna(buy_available) or buy_available <= 0:
-                    continue
-                for sell_exch in valid_rows['Exchange'].unique():
-                    if sell_exch == buy_exch:
-                        continue
-                    sell_row = valid_rows[valid_rows['Exchange'] == sell_exch].iloc[0]
-                    sell_price = sell_row['Bid Price']
-                    sell_available = sell_row['Demand'] if 'Demand' in sell_row else 0
-                    if pd.isna(sell_price) or sell_price <= 0 or pd.isna(sell_available) or sell_available <= 0:
-                        continue
-                    profit = sell_price - buy_price
-                    roi = (profit / buy_price) * 100 if buy_price else 0
-                    # Only require profit > 0, remove ROI filter
-                    if profit > 0 and (buy_exch == exch or sell_exch == exch):
-                        opportunity_size = min(buy_available, sell_available)
-                        if opportunity_size > 1000:
-                            opp_level = "High"
-                        elif opportunity_size > 100:
-                            opp_level = "Medium"
-                        else:
-                            opp_level = "Low"
-                        rows.append([
-                            ticker,
-                            buy_row['Material Name'],
-                            buy_row.get('Product', ''),
-                            f"{buy_price:,.2f}",
-                            f"{sell_price:,.2f}",
-                            f"{profit:,.2f}",
-                            buy_exch,
-                            sell_exch,
-                            f"{roi:.2f}%",
-                            int(opportunity_size),
-                            opp_level
-                        ])
-                        print(f"Checking {ticker} buy@{buy_exch} {buy_price} (supply={buy_available}) sell@{sell_exch} {sell_price} (demand={sell_available}) profit={profit}")
-    print(f"[DEBUG] Arbitrage rows for {exch}: {len(rows)}")
-    # Sort by profit descending and limit to top_n
-    rows = sorted(rows, key=lambda x: float(x[5].replace(',', '')), reverse=True)[:top_n]
-    while len(subheader) < len(REPORT_COLUMNS):
-        subheader.append("")
-    return section_header("Arbitrage Opportunities") + [subheader] + rows + [[""] * len(subheader)]
+def arbitrage_section(all_df, exch, top_n=None, orders_df=None):
+    """
+    List all arbitrage opportunities for the given exchange.
+    If top_n is None, include all opportunities.
+    """
+    df = all_df[all_df['Buy Exchange'] == exch].copy()
+    # Filter for positive profit opportunities
+    df = df[df['Profit'] > 0]
+    # Sort by Opportunity Level (High > Medium > Low), then by Opportunity Size descending
+    level_order = {'High': 0, 'Medium': 1, 'Low': 2}
+    df['LevelSort'] = df['Opportunity Level'].map(level_order).fillna(99)
+    df = df.sort_values(['LevelSort', 'Opportunity Size'], ascending=[True, False])
+    # Remove the helper column
+    df = df.drop(columns=['LevelSort'])
+    # If top_n is specified, limit the number of rows
+    if top_n is not None:
+        df = df.head(top_n)
+    # Convert to list of lists for the report
+    rows = df[REPORT_COLUMNS].values.tolist()
+    return section_header("Arbitrage Opportunities") + rows
 
 def buy_vs_produce_section(df, exch, top_n=None):
     all_tickers = df['Ticker'].unique()

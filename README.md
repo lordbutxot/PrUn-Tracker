@@ -1,104 +1,58 @@
 # PrUn-Tracker
-Prosperous Universe Data Analyser
 
+**PrUn-Tracker** is a data analysis pipeline for the game Prosperous Universe. It automates the process of fetching, processing, and analyzing in-game economic data, then uploads the results to Google Sheets for easy viewing and further analysis.
 
-Hello!
-I have the following;
+---
 
-I have several python scripts and programs that fetch info from source apis to deliver calculations and stamp it in 2 google spreadsheets, one named ONN_Historical_Data (Timestamps and data for that day) and another named PrUn Calculator (Daily overview reports).
+## Folder Structure
 
-These are for a game called Prosperous Universe about space capitalism in essence.
-The folder structure is as follows; with files explained:
+PrUn-Tracker/  
+├── .gitignore                  # Git ignore rules  
+├── pyrightconfig.json          # Pyright type checker config  
+├── README.md                   # Project documentation  
+├── ROOT_CLEANUP_ANALYSIS.md    # Notes/analysis for project cleanup  
+├── pu-tracker/                 # Main project code and data  
+│   ├── .env                    # Environment variables for local config  
+│   ├── main_enhanced.py        # Enhanced data processing entry point  
+│   ├── remove_duplicates.bat   # Batch script to clean duplicate files  
+│   ├── run_pipeline.bat        # Main pipeline runner (calls main.py)  
+│   ├── writer_profiles.json    # Config for data uploaders  
+│   ├── cache/                  # Intermediate and final data files (CSV/JSON)  
+│   │   ├── buildings.csv/json, categories.json, chains.json, ...  
+│   │   ├── daily_analysis.csv, daily_analysis_enhanced.csv, daily_report.csv  
+│   │   ├── market_data.csv, materials.csv, prices_all.csv, ...  
+│   │   ├── recipes.json, recipe_inputs.csv, recipe_outputs.csv  
+│   │   ├── tickers.json, tiers.json, workforces.csv  
+│   ├── data/                   # Historical and persistent data (DB/JSON)  
+│   │   ├── historical_data_condensed.json  
+│   │   └── prosperous_universe.db  
+│   ├── historical_data/        # All pipeline scripts and helpers  
+│   │   ├── main.py, catch_data.py, process_data.py, upload_data.py, ...  
+│   │   ├── data_analyzer.py, enhanced_analysis.py, ...  
+│   │   ├── sheets_manager.py, rate_limiter.py, ...  
+│   │   └── __pycache__/  
+│   ├── logs/                   # Log files from pipeline runs  
+│   └── (other folders/files)   # Additional supporting files  
+├── tests/                      # Test suites and unit tests  
+│   ├── __init__.py  
+│   ├── test_comprehensive.py  
+│   └── unit/  
+└── utils/                      # Utility scripts and helpers  
 
-PrUn-Tracker/
-│
-├── .gitignore
-├── pyrightconfig.json
-├── README.md
-├── ROOT_CLEANUP_ANALYSIS.md
-│
-├── pu-tracker/
-│   ├── .env
-│   ├── main_enhanced.py
-│   ├── remove_duplicates.bat
-│   ├── run_pipeline.bat
-│   ├── writer_profiles.json
-│   │
-│   ├── cache/
-│   │   ├── buildings.csv
-│   │   ├── buildings.json
-│   │   ├── cache_metadata.json
-│   │   ├── categories.json
-│   │   ├── chains.json
-│   │   ├── daily_analysis_enhanced.csv
-│   │   ├── daily_analysis.csv
-│   │   ├── daily_report.csv
-│   │   ├── data_sheets_cache.json
-│   │   ├── market_data.csv
-│   │   ├── materials.csv
-│   │   ├── prices_all.csv
-│   │   ├── processed_data.csv
-│   │   ├── recipe_inputs.csv
-│   │   ├── recipe_outputs.csv
-│   │   ├── recipes.json
-│   │   ├── tickers.json
-│   │   ├── tier0_resources.json
-│   │   ├── tiers.json
-│   │   └── workforces.csv
-│   │
-│   ├── data/
-│   │   ├── historical_data_condensed.json
-│   │   └── prosperous_universe.db
-│   │
-│   ├── historical_data/
-│   │   ├── __init__.py
-│   │   ├── add_tier_to_materials.py
-│   │   ├── catch_data.py
-│   │   ├── chain_dictionary_generator.py
-│   │   ├── data_analyzer.py
-│   │   ├── db_manager.py
-│   │   ├── debu_data_file.py
-│   │   ├── debu_process_data_file.py
-│   │   ├── dictionary_builder_buildings.py
-│   │   ├── enhanced_analysis.py
-│   │   ├── fetch_all_tickers.py
-│   │   ├── fetch_materials.py
-│   │   ├── main.py
-│   │   ├── prun-profit-7e0c3bafd690.json
-│   │   ├── rate_limiter.py
-│   │   ├── sheets_manager.py
-│   │   ├── smart_cache.py
-│   │   ├── test_setup.bat
-│   │   ├── ultra_all_exchanges_upload.py
-│   │   ├── unified_config.py
-│   │   ├── unified_processor.py
-│   │   ├── upload_data.py
-│   │   ├── upload_enhanced_analysis.py
-│   │   └── __pycache__/
-│   │        └── (compiled .pyc files)
-│   │
-│   └── logs/
-│        └── (pipeline log files)
-│
-├── tests/
-│   ├── __init__.py
-│   ├── test_comprehensive.py
-│   └── unit/
-│
-└── utils/
+---
 
-PIPELINE FLOW:
-1. run_pipeline.bat OR main.py → historical_data/main.py
-2. STEP 1 (catch): catch_data.py → Collects data from PrUn API
-3. STEP 2 (process): process_data.py → Creates daily_report.csv & daily_analysis.csv
-4. STEP 3 (upload): upload_data.py → Uploads to Google Sheets with rate limiting
+## Summary
 
-KEY DATA FILES:
-- daily_report.csv: Contains Recipe, Weight, Volume, Market Cap, Liquidity Ratio
-- daily_analysis.csv: Contains Investment Score, Risk Level, Advanced Analysis
-- Both merged for complete DATA AI1 sheet with all 22 required columns
+- **Purpose:** Automates the collection and analysis of Prosperous Universe market and production data.
+- **Pipeline:**  
+  1. **Fetch:** Scripts collect data from the game's API.  
+  2. **Process:** Data is cleaned, merged, and analyzed into CSVs.  
+  3. **Analyze:** Enhanced analysis scripts generate advanced metrics and reports.  
+  4. **Upload:** Results are uploaded to Google Sheets for sharing and further use.
+- **Key Outputs:**  
+  - `daily_report.csv` and `daily_analysis.csv` (core processed data)  
+  - `daily_analysis_enhanced.csv` (final, enhanced data for Google Sheets)  
+  - Google Sheets tabs: DATA AI1 (main), Report AI1 (advanced), and others for different exchanges.
+- **Testing:** The `tests/` folder contains comprehensive and unit tests to ensure reliability.
 
-GOOGLE SHEETS OUTPUT:
-- DATA AI1: Basic market data with all 22 columns (primary focus)
-- Report AI1: Advanced analysis with arbitrage, bottlenecks, production opportunities
-- Similar sheets for other exchanges (CI1, CI2, NC1, NC2, IC1)
+For more details, see the docstrings in each script and the comments
