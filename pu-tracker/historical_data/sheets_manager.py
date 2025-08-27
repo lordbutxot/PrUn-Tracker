@@ -181,7 +181,7 @@ class SheetsManager:
             if clear_first:
                 worksheet.clear()
                 time.sleep(1)  # Rate limiting
-                
+            
             # Convert DataFrame to list of lists for upload
             data_to_upload = []
             
@@ -381,6 +381,479 @@ class UnifiedSheetsManager:
             import traceback
             traceback.print_exc()
             return False
+    
+    def _get_sheet_id(self, sheet_name: str) -> int:
+        """Helper to get the sheet ID from the spreadsheet."""
+        spreadsheet = self.sheets_service.spreadsheets().get(
+            spreadsheetId=self.spreadsheet_id
+        ).execute()
+        for sheet in spreadsheet['sheets']:
+            if sheet['properties']['title'] == sheet_name:
+                return sheet['properties']['sheetId']
+        raise ValueError(f"Sheet {sheet_name} not found")
+
+    def apply_data_tab_formatting(self, sheet_name: str, df):
+        """
+        Applies conditional formatting and header styling to the DATA tab according to business rules.
+        Also auto-resizes columns to fit content, except 'Recipe' which is set to double default width.
+        Ensures Traded Volume data cells have NO color formatting (header only).
+        """
+        from googleapiclient.errors import HttpError
+
+        col_idx = {col: idx for idx, col in enumerate(df.columns)}
+        requests = []
+
+        sheet_id = self._get_sheet_id(sheet_name)
+
+        # --- Remove all conditional formatting rules for this sheet first ---
+        try:
+            sheet_metadata = self.sheets_service.spreadsheets().get(
+                spreadsheetId=self.spreadsheet_id, fields="sheets.properties,sheets.conditionalFormats"
+            ).execute()
+            for sheet in sheet_metadata['sheets']:
+                if sheet['properties']['title'] == sheet_name:
+                    # conditionalFormats is a list of rules for this sheet
+                    cf_rules = sheet.get('conditionalFormats', [])
+                    for i in reversed(range(len(cf_rules))):
+                        requests.append({
+                            "deleteConditionalFormatRule": {
+                                "index": i,
+                                "sheetId": sheet_id
+                            }
+                        })
+        except Exception as e:
+            print(f"⚠️ Could not clear old conditional formatting: {e}")
+
+        # --- 0. Auto-resize all columns except 'Recipe' ---
+        recipe_idx = col_idx.get('Recipe')
+        if recipe_idx is not None:
+            # Auto-resize before 'Recipe'
+            if recipe_idx > 0:
+                requests.append({
+                    "autoResizeDimensions": {
+                        "dimensions": {
+                            "sheetId": sheet_id,
+                            "dimension": "COLUMNS",
+                            "startIndex": 0,
+                            "endIndex": recipe_idx
+                        }
+                    }
+                })
+            # Auto-resize after 'Recipe'
+            if recipe_idx < len(df.columns) - 1:
+                requests.append({
+                    "autoResizeDimensions": {
+                        "dimensions": {
+                            "sheetId": sheet_id,
+                            "dimension": "COLUMNS",
+                            "startIndex": recipe_idx + 1,
+                            "endIndex": len(df.columns)
+                        }
+                    }
+                })
+            # Set 'Recipe' column to fixed width (double the default, e.g., 200px)
+            requests.append({
+                "updateDimensionProperties": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": recipe_idx,
+                        "endIndex": recipe_idx + 1
+                    },
+                    "properties": {
+                        "pixelSize": 200  # Double the default (default is ~100)
+                    },
+                    "fields": "pixelSize"
+                }
+            })
+        else:
+            # Fallback: auto-resize all if 'Recipe' not found
+            requests.append({
+                "autoResizeDimensions": {
+                    "dimensions": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": 0,
+                        "endIndex": len(df.columns)
+                    }
+                }
+            })
+
+        # --- 1. Header background colors ---
+        informative_headers = [
+            'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe',
+            'Amount per Recipe', 'Weight', 'Volume'
+        ]
+        actual_data_headers = [
+            'Ask Price', 'Bid Price', 'Input Cost per Unit', 'Input Cost per Stack',
+            'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
+            'Supply', 'Demand', 'Traded Volume'
+        ]
+        formula_headers = [
+            'Saturation', 'Market Cap', 'Liquidity Ratio',
+            'Investment Score', 'Risk Level', 'Volatility'
+        ]
+
+        informative_color = {"red": 0.2, "green": 0.4, "blue": 0.8}
+        actual_data_color = {"red": 0.2, "green": 0.7, "blue": 0.2}
+        formula_color = {"red": 0.85, "green": 0.6, "blue": 0.15}
+
+        def add_header_format(col_names, color):
+            for col in col_names:
+                if col in col_idx:
+                    idx = col_idx[col]
+                    requests.append({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": 0,
+                                "endRowIndex": 1,
+                                "startColumnIndex": idx,
+                                "endColumnIndex": idx + 1
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "backgroundColor": color,
+                                    "horizontalAlignment": "CENTER",
+                                    "textFormat": {
+                                        "foregroundColor": {"red": 1, "green": 1, "blue": 1},
+                                        "bold": True
+                                    }
+                                }
+                            },
+                            "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                        }
+                    })
+
+        add_header_format(informative_headers, informative_color)
+        add_header_format(actual_data_headers, actual_data_color)
+        add_header_format(formula_headers, formula_color)
+
+        # --- 2. Profits per Unit/Stack: green (high), yellow (avg), red (negative) ---
+        for col in ['Profit per Unit', 'Profit per Stack']:
+            if col in col_idx:
+                c = col_idx[col]
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_LESS",
+                                    "values": [{"userEnteredValue": "0"}]
+                                },
+                                "format": {"backgroundColor": {"red": 1, "green": 0.2, "blue": 0.2}}
+                            }
+                        },
+                        "index": 0
+                    }
+                })
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_BETWEEN",
+                                    "values": [{"userEnteredValue": "0"}, {"userEnteredValue": "1000"}]
+                                },
+                                "format": {"backgroundColor": {"red": 1, "green": 1, "blue": 0.4}}
+                            }
+                        },
+                        "index": 1
+                    }
+                })
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_GREATER_THAN_EQ",
+                                    "values": [{"userEnteredValue": "1000"}]
+                                },
+                                "format": {"backgroundColor": {"red": 0.2, "green": 1, "blue": 0.2}}
+                            }
+                        },
+                        "index": 2
+                    }
+                })
+
+        # --- 3. ROI columns: green (>=75), yellow (7.5-75), red (<7.5 or negative) ---
+        for col in ['ROI Ask %', 'ROI Bid %']:
+            if col in col_idx:
+                c = col_idx[col]
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_LESS",
+                                    "values": [{"userEnteredValue": "8"}]
+                                },
+                                "format": {"backgroundColor": {"red": 1, "green": 0.2, "blue": 0.2}}
+                            }
+                        },
+                        "index": 0
+                    }
+                })
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_BETWEEN",
+                                    "values": [{"userEnteredValue": "8"}, {"userEnteredValue": "75"}]
+                                },
+                                "format": {"backgroundColor": {"red": 1, "green": 1, "blue": 0.4}}
+                            }
+                        },
+                        "index": 1
+                    }
+                })
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_GREATER_THAN_EQ",
+                                    "values": [{"userEnteredValue": "75"}]
+                                },
+                                "format": {"backgroundColor": {"red": 0.2, "green": 1, "blue": 0.2}}
+                            }
+                        },
+                        "index": 2
+                    }
+                })
+
+        # --- 4. Supply, Demand: brown/red if 0 ---
+        # Traded Volume data cells: NO formatting (skip conditional formatting for this column)
+        for col in ['Supply', 'Demand']:
+            if col in col_idx:
+                c = col_idx[col]
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "startColumnIndex": c,
+                                "endColumnIndex": c + 1
+                            }],
+                            "booleanRule": {
+                                "condition": {
+                                    "type": "NUMBER_EQ",
+                                    "values": [{"userEnteredValue": "0"}]
+                                },
+                                "format": {
+                                    "backgroundColor": {"red": 0.6, "green": 0.3, "blue": 0.1}
+                                }
+                            }
+                        },
+                        "index": 0
+                    }
+                })
+        # --- Traded Volume: header only, no data cell formatting ---
+        # (No conditional formatting rule for Traded Volume data cells)
+
+        # --- 5. Saturation: red if >=100, yellow if 60-99.99, green if <60 ---
+        if 'Saturation' in col_idx:
+            c = col_idx['Saturation']
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_GREATER_THAN_EQ",
+                                "values": [{"userEnteredValue": "100"}]
+                            },
+                            "format": {"backgroundColor": {"red": 1, "green": 0.2, "blue": 0.2}}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_BETWEEN",
+                                "values": [{"userEnteredValue": "60"}, {"userEnteredValue": "99"}]
+                            },
+                            "format": {"backgroundColor": {"red": 1, "green": 1, "blue": 0.4}}
+                        }
+                    },
+                    "index": 1
+                }
+            })
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_LESS",
+                                "values": [{"userEnteredValue": "60"}]
+                            },
+                            "format": {"backgroundColor": {"red": 0.2, "green": 1, "blue": 0.2}}
+                        }
+                    },
+                    "index": 2
+                }
+            })
+
+        # --- 6. Investment Score: 4-color scale from red (0) to green (100) ---
+        if 'Investment Score' in col_idx:
+            c = col_idx['Investment Score']
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "gradientRule": {
+                            "minpoint": {"color": {"red": 1, "green": 0.2, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                            "midpoint": {"color": {"red": 1, "green": 1, "blue": 0.4}, "type": "NUMBER", "value": "50"},
+                            "maxpoint": {"color": {"red": 0.2, "green": 1, "blue": 0.2}, "type": "NUMBER", "value": "100"}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
+        # --- 7. Risk Level: text color (not background) - Green for Low, Yellow for Medium, Red for High ---
+        if 'Risk Level' in col_idx:
+            c = col_idx['Risk Level']
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": "Low"}]
+                            },
+                            "format": {"textFormat": {"foregroundColor": {"red": 0.2, "green": 0.7, "blue": 0.2}, "bold": True}}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": "Medium"}]
+                            },
+                            "format": {"textFormat": {"foregroundColor": {"red": 1, "green": 0.7, "blue": 0.2}, "bold": True}}
+                        }
+                    },
+                    "index": 1
+                }
+            })
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "startColumnIndex": c,
+                            "endColumnIndex": c + 1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": "High"}]
+                            },
+                            "format": {"textFormat": {"foregroundColor": {"red": 1, "green": 0.2, "blue": 0.2}, "bold": True}}
+                        }
+                    },
+                    "index": 2
+                }
+            })
+
+        # --- Send batchUpdate request ---
+        if requests:
+            try:
+                self.sheets_service.spreadsheets().batchUpdate(
+                    spreadsheetId=self.spreadsheet_id,
+                    body={"requests": requests}
+                ).execute()
+                if hasattr(self, "logger"):
+                    self.logger.info(f"✅ Applied formatting to {sheet_name}")
+                else:
+                    print(f"✅ Applied formatting to {sheet_name}")
+            except HttpError as e:
+                if hasattr(self, "logger"):
+                    self.logger.error(f"❌ Failed to apply formatting: {e}")
+                print(e)
 
 # Legacy compatibility functions
 def upload_to_sheets(spreadsheet_id, worksheet_name, dataframe):

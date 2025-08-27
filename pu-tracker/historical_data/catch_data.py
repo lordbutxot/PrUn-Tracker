@@ -6,6 +6,7 @@ Updated to work with consolidated modules and fix import issues.
 
 import sys
 from pathlib import Path
+import requests
 
 # Add parent directory to path for unified modules
 current_dir = Path(__file__).parent
@@ -24,6 +25,21 @@ try:
 except ImportError as e:
     print(f"[WARNING] Some modules not found: {e}")
     print("[INFO] Will attempt to run available modules only")
+
+def fetch_orders_csv():
+    url = "https://rest.fnar.net/csv/orders"
+    cache_dir = Path(__file__).parent.parent / "cache"
+    cache_dir.mkdir(exist_ok=True)
+    orders_file = cache_dir / "orders.csv"
+    try:
+        print("[Catch] Downloading orders.csv...")
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        with open(orders_file, "wb") as f:
+            f.write(response.content)
+        print(f"[SUCCESS] Saved orders.csv ({orders_file})")
+    except Exception as e:
+        print(f"[ERROR] Failed to download orders.csv: {e}")
 
 def main():
     print("[Catch] Starting data collection...")
@@ -91,6 +107,9 @@ def main():
         print("[INFO] Skipping data processing step")
     except Exception as e:
         print(f"[ERROR] Failed to run main data collection: {e}")
+    
+    # Fetch orders CSV
+    fetch_orders_csv()
     
     print("[SUCCESS] Data collection completed")
     return True

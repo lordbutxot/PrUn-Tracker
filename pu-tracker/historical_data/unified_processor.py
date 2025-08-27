@@ -132,81 +132,68 @@ class UnifiedDataProcessor:
     def create_complete_dataset(self, basic_data, market_data):
         print("\n\033[1;36m[STEP]\033[0m Creating complete dataset for all exchanges...")
         """Create complete dataset with all required columns"""
-        complete_df = pd.DataFrame()
-        
+        complete_df = []
+
         if basic_data.empty:
             print("[ERROR] No basic data to process")
-            return complete_df
-        
-        for exchange in VALID_EXCHANGES:
-            print(f"[INFO] Processing {exchange}...")
-            
-            # Start with basic data
-            exchange_data = basic_data.copy()
-            exchange_data['Exchange'] = exchange
-            
-            # Merge with market data if available
+            return pd.DataFrame()
+
+        all_tickers = basic_data['Ticker'].unique()
+        all_exchanges = VALID_EXCHANGES
+
+        # Cross join all tickers and all exchanges
+        cross = pd.MultiIndex.from_product([all_tickers, all_exchanges], names=['Ticker', 'Exchange']).to_frame(index=False)
+        merged = cross.merge(basic_data, on='Ticker', how='left')
+
+        # For each exchange, merge with market data and collect results
+        results = []
+        for exchange in all_exchanges:
+            subset = merged[merged['Exchange'] == exchange].copy()
             if exchange in market_data and not market_data[exchange].empty:
                 market_df = market_data[exchange]
-                print(f"[INFO] Merging with market data for {exchange}: {len(market_df)} records")
-                
-                # Ensure Ticker column exists for merge
-                if 'Ticker' in market_df.columns:
-                    exchange_data = exchange_data.merge(
-                        market_df, 
-                        on='Ticker', 
-                        how='left',
-                        suffixes=('', '_market')
-                    )
-                
-                # Rename columns if needed
-                if 'Ask' in market_df.columns and 'Ask_Price' not in market_df.columns:
-                    market_df = market_df.rename(columns={'Ask': 'Ask_Price'})
-                if 'Bid' in market_df.columns and 'Bid_Price' not in market_df.columns:
-                    market_df = market_df.rename(columns={'Bid': 'Bid_Price'})
-            
-            # Fill missing columns with appropriate defaults BEFORE any access
-            for col in REQUIRED_DATA_COLUMNS:
-                if col not in exchange_data.columns:
-                    if col in ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded']:
-                        exchange_data[col] = 0.0
-                    elif col in ['Saturation', 'Input_Cost', 'Profit_Ask', 'Profit_Bid']:
-                        exchange_data[col] = 0.0
-                    elif col in ['ROI_Ask', 'ROI_Bid', 'Investment_Score']:
-                        exchange_data[col] = 0.0
-                    elif col in ['Risk', 'Viability', 'Recommendation']:
-                        exchange_data[col] = 'Unknown'
-                    elif col == 'Price_Spread':
-                        exchange_data[col] = 0.0
-                    else:
-                        exchange_data[col] = ''
-            
-            # Now it's safe to access columns for debug
-            print(f"[INFO] After merge: {len(exchange_data)} records")
-            print(f"[DEBUG] Nonzero Ask_Price: {(exchange_data['Ask_Price'] > 0).sum()}")
-            
-            # Add timestamp
-            exchange_data['Timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            # Calculate derived fields
-            exchange_data = self.calculate_derived_fields(exchange_data)
-            
-            # Select only required columns in correct order
-            available_cols = [col for col in REQUIRED_DATA_COLUMNS if col in exchange_data.columns]
-            exchange_data = exchange_data[available_cols]
-            
-            # Add missing columns that might have been lost
-            for col in REQUIRED_DATA_COLUMNS:
-                if col not in exchange_data.columns:
-                    exchange_data[col] = ''
-            
-            # Reorder to match required columns
-            exchange_data = exchange_data[REQUIRED_DATA_COLUMNS]
-            
-            complete_df = pd.concat([complete_df, exchange_data], ignore_index=True)
-            
-        print(f"[SUCCESS] Created complete dataset: {len(complete_df)} total records")
-        return complete_df
+                # Merge on Ticker, keeping all tickers for this exchange
+                subset = subset.merge(market_df, on='Ticker', how='left', suffixes=('', '_market'))
+            results.append(subset)
+
+        # Concatenate all exchanges back together
+        merged = pd.concat(results, ignore_index=True)
+
+        # Fill missing columns with appropriate defaults
+        for col in REQUIRED_DATA_COLUMNS:
+            if col not in merged.columns:
+                if col in ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded']:
+                    merged[col] = 0.0
+                elif col in ['Saturation', 'Input_Cost', 'Profit_Ask', 'Profit_Bid']:
+                    merged[col] = 0.0
+                elif col in ['ROI_Ask', 'ROI_Bid', 'Investment_Score']:
+                    merged[col] = 0.0
+                elif col in ['Risk', 'Viability', 'Recommendation']:
+                    merged[col] = 'Unknown'
+                elif col == 'Price_Spread':
+                    merged[col] = 0.0
+                else:
+                    merged[col] = ''
+
+        # Add timestamp
+        merged['Timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Calculate derived fields
+        merged = self.calculate_derived_fields(merged)
+
+        # Select only required columns in correct order
+        available_cols = [col for col in REQUIRED_DATA_COLUMNS if col in merged.columns]
+        merged = merged[available_cols]
+
+        # Add missing columns that might have been lost
+        for col in REQUIRED_DATA_COLUMNS:
+            if col not in merged.columns:
+                merged[col] = ''
+
+        # Reorder to match required columns
+        merged = merged[REQUIRED_DATA_COLUMNS]
+
+        print(f"[SUCCESS] Created complete dataset: {len(merged)} total records")
+        return merged
     
     def calculate_derived_fields(self, df):
         print("\n\033[1;36m[STEP]\033[0m Calculating derived fields (profit, ROI, risk, etc.)...")

@@ -11,6 +11,7 @@ import sys
 import re
 from pathlib import Path
 from datetime import datetime
+from sklearn.preprocessing import MinMaxScaler
 
 # Add current directory to path for imports
 current_dir = Path(__file__).parent
@@ -33,11 +34,13 @@ class UnifiedAnalysisProcessor:
         
         self.target_columns = [
             'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe', 
-            'Amount per Recipe', 'Weight', 'Volume', 'Current Price',
+            'Amount per Recipe', 'Weight', 'Volume', 
+            'Ask Price', 'Bid Price',  # <-- Add these
             'Input Cost per Unit', 'Input Cost per Stack', 
             'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
             'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
-            'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Volatility'
+            'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Volatility',
+            'Exchange'  # <-- Add this
         ]
         
     def load_cache_data(self):
@@ -121,28 +124,46 @@ class UnifiedAnalysisProcessor:
         
     def calculate_roi_ask_bid(self, ask_price, bid_price, input_cost):
         """Calculate separate ROI for Ask and Bid"""
-        roi_ask = roi_bid = 0
-        
+        roi_ask = roi_bid = None
+        ROI_CAP = 1000  # or whatever large value you prefer
+
         if pd.notna(input_cost) and input_cost > 0:
             if pd.notna(ask_price) and ask_price > 0:
-                roi_ask = ((ask_price - input_cost) / input_cost) * 100
+                roi_ask = round(((ask_price - input_cost) / input_cost) * 100, 2)
             if pd.notna(bid_price) and bid_price > 0:
-                roi_bid = ((bid_price - input_cost) / input_cost) * 100
-                
-        return round(roi_ask, 2), round(roi_bid, 2)
+                roi_bid = round(((bid_price - input_cost) / input_cost) * 100, 2)
+        elif input_cost == 0:
+            # Free product: ROI is "infinite" if profit > 0, else 0
+            if pd.notna(ask_price) and ask_price > 0:
+                roi_ask = ROI_CAP
+            else:
+                roi_ask = 0
+            if pd.notna(bid_price) and bid_price > 0:
+                roi_bid = ROI_CAP
+            else:
+                roi_bid = 0
+
+        return roi_ask, roi_bid
         
     def calculate_investment_score(self, roi_ask, liquidity_ratio, saturation):
         """Calculate investment score (0-100)"""
         score = 0
-        
+
+        # Safely handle None or non-numeric ROI
+        try:
+            roi = float(roi_ask)
+        except (TypeError, ValueError):
+            roi = None
+
         # ROI component (40%)
-        if roi_ask > 20:
-            score += 40
-        elif roi_ask > 10:
-            score += 30
-        elif roi_ask > 0:
-            score += 20
-            
+        if roi is not None:
+            if roi > 20:
+                score += 40
+            elif roi > 10:
+                score += 30
+            elif roi > 0:
+                score += 20
+
         # Liquidity component (30%)
         if liquidity_ratio > 10:
             score += 30
@@ -150,7 +171,7 @@ class UnifiedAnalysisProcessor:
             score += 20
         elif liquidity_ratio > 1:
             score += 10
-            
+
         # Saturation component (30%) - INVERSE
         if saturation < 20:
             score += 30
@@ -158,14 +179,14 @@ class UnifiedAnalysisProcessor:
             score += 20
         elif saturation < 60:
             score += 10
-            
+
         return min(score, 100)
         
-    def calculate_risk_level(self, saturation, liquidity_ratio, profit_per_unit):
-        """Calculate risk level"""
-        if saturation > 70 or liquidity_ratio < 1 or profit_per_unit < 0:
+    def calculate_risk_level(self, saturation, liquidity_ratio, profit_per_unit, traded_volume):
+        """Calculate risk level, now considering traded volume"""
+        if saturation > 70 or liquidity_ratio < 1 or profit_per_unit < 0 or traded_volume < 10:
             return "High"
-        elif saturation > 40 or liquidity_ratio < 5:
+        elif saturation > 40 or liquidity_ratio < 5 or traded_volume < 100:
             return "Medium"
         else:
             return "Low"
@@ -305,6 +326,9 @@ class UnifiedAnalysisProcessor:
         # Generate analysis data
         analysis_data = []
         
+        # If you have price_history loaded:
+        # price_history = pd.read_csv(self.cache_dir / 'prices_all.csv')  # Example
+
         for _, row in base_df.iterrows():
             # Get ticker/material identification
             ticker = self.get_ticker_from_row(row)
@@ -348,11 +372,17 @@ class UnifiedAnalysisProcessor:
             
             # Calculate scores
             investment_score = self.calculate_investment_score(roi_ask, liquidity_ratio, saturation)
-            risk_level = self.calculate_risk_level(saturation, liquidity_ratio, profit_per_unit)
-            volatility = abs(roi_ask - roi_bid) if roi_ask and roi_bid else 0
+            risk_level = self.calculate_risk_level(saturation, liquidity_ratio, profit_per_unit, traded_volume)
+            
+            # Compute volatility if price_history is available
+            price_volatility = None
+            vw_volatility = None
+            # Uncomment and use if you have price_history loaded
+            # if 'price_history' in locals():
+            #     price_volatility, vw_volatility = self.compute_volatility(price_history, material_name)
             
             # Build row
-            analysis_data.append({
+            analysis_row = {
                 'Material Name': material_name,
                 'Ticker': ticker,
                 'Category': category,
@@ -361,7 +391,8 @@ class UnifiedAnalysisProcessor:
                 'Amount per Recipe': amount_per_recipe,
                 'Weight': weight,
                 'Volume': volume,
-                'Current Price': current_price,
+                'Ask Price': ask_price,
+                'Bid Price': bid_price,
                 'Input Cost per Unit': input_cost_per_unit,
                 'Input Cost per Stack': input_cost_per_stack,
                 'Profit per Unit': profit_per_unit,
@@ -376,8 +407,15 @@ class UnifiedAnalysisProcessor:
                 'Liquidity Ratio': liquidity_ratio,
                 'Investment Score': investment_score,
                 'Risk Level': risk_level,
-                'Volatility': volatility
-            })
+                'Volatility': price_volatility if price_volatility is not None else abs(roi_ask - roi_bid) if roi_ask and roi_bid else 0
+            }
+            # Add Exchange if present in base_df
+            if 'Exchange' in row:
+                analysis_row['Exchange'] = row['Exchange']
+            else:
+                analysis_row['Exchange'] = ''  # or set to None
+
+            analysis_data.append(analysis_row)
             
         # Create final DataFrame
         result_df = pd.DataFrame(analysis_data)
@@ -390,8 +428,44 @@ class UnifiedAnalysisProcessor:
         # Reorder columns
         result_df = result_df[self.target_columns]
         
-        # Remove duplicates based on Ticker, keeping the first occurrence
-        result_df = result_df.drop_duplicates(subset=['Ticker'], keep='first')
+        # Fill NA values for ROI columns with 0 for normalization
+        result_df[['ROI Ask %', 'ROI Bid %']] = result_df[['ROI Ask %', 'ROI Bid %']].fillna(0)
+
+        # Normalize columns (0-1 scale)
+        scaler = MinMaxScaler()
+        result_df[['ROI_Norm', 'Liquidity_Norm', 'Saturation_Norm']] = scaler.fit_transform(
+            result_df[['ROI Ask %', 'Liquidity Ratio', 'Saturation']]
+        )
+
+        # Invert saturation (lower is better)
+        result_df['Saturation_Norm'] = 1 - result_df['Saturation_Norm']
+
+        # Add volatility and market cap normalization if available
+        if 'Volatility' in result_df.columns:
+            result_df['Volatility_Norm'] = 1 - scaler.fit_transform(result_df[['Volatility']])
+        else:
+            result_df['Volatility_Norm'] = 1
+
+        if 'Market Cap' in result_df.columns:
+            result_df['MarketCap_Norm'] = scaler.fit_transform(result_df[['Market Cap']])
+        else:
+            result_df['MarketCap_Norm'] = 1
+
+        # Normalize Traded Volume (0-1 scale)
+        if 'Traded Volume' in result_df.columns:
+            result_df['TradedVolume_Norm'] = scaler.fit_transform(result_df[['Traded Volume']])
+        else:
+            result_df['TradedVolume_Norm'] = 0
+
+        # Weighted sum (adjust weights as needed)
+        result_df['Investment Score'] = (
+            0.35 * result_df['ROI_Norm'] +
+            0.25 * result_df['Liquidity_Norm'] +
+            0.15 * result_df['Saturation_Norm'] +
+            0.05 * result_df['Volatility_Norm'] +
+            0.05 * result_df['MarketCap_Norm'] +
+            0.15 * result_df['TradedVolume_Norm']
+        ) * 100
         
         # Save result
         output_path = self.cache_dir / 'daily_analysis_enhanced.csv'
@@ -444,6 +518,18 @@ class UnifiedAnalysisProcessor:
                 
         return 0
 
+    # If you have a DataFrame 'price_history' with columns: 'Material', 'Date', 'Price', 'Volume'
+    def compute_volatility(self, price_history, material, window=7):
+        mat_hist = price_history[price_history['Material'] == material].sort_values('Date')
+        if mat_hist.empty:
+            return 0, 0
+        mat_hist['Price_Std'] = mat_hist['Price'].rolling(window=window, min_periods=1).std()
+        mat_hist['VW_Volatility'] = (
+            mat_hist['Price'].rolling(window=window, min_periods=1)
+            .apply(lambda x: (x * mat_hist['Volume']).sum() / mat_hist['Volume'].sum() if mat_hist['Volume'].sum() > 0 else 0)
+        )
+        return mat_hist['Price_Std'].iloc[-1], mat_hist['VW_Volatility'].iloc[-1]
+
 def main():
     print("\n\033[1;35m[DATA ANALYZER]\033[0m")
     """Main entry point"""
@@ -453,24 +539,19 @@ def main():
     try:
         processor = UnifiedAnalysisProcessor()
         result = processor.generate_unified_analysis()
-        
         if result is not None:
             print(f"\n🎉 SUCCESS: Generated {len(result)} rows with 24 columns")
-            
             # Show summary of generated data
             output_file = processor.cache_dir / 'daily_analysis_enhanced.csv'
             print(f"📁 Output file: {output_file}")
             print(f"📊 File size: {output_file.stat().st_size / 1024:.1f} KB")
-            
             # Show sample data
             print(f"\n📋 Sample data (first 3 rows):")
-            print(result.head(3)[['Material Name', 'Ticker', 'Current Price', 'Investment Score']].to_string())
-            
+            print(result.head(3)[['Material Name', 'Ticker', 'Ask Price', 'Bid Price', 'Investment Score']].to_string())
             return True
         else:
             print(f"\n❌ FAILED: Could not generate analysis")
             return False
-            
     except Exception as e:
         print(f"\n💥 ERROR: {e}")
         import traceback

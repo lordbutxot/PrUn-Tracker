@@ -220,6 +220,15 @@ if %PIPELINE_RESULT% equ 0 (
 )
 echo.
 
+REM --- REPORT TAB GENERATION ---
+echo [STEP] Generating and uploading Report Tabs...
+python historical_data\generate_report_tabs.py >> "%LOGFILE%" 2>&1
+set REPORT_RESULT=%errorlevel%
+if !REPORT_RESULT! neq 0 (
+    echo [ERROR] Report tab generation failed (exit code !REPORT_RESULT!)
+)
+echo.
+
 REM --- COMPLETION STATUS ---
 echo ========================================
 if %PIPELINE_RESULT% neq 0 (
@@ -233,6 +242,7 @@ if %PIPELINE_RESULT% neq 0 (
     echo 2. Verify Google Sheets credentials
     echo 3. Check internet connection
     echo 4. Review full log file: %LOGFILE%"
+    echo.
     pause
     exit /b 1
 ) else (

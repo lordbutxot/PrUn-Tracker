@@ -6,6 +6,7 @@ import pandas as pd
 import time
 import sys
 from pathlib import Path
+import traceback
 
 # Import your preferred Sheets manager
 try:
@@ -21,7 +22,7 @@ except ImportError:
 
 REQUIRED_HEADERS = [
     'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe', 'Amount per Recipe',
-    'Weight', 'Volume', 'Current Price', 'Input Cost per Unit', 'Input Cost per Stack',
+    'Weight', 'Volume', 'Ask Price', 'Bid Price', 'Input Cost per Unit', 'Input Cost per Stack',
     'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
     'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
     'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Volatility'
@@ -92,6 +93,14 @@ class UnifiedAnalysisUploader:
                     success = False
                 if success:
                     print(f"✅ Uploaded to {tab_name}")
+                    # Apply formatting if available
+                    format_method = getattr(self.sheets_manager, "apply_data_tab_formatting", None)
+                    if callable(format_method):
+                        try:
+                            format_method(tab_name, df)
+                            print(f"🎨 Formatting applied to {tab_name}")
+                        except Exception as fe:
+                            print(f"⚠️  Formatting failed for {tab_name}: {fe}")
                     success_count += 1
                 else:
                     print(f"❌ Failed to upload to {tab_name}")
@@ -100,6 +109,31 @@ class UnifiedAnalysisUploader:
                 print(f"Upload error for {tab_name}: {e}")
         print(f"\n📊 Upload Summary: {success_count}/{len(EXCHANGE_TABS)} tabs successful")
         return success_count > 0
+
+# Add this utility function in upload_enhanced_analysis.py (and reuse elsewhere as needed)
+def expand_multiple_recipes(df):
+    """
+    For rows where the 'Recipe' column contains multiple recipes separated by ';',
+    split them into separate rows, each with a single recipe.
+    """
+    if 'Recipe' not in df.columns:
+        return df
+    # Split recipes and explode
+    df = df.copy()
+    df['Recipe'] = df['Recipe'].fillna('')
+    df['Recipe'] = df['Recipe'].astype(str)
+    df['Recipe_list'] = df['Recipe'].str.split(';')
+    df = df.explode('Recipe_list')
+    df['Recipe'] = df['Recipe_list'].str.strip()
+    df = df.drop(columns=['Recipe_list'])
+    # Remove empty recipes (if any)
+    df = df[df['Recipe'] != '']
+    # Deduplicate by Ticker, Exchange, Recipe (if Exchange exists)
+    dedup_cols = ['Ticker', 'Recipe']
+    if 'Exchange' in df.columns:
+        dedup_cols.insert(1, 'Exchange')
+    df = df.drop_duplicates(subset=dedup_cols)
+    return df
 
 def main() -> bool:
     print("🚀 Unified Enhanced Analysis Uploader")
@@ -112,7 +146,13 @@ def main() -> bool:
     try:
         df = pd.read_csv(enhanced_file)
         print(f"✅ Loaded enhanced data: {len(df)} rows, {len(df.columns)} columns")
+        missing = [col for col in REQUIRED_HEADERS if col not in df.columns]
+        if missing:
+            print(f"❌ Missing columns in enhanced data: {missing}")
+            return False
         df = df[REQUIRED_HEADERS]  # Ensure correct column order
+        df = expand_multiple_recipes(df)  # <-- ADD THIS LINE
+        df = df.sort_values("Investment Score", ascending=False)
     except Exception as e:
         print(f"❌ Error loading enhanced data: {e}")
         return False

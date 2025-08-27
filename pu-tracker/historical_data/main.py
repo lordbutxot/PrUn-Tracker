@@ -23,10 +23,21 @@ def run_script(script_name, description=None):
     if description:
         print(f"\n\033[1;36m[STEP]\033[0m {description}")
     print(f"\033[1;33m[RUNNING]\033[0m {script_name}")
-    result = subprocess.run([sys.executable, script_name], cwd=current_dir, capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print(result.stderr)
+    # Use unbuffered output (-u) and stream output live
+    process = subprocess.Popen(
+        [sys.executable, "-u", script_name],
+        cwd=current_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        encoding="utf-8"  # <-- Add this line
+    )
+    if process.stdout is not None:
+        for line in process.stdout:
+            print(line, end='')  # Print each line as it arrives
+    process.wait()
+    if process.returncode != 0:
         print(f"\033[1;31m[ERROR]\033[0m {script_name} failed.")
         return False
     print(f"\033[1;32m[SUCCESS]\033[0m {script_name} completed.")
@@ -69,6 +80,11 @@ def main(mode='full'):
     # 4. Upload to Google Sheets
     if not run_script("upload_enhanced_analysis.py", "Uploading to Google Sheets"):
         print("\033[1;31m[FATAL]\033[0m Upload failed. Exiting.")
+        return 1
+
+    # 5. Generate and upload Report Tabs
+    if not run_script("generate_report_tabs.py", "Generating and uploading Report Tabs"):
+        print("\033[1;31m[FATAL]\033[0m Report tab generation failed. Exiting.")
         return 1
 
     print("\n\033[1;32m[SUCCESS]\033[0m Pipeline completed and data uploaded to Google Sheets.")
