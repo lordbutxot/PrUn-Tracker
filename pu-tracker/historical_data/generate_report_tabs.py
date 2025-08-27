@@ -155,15 +155,18 @@ def arbitrage_section(all_df, exch, top_n=20, orders_df=None):
         subheader.append("")
     return section_header("Arbitrage Opportunities") + [subheader] + rows + [[""] * len(subheader)]
 
-def buy_vs_produce_section(df, exch, top_n=20):
+def buy_vs_produce_section(df, exch, top_n=None):
+    all_tickers = df['Ticker'].unique()
     rows = []
     subheader = ["Name", "Ticker", "Buy Price", "Produce Cost", "Difference", "Recommendation", "Level", "Trend"]
-    for _, row in df.iterrows():
-        buy_price = row['Ask Price']
-        produce_cost = row['Input Cost per Unit']
+    for ticker in all_tickers:
+        ticker_rows = df[df['Ticker'] == ticker]
+        row = ticker_rows[ticker_rows['Exchange'] == exch].iloc[0] if 'Exchange' in ticker_rows.columns and not ticker_rows[ticker_rows['Exchange'] == exch].empty else ticker_rows.iloc[0]
+        buy_price = row.get('Ask Price', 0) if not pd.isna(row.get('Ask Price', 0)) else 0
+        produce_cost = row.get('Input Cost per Unit', 0) if not pd.isna(row.get('Input Cost per Unit', 0)) else 0
         diff = buy_price - produce_cost
         # Recommendation logic
-        if diff < -100:  # Buy is much cheaper
+        if diff < -100:
             rec, level = "Buy", "High"
         elif diff < -20:
             rec, level = "Buy", "Medium"
@@ -175,19 +178,27 @@ def buy_vs_produce_section(df, exch, top_n=20):
             rec, level = "Produce", "Medium"
         else:
             rec, level = "Depends", "Low"
-        trend = "Unknown"  # You can add logic for trend if you have historical data
+        trend = "Unknown"
         rows.append([
-            row['Material Name'],
-            row['Ticker'],
-            f"{buy_price:,.2f}",
-            f"{produce_cost:,.2f}",
-            f"{diff:,.2f}",
+            row.get('Material Name', ticker),
+            ticker,
+            f"{buy_price:,.2f}" if buy_price else "N/A",
+            f"{produce_cost:,.2f}" if produce_cost else "N/A",
+            f"{diff:,.2f}" if not pd.isna(diff) else "N/A",
             rec,
             level,
             trend
         ])
-    # Sort by abs(diff) descending and take top_n
-    rows = sorted(rows, key=lambda x: abs(float(x[4].replace(',', ''))), reverse=True)[:top_n]
+    # Custom sort: Buy (by abs(diff) desc), then Produce (by abs(diff) desc), then Neutral, then Depends
+    def sort_key(x):
+        rec_order = {"Buy": 0, "Produce": 1, "Neutral": 2, "Depends": 3}
+        rec = x[5]
+        try:
+            diff_val = abs(float(x[4].replace(',', ''))) if x[4] != "N/A" else 0
+        except Exception:
+            diff_val = 0
+        return (rec_order.get(rec, 99), -diff_val)
+    rows = sorted(rows, key=sort_key)
     return section_header("Buy vs Produce") + [subheader] + rows + [[""] * len(subheader)]
 
 def top_invest_section(df, exch, top_n=20):
@@ -224,94 +235,158 @@ def bottleneck_section(df, exch, top_n=20):
         ])
     return section_header("Chokepoints/Bottlenecks") + [subheader] + rows + [[""] * len(REPORT_COLUMNS)]
 
+def pad_section(section, n_rows):
+    """Pad section (list of lists) to n_rows with empty rows."""
+    width = len(section[0])
+    while len(section) < n_rows:
+        section.append([""] * width)
+    return section
+
 def build_report_tab(df, exch, all_df, orders_df=None):
-    report_rows = []
-    report_rows += summary_section(df)
-    report_rows += arbitrage_section(all_df, exch, orders_df=orders_df)
-    report_rows += buy_vs_produce_section(all_df, exch)
-    report_rows += top_invest_section(df, exch)
-    report_rows += bottleneck_section(df, exch)
-    return pd.DataFrame(report_rows, columns=REPORT_COLUMNS)
+    # Build each section as a list of lists
+    summary = summary_section(df)
+    arbitrage = arbitrage_section(all_df, exch, orders_df=orders_df)
+    buy_vs_produce = buy_vs_produce_section(all_df, exch)
+    top_invest = top_invest_section(df, exch)
+    bottleneck = bottleneck_section(df, exch)
+
+    # Find the max number of rows among all sections
+    max_rows = max(len(summary), len(arbitrage), len(buy_vs_produce), len(top_invest), len(bottleneck))
+
+    # Pad each section to the same number of rows
+    summary = pad_section(summary, max_rows)
+    arbitrage = pad_section(arbitrage, max_rows)
+    buy_vs_produce = pad_section(buy_vs_produce, max_rows)
+    top_invest = pad_section(top_invest, max_rows)
+    bottleneck = pad_section(bottleneck, max_rows)
+
+    # Convert each to DataFrame
+    summary_df = pd.DataFrame(summary)
+    arbitrage_df = pd.DataFrame(arbitrage)
+    buy_vs_produce_df = pd.DataFrame(buy_vs_produce)
+    top_invest_df = pd.DataFrame(top_invest)
+    bottleneck_df = pd.DataFrame(bottleneck)
+
+    # Concatenate horizontally
+    report_df = pd.concat(
+        [summary_df, arbitrage_df, buy_vs_produce_df, top_invest_df, bottleneck_df],
+        axis=1
+    )
+    return report_df
 
 def apply_report_tab_formatting(sheets_manager, sheet_name, df):
     """
-    Apply color formatting to section headers and recommendation cells in the report tab.
-    Also clears all formatting before applying new formatting to avoid legacy/stray formats.
+    Adapted for horizontal (side-by-side) sections:
+    - Section headers colored in their respective column blocks
+    - All text centered
+    - All columns auto-resize
     """
     from googleapiclient.errors import HttpError
 
-    # Get sheet ID
     sheet_id = sheets_manager._get_sheet_id(sheet_name)
     requests = []
 
-    # --- 0. Clear all formatting first ---
+    # 0. Clear all formatting
     requests.append({
         "updateCells": {
-            "range": {
-                "sheetId": sheet_id
-            },
+            "range": {"sheetId": sheet_id},
             "fields": "userEnteredFormat"
         }
     })
 
-    # Define section header colors (RGB 0-1)
-    section_colors = [
-        {"red": 0.2, "green": 0.4, "blue": 0.8},   # Summary - blue
-        {"red": 0.2, "green": 0.7, "blue": 0.2},   # Arbitrage - green
-        {"red": 1.0, "green": 0.8, "blue": 0.2},   # Buy vs Produce - yellow
-        {"red": 0.85, "green": 0.6, "blue": 0.15}, # Top Invest - orange
-        {"red": 0.8, "green": 0.2, "blue": 0.2},   # Bottlenecks - red
+    # Section info: (header, color, width)
+    section_defs = [
+        ("SUMMARY", {"red": 0.2, "green": 0.4, "blue": 0.8}, len(REPORT_COLUMNS)),
+        ("ARBITRAGE OPPORTUNITIES", {"red": 0.2, "green": 0.7, "blue": 0.2}, len(REPORT_COLUMNS)),
+        ("BUY VS PRODUCE", {"red": 1.0, "green": 0.8, "blue": 0.2}, 8),
+        ("TOP 20 MATERIALS TO INVEST IN", {"red": 0.85, "green": 0.6, "blue": 0.15}, len(REPORT_COLUMNS)),
+        ("CHOKEPOINTS/BOTTLENECKS", {"red": 0.8, "green": 0.2, "blue": 0.2}, len(REPORT_COLUMNS)),
     ]
-    section_names = [
-        "SUMMARY", "ARBITRAGE OPPORTUNITIES", "BUY VS PRODUCE",
-        "TOP 20 MATERIALS TO INVEST IN", "CHOKEPOINTS/BOTTLENECKS"
-    ]
-    section_rows = []
-    for idx, row in enumerate(df.values):
-        val = str(row[0]).strip().upper()
-        if val in section_names:
-            section_rows.append((idx, section_names.index(val)))
 
-    # Only format the first cell of the section header row (not the whole row)
-    for row_idx, color_idx in section_rows:
-        color = section_colors[color_idx]
+    # Find section start columns by scanning the first row for each header
+    section_starts = []
+    first_row = df.iloc[0].fillna("").astype(str).str.strip().str.upper().tolist()
+    col = 0
+    for header, color, width in section_defs:
+        try:
+            idx = first_row.index(header)
+            section_starts.append((idx, color, width, header))
+        except ValueError:
+            continue
+
+    # Color each section header block
+    for idx, color, width, header in section_starts:
         requests.append({
             "repeatCell": {
                 "range": {
                     "sheetId": sheet_id,
-                    "startRowIndex": row_idx + 1,  # +1 for 1-based index in Sheets
-                    "endRowIndex": row_idx + 2,
-                    "startColumnIndex": 0,
-                    "endColumnIndex": 1  # Only the first column
+                    "startRowIndex": 1,
+                    "endRowIndex": 2,
+                    "startColumnIndex": idx,
+                    "endColumnIndex": idx + width
                 },
                 "cell": {
                     "userEnteredFormat": {
                         "backgroundColor": color,
                         "textFormat": {"bold": True, "fontSize": 12, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
-                        "horizontalAlignment": "LEFT"
+                        "horizontalAlignment": "CENTER"
                     }
                 },
                 "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
             }
         })
 
+    # Center all text
+    requests.append({
+        "repeatCell": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": len(df) + 1,
+                "startColumnIndex": 0,
+                "endColumnIndex": len(df.columns)
+            },
+            "cell": {
+                "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                }
+            },
+            "fields": "userEnteredFormat(horizontalAlignment)"
+        }
+    })
+
+    # Auto-resize all columns
+    requests.append({
+        "autoResizeDimensions": {
+            "dimensions": {
+                "sheetId": sheet_id,
+                "dimension": "COLUMNS",
+                "startIndex": 0,
+                "endIndex": len(df.columns)
+            }
+        }
+    })
+
     # Find "Recommendation" column for Buy vs Produce section
     rec_col = None
     subheader_row = None
-    for idx, row in enumerate(df.values):
-        if str(row[0]).strip().upper() == "BUY VS PRODUCE":
-            subheader_row = idx + 1
-            for col_idx, col_name in enumerate(df.iloc[subheader_row]):
+    for idx, (col_idx, _, width, header) in enumerate(section_starts):
+        if header == "BUY VS PRODUCE":
+            # Subheader is the next row (row 2), columns col_idx to col_idx+width
+            subheader_row = 1
+            subheader = df.iloc[subheader_row, col_idx:col_idx+width]
+            for i, col_name in enumerate(subheader):
                 if str(col_name).strip().lower() == "recommendation":
-                    rec_col = col_idx
+                    rec_col = col_idx + i
             break
 
     # Find rows with recommendations to color
     rec_rows = []
     if rec_col is not None and subheader_row is not None:
-        for idx, row in enumerate(df.values):
-            if idx > subheader_row and row[rec_col] in ("Buy", "Produce", "Neutral", "Depends"):
-                rec_rows.append((idx, row[rec_col]))
+        for idx in range(subheader_row + 1, len(df)):
+            val = df.iloc[idx, rec_col]
+            if val in ("Buy", "Produce", "Neutral", "Depends"):
+                rec_rows.append((idx, val))
 
     rec_colors = {
         "Buy": {"red": 0.2, "green": 0.7, "blue": 0.2},
@@ -343,6 +418,119 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
             })
     else:
         print(f"⚠️  'Recommendation' column not found in Buy vs Produce section for {sheet_name}, skipping recommendation formatting.")
+
+    # --- EXTRA FORMATTING ---
+
+    # Helper: find column index by header in a section
+    def find_col_idx(section_starts, header, subheader_name):
+        for idx, (col_idx, _, width, section_header) in enumerate(section_starts):
+            if section_header == header:
+                subheader_row = 1
+                subheader = df.iloc[subheader_row, col_idx:col_idx+width]
+                for i, col_name in enumerate(subheader):
+                    if str(col_name).strip().lower() == subheader_name.lower():
+                        return col_idx + i
+        return None
+
+    # 1. Arbitrage: Opportunity Size (gradient green to red)
+    opp_size_col = find_col_idx(section_starts, "ARBITRAGE OPPORTUNITIES", "Opportunity Size")
+    if opp_size_col is not None:
+        requests.append({
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [{
+                        "sheetId": sheet_id,
+                        "startRowIndex": 2,
+                        "endRowIndex": len(df)+1,
+                        "startColumnIndex": opp_size_col,
+                        "endColumnIndex": opp_size_col+1
+                    }],
+                    "gradientRule": {
+                        "minpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                        "maxpoint": {"color": {"red": 1, "green": 0.2, "blue": 0.2}, "type": "NUMBER", "value": "10000"}
+                    }
+                },
+                "index": 0
+            }
+        })
+
+    # 2. Arbitrage: Opportunity Level (green/yellow/red)
+    opp_level_col = find_col_idx(section_starts, "ARBITRAGE OPPORTUNITIES", "Opportunity Level")
+    if opp_level_col is not None:
+        for val, color in [("High", {"red": 0.2, "green": 0.8, "blue": 0.2}),
+                           ("Medium", {"red": 1, "green": 1, "blue": 0.2}),
+                           ("Low", {"red": 1, "green": 0.2, "blue": 0.2})]:
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": opp_level_col,
+                            "endColumnIndex": opp_level_col+1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": val}]
+                            },
+                            "format": {"backgroundColor": color, "textFormat": {"bold": True}}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
+    # 3. Buy vs Produce: Level (text color green/yellow/red)
+    bvp_level_col = find_col_idx(section_starts, "BUY VS PRODUCE", "Level")
+    if bvp_level_col is not None:
+        for val, color in [("High", {"red": 0.2, "green": 0.8, "blue": 0.2}),
+                           ("Medium", {"red": 1, "green": 1, "blue": 0.2}),
+                           ("Low", {"red": 1, "green": 0.2, "blue": 0.2})]:
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": bvp_level_col,
+                            "endColumnIndex": bvp_level_col+1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": val}]
+                            },
+                            "format": {"textFormat": {"foregroundColor": color, "bold": True}}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
+    # 4. Top 20 Materials: Investment Score (green to yellow gradient)
+    invest_score_col = find_col_idx(section_starts, "TOP 20 MATERIALS TO INVEST IN", "Investment Score")
+    if invest_score_col is not None:
+        requests.append({
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [{
+                        "sheetId": sheet_id,
+                        "startRowIndex": 2,
+                        "endRowIndex": len(df)+1,
+                        "startColumnIndex": invest_score_col,
+                        "endColumnIndex": invest_score_col+1
+                    }],
+                    "gradientRule": {
+                        "minpoint": {"color": {"red": 1, "green": 1, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                        "maxpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "100"}
+                    }
+                },
+                "index": 0
+            }
+        })
 
     # Send batchUpdate request
     if requests:
