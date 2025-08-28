@@ -159,51 +159,65 @@ class UnifiedAnalysisProcessor:
 
         return roi_ask, roi_bid
         
-    def calculate_investment_score(self, roi_ask, liquidity_ratio, saturation):
-        """Calculate investment score (0-100)"""
+    def calculate_investment_score(self, roi_ask, liquidity_ratio, saturation, supply, demand, traded_volume, volatility):
         score = 0
 
-        # Safely handle None or non-numeric ROI
+        # Penalize no supply or no demand
+        if supply == 0 or demand == 0 or traded_volume == 0:
+            return 0
+
+        # ROI component (30%)
         try:
             roi = float(roi_ask)
         except (TypeError, ValueError):
-            roi = None
+            roi = 0
+        if roi > 20:
+            score += 30
+        elif roi > 10:
+            score += 20
+        elif roi > 0:
+            score += 10
 
-        # ROI component (40%)
-        if roi is not None:
-            if roi > 20:
-                score += 40
-            elif roi > 10:
-                score += 30
-            elif roi > 0:
-                score += 20
-
-        # Liquidity component (30%)
+        # Liquidity (20%)
         if liquidity_ratio > 10:
-            score += 30
-        elif liquidity_ratio > 5:
             score += 20
-        elif liquidity_ratio > 1:
+        elif liquidity_ratio > 5:
             score += 10
 
-        # Saturation component (30%) - INVERSE
+        # Saturation (15%, lower is better)
         if saturation < 20:
-            score += 30
+            score += 15
         elif saturation < 40:
-            score += 20
-        elif saturation < 60:
             score += 10
+
+        # Traded volume (15%)
+        if traded_volume > 1000:
+            score += 15
+        elif traded_volume > 100:
+            score += 10
+
+        # Volatility (10%, lower is better)
+        if volatility is not None and volatility < 10:
+            score += 10
+        elif volatility is not None and volatility < 30:
+            score += 5
 
         return min(score, 100)
         
-    def calculate_risk_level(self, saturation, liquidity_ratio, profit_per_unit, traded_volume):
-        """Calculate risk level, now considering traded volume"""
-        if saturation > 70 or liquidity_ratio < 1 or profit_per_unit < 0 or traded_volume < 10:
+    def calculate_risk_level(self, saturation, liquidity_ratio, profit_per_unit, traded_volume, supply, demand, volatility):
+        if supply == 0 or demand == 0 or traded_volume < 10:
             return "High"
-        elif saturation > 40 or liquidity_ratio < 5 or traded_volume < 100:
+        if profit_per_unit < 0:
+            return "High"
+        if volatility is not None and volatility > 50:
+            return "High"
+        if liquidity_ratio < 1:
+            return "High"
+        if saturation > 80:
+            return "High"
+        if traded_volume < 100 or liquidity_ratio < 5 or saturation > 40 or (volatility is not None and volatility > 20):
             return "Medium"
-        else:
-            return "Low"
+        return "Low"
             
     def get_material_info(self, ticker):
         """Get material info from materials.csv"""
@@ -393,10 +407,6 @@ class UnifiedAnalysisProcessor:
             liquidity_ratio = (traded_volume / supply * 100) if supply > 0 else 0
             saturation = self.calculate_saturation(supply, demand, traded_volume)
             
-            # Calculate scores
-            investment_score = self.calculate_investment_score(roi_ask, liquidity_ratio, saturation)
-            risk_level = self.calculate_risk_level(saturation, liquidity_ratio, profit_per_unit, traded_volume)
-            
             # Compute volatility if price_history is available
             price_volatility = None
             vw_volatility = None
@@ -404,6 +414,14 @@ class UnifiedAnalysisProcessor:
             # if 'price_history' in locals():
             #     price_volatility, vw_volatility = self.compute_volatility(price_history, material_name)
             
+            # Calculate scores
+            investment_score = self.calculate_investment_score(
+                roi_ask, liquidity_ratio, saturation, supply, demand, traded_volume, price_volatility
+            )
+            risk_level = self.calculate_risk_level(
+                saturation, liquidity_ratio, profit_per_unit, traded_volume, supply, demand, price_volatility
+            )
+
             # Build row
             analysis_row = {
                 'Material Name': material_name,
@@ -454,6 +472,9 @@ class UnifiedAnalysisProcessor:
         # Fill NA values for ROI columns with 0 for normalization
         result_df[['ROI Ask %', 'ROI Bid %']] = result_df[['ROI Ask %', 'ROI Bid %']].fillna(0)
 
+        # Penalize negative ROI Ask % by setting them to zero (or a small negative weight if you want to keep them visible)
+        result_df['ROI Ask %'] = result_df['ROI Ask %'].apply(lambda x: x if x > 0 else 0)
+
         # Normalize columns (0-1 scale)
         scaler = MinMaxScaler()
         result_df[['ROI_Norm', 'Liquidity_Norm', 'Saturation_Norm']] = scaler.fit_transform(
@@ -480,11 +501,18 @@ class UnifiedAnalysisProcessor:
         else:
             result_df['TradedVolume_Norm'] = 0
 
+        # Normalize Profit per Unit (0-1 scale)
+        if 'Profit per Unit' in result_df.columns:
+            result_df['Profit_Norm'] = MinMaxScaler().fit_transform(result_df[['Profit per Unit']])
+        else:
+            result_df['Profit_Norm'] = 0
+
         # Weighted sum (adjust weights as needed)
         result_df['Investment Score'] = (
-            0.35 * result_df['ROI_Norm'] +
-            0.25 * result_df['Liquidity_Norm'] +
+            0.30 * result_df['ROI_Norm'] +
+            0.20 * result_df['Liquidity_Norm'] +
             0.15 * result_df['Saturation_Norm'] +
+            0.10 * result_df['Profit_Norm'] +         # <-- Add profit here!
             0.05 * result_df['Volatility_Norm'] +
             0.05 * result_df['MarketCap_Norm'] +
             0.15 * result_df['TradedVolume_Norm']
