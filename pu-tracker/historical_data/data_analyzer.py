@@ -22,7 +22,7 @@ class UnifiedAnalysisProcessor:
         print("\n\033[1;36m[STEP]\033[0m Initializing UnifiedAnalysisProcessor...")
         # Ensure we're using the correct cache directory
         self.cache_dir = Path(__file__).parent.parent / 'cache'
-        print(f"📁 Cache directory: {self.cache_dir}")
+        print(f" Cache directory: {self.cache_dir}")
         
         # Create cache directory if it doesn't exist
         self.cache_dir.mkdir(exist_ok=True)
@@ -43,13 +43,16 @@ class UnifiedAnalysisProcessor:
             'Exchange'  # <-- Add this
         ]
         
+        self._materials_cache = None
+        self._materials_mtime = None
+        
     def load_cache_data(self):
         print("\n\033[1;36m[STEP]\033[0m Loading cache data...")
         """Load all available cache data"""
         print(f"   Cache directory exists: {self.cache_dir.exists()}")
         
         if not self.cache_dir.exists():
-            print("❌ Cache directory doesn't exist - creating it...")
+            print(" Cache directory doesn't exist - creating it...")
             self.cache_dir.mkdir(exist_ok=True)
         
         data = {}
@@ -68,11 +71,11 @@ class UnifiedAnalysisProcessor:
             if path.exists():
                 try:
                     data[file] = pd.read_csv(path)
-                    print(f"   ✅ {file}: {len(data[file])} rows")
+                    print(f"    {file}: {len(data[file])} rows")
                 except Exception as e:
-                    print(f"   ❌ {file}: Error loading - {e}")
+                    print(f"    {file}: Error loading - {e}")
             else:
-                print(f"   ❌ {file}: Not found")
+                print(f"    {file}: Not found")
                 
         # Load JSON files
         json_files = ['materials.json', 'categories.json', 'tiers.json', 'recipes.json']
@@ -82,12 +85,12 @@ class UnifiedAnalysisProcessor:
                 try:
                     with open(path, 'r') as f:
                         data[file] = json.load(f)
-                    print(f"   ✅ {file}: {len(data[file])} items")
+                    print(f"    {file}: {len(data[file])} items")
                 except Exception as e:
-                    print(f"   ❌ {file}: Error loading - {e}")
+                    print(f"    {file}: Error loading - {e}")
                     data[file] = {}
             else:
-                print(f"   ❌ {file}: Not found")
+                print(f"    {file}: Not found")
                 data[file] = {}
                 
         return data
@@ -95,16 +98,16 @@ class UnifiedAnalysisProcessor:
     def inspect_data_structure(self, data):
         print("\n\033[1;36m[STEP]\033[0m Inspecting data structure...")
         """Inspect and show available data structure"""
-        print("\n📊 Data Structure Analysis:")
+        print("\n Data Structure Analysis:")
         
         for filename, content in data.items():
             if isinstance(content, pd.DataFrame):
-                print(f"\n📄 {filename} columns:")
+                print(f"\n {filename} columns:")
                 for i, col in enumerate(content.columns, 1):
                     non_null = content[col].count()
                     print(f"   {i:2d}. {col} ({non_null}/{len(content)} non-null)")
             elif isinstance(content, dict) and content:
-                print(f"\n📄 {filename} sample keys:")
+                print(f"\n {filename} sample keys:")
                 sample_keys = list(content.keys())[:5]
                 for key in sample_keys:
                     print(f"   - {key}")
@@ -280,6 +283,15 @@ class UnifiedAnalysisProcessor:
                 min_cost = total_cost
         return min_cost if min_cost is not None else 0
 
+    def load_materials(self):
+        path = self.cache_dir / 'materials.csv'
+        mtime = os.path.getmtime(path)
+        if self._materials_cache is not None and self._materials_mtime == mtime:
+            return self._materials_cache
+        self._materials_cache = pd.read_csv(path)
+        self._materials_mtime = mtime
+        return self._materials_cache
+
     def generate_unified_analysis(self):
         print("\n\033[1;36m[STEP]\033[0m Generating unified analysis for Google Sheets...")
         """Generate the complete 24-column analysis"""
@@ -295,15 +307,15 @@ class UnifiedAnalysisProcessor:
         # Priority: processed_data.csv > market_data.csv > materials.csv
         if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
             base_df = data['processed_data.csv'].copy()
-            print(f"\n✅ Using processed_data.csv as base ({len(base_df)} rows)")
+            print(f"\n Using processed_data.csv as base ({len(base_df)} rows)")
         elif 'market_data.csv' in data and not data['market_data.csv'].empty:
             base_df = data['market_data.csv'].copy()
-            print(f"\n✅ Using market_data.csv as base ({len(base_df)} rows)")
+            print(f"\n Using market_data.csv as base ({len(base_df)} rows)")
         elif 'materials.csv' in data and not data['materials.csv'].empty:
             base_df = data['materials.csv'].copy()
-            print(f"\n✅ Using materials.csv as base ({len(base_df)} rows)")
+            print(f"\n Using materials.csv as base ({len(base_df)} rows)")
         else:
-            print("\n❌ No suitable base data found")
+            print("\n No suitable base data found")
             return None
             
         # Get reference data
@@ -312,14 +324,14 @@ class UnifiedAnalysisProcessor:
         tiers_dict = data.get('tiers.json', {})
         recipes_dict = data.get('recipes.json', {})
         
-        print(f"📋 Reference data loaded:")
+        print(f" Reference data loaded:")
         print(f"   Materials: {len(materials_dict)}")
         print(f"   Categories: {len(categories_dict)}")
         print(f"   Tiers: {len(tiers_dict)}")
         print(f"   Recipes: {len(recipes_dict)}")
         
         # Show available columns for mapping
-        print(f"\n📊 Available columns in base data:")
+        print(f"\n Available columns in base data:")
         for i, col in enumerate(base_df.columns, 1):
             print(f"   {i:2d}. {col}")
             
@@ -482,8 +494,8 @@ class UnifiedAnalysisProcessor:
         output_path = self.cache_dir / 'daily_analysis_enhanced.csv'
         result_df.to_csv(output_path, index=False)
         
-        print(f"\n✅ Generated analysis: {len(result_df)} rows, 24 columns")
-        print(f"📁 Saved to: {output_path}")
+        print(f"\n Generated analysis: {len(result_df)} rows, 24 columns")
+        print(f" Saved to: {output_path}")
         
         return result_df
         
@@ -544,27 +556,27 @@ class UnifiedAnalysisProcessor:
 def main():
     print("\n\033[1;35m[DATA ANALYZER]\033[0m")
     """Main entry point"""
-    print("🚀 Starting Unified Analysis Processor")
+    print("Starting Unified Analysis Processor")
     print("=" * 50)
     
     try:
         processor = UnifiedAnalysisProcessor()
         result = processor.generate_unified_analysis()
         if result is not None:
-            print(f"\n🎉 SUCCESS: Generated {len(result)} rows with 24 columns")
+            print(f"\n SUCCESS: Generated {len(result)} rows with 24 columns")
             # Show summary of generated data
             output_file = processor.cache_dir / 'daily_analysis_enhanced.csv'
-            print(f"📁 Output file: {output_file}")
-            print(f"📊 File size: {output_file.stat().st_size / 1024:.1f} KB")
+            print(f" Output file: {output_file}")
+            print(f" File size: {output_file.stat().st_size / 1024:.1f} KB")
             # Show sample data
-            print(f"\n📋 Sample data (first 3 rows):")
+            print(f"\n Sample data (first 3 rows):")
             print(result.head(3)[['Material Name', 'Ticker', 'Ask Price', 'Bid Price', 'Investment Score']].to_string())
             return True
         else:
-            print(f"\n❌ FAILED: Could not generate analysis")
+            print(f"\n FAILED: Could not generate analysis")
             return False
     except Exception as e:
-        print(f"\n💥 ERROR: {e}")
+        print(f"\n ERROR: {e}")
         import traceback
         traceback.print_exc()
         return False

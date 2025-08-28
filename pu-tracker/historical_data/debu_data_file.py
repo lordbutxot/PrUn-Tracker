@@ -10,7 +10,7 @@ from datetime import datetime
 
 def test_api_endpoints():
     """Test various API endpoint patterns"""
-    print("🔍 Testing different API endpoint patterns...")
+    print(" Testing different API endpoint patterns...")
     
     # Common base URLs for PrUn API
     base_urls = [
@@ -33,7 +33,7 @@ def test_api_endpoints():
     ]
     
     for base_url in base_urls:
-        print(f"\n🌐 Testing base URL: {base_url}")
+        print(f"\n Testing base URL: {base_url}")
         
         for endpoint in endpoints:
             try:
@@ -44,7 +44,7 @@ def test_api_endpoints():
                 if response.status_code == 200:
                     try:
                         data = response.json()
-                        print(f"    ✅ SUCCESS: Got {len(data) if isinstance(data, list) else 'data'}")
+                        print(f"     SUCCESS: Got {len(data) if isinstance(data, list) else 'data'}")
                         
                         # Save successful endpoint info
                         with open("cache/successful_endpoint.txt", "w") as f:
@@ -56,16 +56,16 @@ def test_api_endpoints():
                         return url, data
                         
                     except:
-                        print(f"    ❌ Not JSON data")
+                        print(f"     Not JSON data")
                         
             except Exception as e:
-                print(f"  {endpoint}: ❌ {e}")
+                print(f"  {endpoint}:  {e}")
     
     return None, None
 
 def test_exchange_endpoints():
     """Test exchange-specific endpoints"""
-    print("\n🔍 Testing exchange endpoints...")
+    print("\n Testing exchange endpoints...")
     
     base_urls = [
         "https://rest.fnar.net",
@@ -90,15 +90,15 @@ def test_exchange_endpoints():
                     response = requests.get(url, timeout=5)
                     
                     if response.status_code == 200:
-                        print(f"✅ SUCCESS: {url}")
+                        print(f" SUCCESS: {url}")
                         try:
                             data = response.json()
                             print(f"    Got {len(data)} items for {exchange}")
                             return url.replace(exchange, "{exchange}"), data
                         except:
-                            print(f"    ❌ Not JSON")
+                            print(f"     Not JSON")
                     else:
-                        print(f"❌ {url}: {response.status_code}")
+                        print(f" {url}: {response.status_code}")
                         
                 except Exception as e:
                     continue
@@ -107,7 +107,7 @@ def test_exchange_endpoints():
 
 def check_fnar_documentation():
     """Check if we can find API documentation"""
-    print("\n🔍 Looking for API documentation...")
+    print("\n Looking for API documentation...")
     
     doc_urls = [
         "https://rest.fnar.net",
@@ -120,7 +120,7 @@ def check_fnar_documentation():
         try:
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
-                print(f"✅ Found docs at: {url}")
+                print(f" Found docs at: {url}")
                 # Check if it contains API info
                 content = response.text.lower()
                 if 'api' in content or 'endpoint' in content:
@@ -130,7 +130,7 @@ def check_fnar_documentation():
 
 def try_alternative_apis():
     """Try alternative data sources"""
-    print("\n🔍 Trying alternative data sources...")
+    print("\n Trying alternative data sources...")
     
     # Try to find if there are other APIs or data sources
     alternatives = [
@@ -144,11 +144,11 @@ def try_alternative_apis():
             response = requests.get(url, timeout=5)
             print(f"{url}: Status {response.status_code}")
         except Exception as e:
-            print(f"{url}: ❌ {e}")
+            print(f"{url}:  {e}")
 
 def inspect_existing_data():
     """Check if we have any existing working data"""
-    print("\n🔍 Looking for existing working data...")
+    print("\n Looking for existing working data...")
     
     # Check current directory and parent directories for data
     search_dirs = [
@@ -163,7 +163,7 @@ def inspect_existing_data():
     
     for search_dir in search_dirs:
         if os.path.exists(search_dir):
-            print(f"\n📁 Checking {search_dir}:")
+            print(f"\n Checking {search_dir}:")
             try:
                 files = os.listdir(search_dir)
                 data_files = [f for f in files if f.endswith(('.csv', '.json')) and 'market' in f.lower() or 'material' in f.lower()]
@@ -171,7 +171,7 @@ def inspect_existing_data():
                 for file in data_files:
                     file_path = os.path.join(search_dir, file)
                     size = os.path.getsize(file_path)
-                    print(f"  📊 {file}: {size} bytes")
+                    print(f"   {file}: {size} bytes")
                     
                     if file.endswith('.csv') and size > 0:
                         try:
@@ -184,7 +184,7 @@ def inspect_existing_data():
                 pass
 
 if __name__ == "__main__":
-    print("🚀 PrUn API Endpoint Debug")
+    print(" PrUn API Endpoint Debug")
     print("=" * 50)
     
     # Create cache directory
@@ -194,17 +194,17 @@ if __name__ == "__main__":
     working_url, sample_data = test_api_endpoints()
     
     if working_url:
-        print(f"\n🎉 Found working endpoint: {working_url}")
+        print(f"\n Found working endpoint: {working_url}")
     else:
-        print("\n❌ No working material endpoints found")
+        print("\n No working material endpoints found")
     
     # Test exchange endpoints
     exchange_url, exchange_data = test_exchange_endpoints()
     
     if exchange_url:
-        print(f"\n🎉 Found working exchange endpoint: {exchange_url}")
+        print(f"\n Found working exchange endpoint: {exchange_url}")
     else:
-        print("\n❌ No working exchange endpoints found")
+        print("\n No working exchange endpoints found")
     
     # Check documentation
     check_fnar_documentation()
@@ -215,17 +215,17 @@ if __name__ == "__main__":
     # Check existing data
     inspect_existing_data()
     
-    print("\n✅ API debug complete!")
+    print("\n API debug complete!")
     
     # Summary
     if working_url or exchange_url:
-        print("\n📝 RESULTS:")
+        print("\n RESULTS:")
         if working_url:
             print(f"  Materials API: {working_url}")
         if exchange_url:
             print(f"  Exchange API: {exchange_url}")
     else:
-        print("\n❌ No working APIs found. Possible issues:")
+        print("\n No working APIs found. Possible issues:")
         print("  1. API has changed or been deprecated")
         print("  2. Authentication required")
         print("  3. Different base URL")

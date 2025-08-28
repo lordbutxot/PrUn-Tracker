@@ -183,6 +183,8 @@ class UnifiedDataProcessor:
         # Select only required columns in correct order
         available_cols = [col for col in REQUIRED_DATA_COLUMNS if col in merged.columns]
         merged = merged[available_cols]
+        # Drop any columns not in REQUIRED_DATA_COLUMNS
+        merged = merged.loc[:, merged.columns.isin(REQUIRED_DATA_COLUMNS)]
 
         # Add missing columns that might have been lost
         for col in REQUIRED_DATA_COLUMNS:

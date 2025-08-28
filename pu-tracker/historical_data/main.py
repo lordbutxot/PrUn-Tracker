@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import subprocess
 import time
+import os
 
 # Add current directory to path
 current_dir = Path(__file__).parent
@@ -50,7 +51,6 @@ def run_script(script_name, description=None, log_file=None):
     return process.returncode == 0, elapsed
 
 def main(mode='full'):
-    import os
     log_file = os.environ.get("PRUN_PIPELINE_LOGFILE", None)
     print("\n\033[1;35m========================================\033[0m")
     print("\033[1;35m   PrUn-Tracker Unified Pipeline\033[0m")
@@ -78,6 +78,13 @@ def main(mode='full'):
             return 1
     else:
         print("\033[1;32m[INFO]\033[0m Market data found.")
+
+    # --- ADD THIS STEP ---
+    ok, elapsed = run_script("add_tier_to_materials.py", "Assigning tiers to materials", log_file)
+    step_times.append(("Assign Tiers", elapsed))
+    if not ok:
+        print("\033[1;31m[FATAL]\033[0m Tier assignment failed. Exiting.")
+        return 1
 
     # 2. Process data
     ok, elapsed = run_script("unified_processor.py", "Processing and merging all data", log_file)
@@ -107,11 +114,13 @@ def main(mode='full'):
         return 1
 
     # 6. Generate and upload Report Tabs
-    ok, elapsed = run_script("generate_report_tabs.py", "Generating and uploading Report Tabs", log_file)
-    step_times.append(("Report Tabs", elapsed))
-    if not ok:
-        print("\033[1;31m[FATAL]\033[0m Report tab generation failed. Exiting.")
-        return 1
+    skip_arbitrage = os.environ.get("PRUN_SKIP_ARBITRAGE", "0") == "1"
+    if not skip_arbitrage:
+        ok, elapsed = run_script("generate_report_tabs.py", "Generating and uploading Report Tabs", log_file)
+        step_times.append(("Report Tabs", elapsed))
+        if not ok:
+            print("\033[1;31m[FATAL]\033[0m Report tab generation failed. Exiting.")
+            return 1
 
     print("\n\033[1;32m[SUCCESS]\033[0m Pipeline completed and data uploaded to Google Sheets.")
     print("\nStep timings:")

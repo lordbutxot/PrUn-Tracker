@@ -3,6 +3,8 @@ from pathlib import Path
 import sys
 import time
 import math
+import os
+import concurrent.futures
 
 try:
     from sheets_manager import UnifiedSheetsManager as SheetsManager
@@ -43,20 +45,20 @@ def summary_section(df):
 def arbitrage_section(arbitrage_df, exch, top_n=None, orders_df=None):
     """
     List all arbitrage opportunities for the given exchange.
-    Includes all opportunities with profit > 0, sorted by level and size.
+    Includes all opportunities with profit > 0 and opportunity size > 0, sorted by level and size.
     Adds a subheader row.
     """
     df = arbitrage_df[arbitrage_df['Buy Exchange'] == exch].copy()
-    df = df[df['Profit'] > 0]
+    # Only keep real opportunities
+    df = df[(df['Profit'] > 0) & (df['Opportunity Size'] > 0)]
     level_order = {'Very High': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Very Low': 4}
-    df['LevelSort'] = df['Opportunity Level'].map(level_order).fillna(99)
+    df['LevelSort'] = df['Opportunity Level'].map(level_order).astype('float64').fillna(99)
     df = df.sort_values(['LevelSort', 'Opportunity Size'], ascending=[True, False])
     df = df.drop(columns=['LevelSort'])
-    # Format numeric columns for display, but leave ROI as number for conditional formatting
     for col in ["Buy Price", "Sell Price", "Profit"]:
         if col in df.columns:
-            df[col] = df[col].apply(lambda x: f"{x:,.2f}" if pd.notna(x) else "0")
-    # Do NOT format ROI as string; keep as float
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            df[col] = df[col].map('{:,.2f}'.format)
     subheader = REPORT_COLUMNS
     rows = df[REPORT_COLUMNS].values.tolist()
     return section_header("Arbitrage Opportunities") + [subheader] + rows + [[""] * len(subheader)]
@@ -350,7 +352,7 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
                 }
             })
     else:
-        print(f"⚠️  'Recommendation' column not found in Buy vs Produce section for {sheet_name}, skipping recommendation formatting.")
+        print(f"  'Recommendation' column not found in Buy vs Produce section for {sheet_name}, skipping recommendation formatting.")
 
     # --- EXTRA FORMATTING ---
 
@@ -513,21 +515,23 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
                 spreadsheetId=sheets_manager.spreadsheet_id,
                 body={"requests": requests}
             ).execute()
-            print(f"🎨 Formatting applied to {sheet_name}")
+            print(f" Formatting applied to {sheet_name}")
         except HttpError as e:
-            print(f"⚠️ Formatting failed for {sheet_name}: {e}")
+            print(f" Formatting failed for {sheet_name}: {e}")
 
 def compute_arbitrage_opportunities(df, orders_df=None):
     arbitrage_rows = []
     exchanges = df['Exchange'].unique()
-    for ticker in df['Ticker'].unique():
+    tickers = df['Ticker'].unique()
+
+    def process_ticker(ticker):
         mat_rows = df[df['Ticker'] == ticker]
+        ticker_arbitrage_rows = []
         for buy_ex in exchanges:
             buy_row = mat_rows[mat_rows['Exchange'] == buy_ex]
             if buy_row.empty:
                 continue
             buy_price = buy_row.iloc[0].get('Ask Price', None)
-            buy_supply = buy_row.iloc[0].get('Supply', 0)
             name = buy_row.iloc[0].get('Material Name', ticker)
             product = buy_row.iloc[0].get('Product', '')
             if pd.isna(buy_price) or buy_price == 0:
@@ -539,80 +543,77 @@ def compute_arbitrage_opportunities(df, orders_df=None):
                 if sell_row.empty:
                     continue
                 sell_price = sell_row.iloc[0].get('Bid Price', None)
-                sell_demand = sell_row.iloc[0].get('Demand', 0)
                 if pd.isna(sell_price) or sell_price == 0:
                     continue
-                profit = sell_price - buy_price
-                if profit > 0:
-                    roi = (profit / buy_price) * 100 if buy_price else 0
-                    # Use order book if available
-                    if orders_df is not None:
-                        opportunity_size = get_arbitrage_opportunity_size(
-                            ticker, buy_ex, sell_ex, orders_df
-                        )
-                    else:
-                        try:
-                            opportunity_size = int(min(float(buy_supply), float(sell_demand)))
-                        except Exception:
-                            opportunity_size = 0
-                    if opportunity_size > 0:
-                        # Simple opportunity level
-                        if profit > 10000:
-                            level = "Very High"
-                        elif profit > 1000:
-                            level = "High"
-                        elif profit > 100:
-                            level = "Medium"
-                        elif profit > 10:
-                            level = "Low"
-                        else:
-                            level = "Very Low"
-                        arbitrage_rows.append([
-                            ticker, name, product,
-                            buy_price, sell_price, profit,
-                            buy_ex, sell_ex, roi, opportunity_size, level
-                        ])
+                # Use the correct function here:
+                if orders_df is not None:
+                    size, total_profit, _ = compute_arbitrage_opportunity_size(orders_df, ticker, buy_ex, sell_ex)
+                else:
+                    size = 0
+                    total_profit = 0
+                profit_per_unit = sell_price - buy_price if (sell_price and buy_price) else 0
+                roi = (profit_per_unit / buy_price * 100) if buy_price else 0
+                ticker_arbitrage_rows.append([
+                    ticker, name, product, buy_price, sell_price, profit_per_unit,
+                    buy_ex, sell_ex, roi, size, None  # Opportunity Level assigned later
+                ])
+        return ticker_arbitrage_rows
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = list(executor.map(process_ticker, tickers))
+    for rows in results:
+        arbitrage_rows.extend(rows)
     columns = [
         "Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit",
         "Buy Exchange", "Sell Exchange", "ROI", "Opportunity Size", "Opportunity Level"
     ]
     return pd.DataFrame(arbitrage_rows, columns=columns)
 
-def get_arbitrage_opportunity_size(ticker, buy_ex, sell_ex, orders_df):
+def compute_arbitrage_opportunity_size(orders_df, ticker, buy_ex, sell_ex):
     """
-    Calculate the max quantity that can be bought at buy_ex and sold at sell_ex for profit.
-    Assumes orders_df has columns: Ticker, Exchange, Side ('ask' or 'bid'), Price, Quantity
+    For a given ticker, buy_ex (where you buy), and sell_ex (where you sell),
+    compute the maximum arbitrage size and total profit using the full order book.
     """
+    # Get asks from buy_ex (where you buy)
     asks = orders_df[
         (orders_df['Ticker'] == ticker) &
         (orders_df['Exchange'] == buy_ex) &
         (orders_df['Side'] == 'ask')
-    ].copy()
+    ].sort_values('Price', ascending=True).copy()
+    # Get bids from sell_ex (where you sell)
     bids = orders_df[
         (orders_df['Ticker'] == ticker) &
         (orders_df['Exchange'] == sell_ex) &
         (orders_df['Side'] == 'bid')
-    ].copy()
-    asks = asks.sort_values('Price').reset_index(drop=True)
-    bids = bids.sort_values('Price', ascending=False).reset_index(drop=True)
-
+    ].sort_values('Price', ascending=False).copy()
     ask_idx, bid_idx = 0, 0
     matched_qty = 0
+    total_profit = 0
+    matches = []
     while ask_idx < len(asks) and bid_idx < len(bids):
-        ask_price = asks.at[ask_idx, 'Price']
-        bid_price = bids.at[bid_idx, 'Price']
-        if bid_price > ask_price:
-            trade_qty = min(asks.at[ask_idx, 'Quantity'], bids.at[bid_idx, 'Quantity'])
-            matched_qty += trade_qty
-            asks.at[ask_idx, 'Quantity'] -= trade_qty
-            bids.at[bid_idx, 'Quantity'] -= trade_qty
-            if asks.at[ask_idx, 'Quantity'] == 0:
+        ask_price = asks.iloc[ask_idx]['Price']
+        ask_qty = asks.iloc[ask_idx]['Quantity']
+        bid_price = bids.iloc[bid_idx]['Price']
+        bid_qty = bids.iloc[bid_idx]['Quantity']
+        if bid_price >= ask_price:
+            qty = min(ask_qty, bid_qty)
+            profit = (bid_price - ask_price) * qty
+            matched_qty += qty
+            total_profit += profit
+            matches.append((ask_price, bid_price, qty, profit))
+            asks.at[asks.index[ask_idx], 'Quantity'] -= qty
+            bids.at[bids.index[bid_idx], 'Quantity'] -= qty
+            if asks.at[asks.index[ask_idx], 'Quantity'] == 0:
                 ask_idx += 1
-            if bids.at[bid_idx, 'Quantity'] == 0:
+            if bids.at[bids.index[bid_idx], 'Quantity'] == 0:
                 bid_idx += 1
         else:
-            break
-    return int(matched_qty)
+            break  # No more profitable matches
+    if matched_qty == 0:
+        print(f"[DEBUG] No arbitrage for {ticker} {buy_ex}->{sell_ex}")
+    else:
+        print(f"[DEBUG] Arbitrage for {ticker} {buy_ex}->{sell_ex}: size={matched_qty}, profit={total_profit}")
+    return matched_qty, total_profit, matches
 
 def get_weighted_avg_price(orders_df, ticker, exchange, side, quantity):
     """
@@ -635,20 +636,35 @@ def assign_opportunity_level(df):
     """
     Assigns opportunity level based on composite score of ROI, size, volatility, and risk.
     """
+    # Add default columns if missing
+    if 'Volatility' not in df.columns:
+        df['Volatility'] = 0
+    if 'Risk Level' not in df.columns:
+        df['Risk Level'] = 'Medium'
     # Normalize columns (min-max scaling)
-    df['ROI_norm'] = (df['ROI'] - df['ROI'].min()) / (df['ROI'].max() - df['ROI'].min())
-    df['Size_norm'] = (df['Opportunity Size'] - df['Opportunity Size'].min()) / (df['Opportunity Size'].max() - df['Opportunity Size'].min())
-    df['Volatility_norm'] = 1 - ((df['Volatility'] - df['Volatility'].min()) / (df['Volatility'].max() - df['Volatility'].min()))
+    df['ROI_norm'] = (df['ROI'] - df['ROI'].min()) / (df['ROI'].max() - df['ROI'].min()) if df['ROI'].max() != df['ROI'].min() else 0
+    df['Size_norm'] = (df['Opportunity Size'] - df['Opportunity Size'].min()) / (df['Opportunity Size'].max() - df['Opportunity Size'].min()) if df['Opportunity Size'].max() != df['Opportunity Size'].min() else 0
+    df['Volatility_norm'] = 1 - ((df['Volatility'] - df['Volatility'].min()) / (df['Volatility'].max() - df['Volatility'].min())) if df['Volatility'].max() != df['Volatility'].min() else 1
     df['Risk_norm'] = df['Risk Level'].map({'Low': 1, 'Medium': 0.5, 'High': 0}).fillna(0.5)
     # Composite score (adjust weights as needed)
     df['Score'] = 0.5 * df['ROI_norm'] + 0.3 * df['Size_norm'] + 0.1 * df['Volatility_norm'] + 0.1 * df['Risk_norm']
-    # Assign levels by percentiles
-    df['Opportunity Level'] = pd.qcut(df['Score'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+    # Only assign levels if Score is not all NaN or constant
+    if df['Score'].nunique() > 1:
+        df['Opportunity Level'] = pd.qcut(df['Score'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+    else:
+        df['Opportunity Level'] = 'Medium'
     return df
 
 def load_and_prepare_orders():
+    base_dir = Path(__file__).parent.parent / "cache"
+    orders_path = base_dir / "orders.csv"
+    bids_path = base_dir / "bids.csv"
+    if not orders_path.exists():
+        raise FileNotFoundError(f"orders.csv not found at {orders_path}")
+    if not bids_path.exists():
+        raise FileNotFoundError(f"bids.csv not found at {bids_path}")
     # Load asks (sell orders)
-    asks = pd.read_csv('cache/orders.csv')
+    asks = pd.read_csv(orders_path)
     asks = asks.rename(columns={
         'MaterialTicker': 'Ticker',
         'ExchangeCode': 'Exchange',
@@ -659,7 +675,7 @@ def load_and_prepare_orders():
     asks = asks[['Ticker', 'Exchange', 'Side', 'Price', 'Quantity']]
 
     # Load bids (buy orders)
-    bids = pd.read_csv('cache/bids.csv')
+    bids = pd.read_csv(bids_path)
     bids = bids.rename(columns={
         'MaterialTicker': 'Ticker',
         'ExchangeCode': 'Exchange',
@@ -680,10 +696,20 @@ def main():
     if not ENHANCED_FILE.exists():
         print(f"[FATAL] Enhanced analysis file not found: {ENHANCED_FILE}")
         return
+
     all_df = pd.read_csv(ENHANCED_FILE)
-    arbitrage_df = compute_arbitrage_opportunities(all_df)
+    orders_df = load_and_prepare_orders()  # Load orders first!
+    arbitrage_df = compute_arbitrage_opportunities(all_df, orders_df=orders_df)  # Pass orders_df here!
+    # --- FIX: Assign opportunity levels ---
+    if not arbitrage_df.empty:
+        arbitrage_df = assign_opportunity_level(arbitrage_df)
+    else:
+        print("[WARN] No arbitrage opportunities found.")
+
     # --- FIX: Load and prepare orders with Side column ---
     orders_df = load_and_prepare_orders()
+    print(orders_df.head(20))
+    print(orders_df['Side'].value_counts())
     sheets = SheetsManager()
     for exch, tab in zip(EXCHANGES, REPORT_TABS):
         exch_df = all_df[all_df['Exchange'] == exch] if 'Exchange' in all_df.columns else all_df
@@ -697,9 +723,12 @@ def main():
         elif callable(upload_sheet_method):
             upload_sheet_method(SPREADSHEET_ID, tab, report_df)
         else:
-            print("❌ No valid upload method found in SheetsManager")
+            print(" No valid upload method found in SheetsManager")
         apply_report_tab_formatting(sheets, tab, report_df)
         time.sleep(2)
+    print(f"[DEBUG] Arbitrage DataFrame rows: {len(arbitrage_df)}")
+    print(arbitrage_df.head())
+    print(arbitrage_df[['Ticker', 'Buy Exchange', 'Sell Exchange', 'Opportunity Size']].sort_values('Opportunity Size', ascending=False).head(20))
 
 if __name__ == "__main__":
     main()

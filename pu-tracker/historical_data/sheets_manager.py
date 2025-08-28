@@ -270,9 +270,9 @@ class UnifiedSheetsManager:
                 self.service_account_file, 
                 scopes=scopes
             )
-            self.logger.info("✅ Google Sheets credentials initialized")
+            self.logger.info(" Google Sheets credentials initialized")
         except Exception as e:
-            self.logger.error(f"❌ Failed to initialize credentials: {e}")
+            self.logger.error(f" Failed to initialize credentials: {e}")
             raise
     
     def _init_clients(self):
@@ -287,9 +287,9 @@ class UnifiedSheetsManager:
             # Google Sheets API service for advanced operations
             self.sheets_service = build('sheets', 'v4', credentials=self.credentials)
             
-            self.logger.info(f"✅ Connected to spreadsheet: {self.spreadsheet.title}")
+            self.logger.info(f" Connected to spreadsheet: {self.spreadsheet.title}")
         except Exception as e:
-            self.logger.error(f"❌ Failed to initialize clients: {e}")
+            self.logger.error(f" Failed to initialize clients: {e}")
             raise
     
     def _rate_limit(self):
@@ -349,13 +349,13 @@ class UnifiedSheetsManager:
                     value_input_option='RAW'
                 )
                 
-                self.logger.info(f"✅ Updated {sheet_name}: {len(df)} rows, {len(df.columns)} columns")
+                self.logger.info(f" Updated {sheet_name}: {len(df)} rows, {len(df.columns)} columns")
                 return True
             
             return False
             
         except Exception as e:
-            self.logger.error(f"❌ Failed to update {sheet_name}: {e}")
+            self.logger.error(f" Failed to update {sheet_name}: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -400,7 +400,7 @@ class UnifiedSheetsManager:
                             }
                         })
         except Exception as e:
-            print(f"⚠️ Could not clear old conditional formatting: {e}")
+            print(f" Could not clear old conditional formatting: {e}")
 
         # --- 0. Auto-resize all columns except 'Recipe' ---
         recipe_idx = col_idx.get('Recipe')
@@ -825,12 +825,12 @@ class UnifiedSheetsManager:
                     body={"requests": requests}
                 ).execute()
                 if hasattr(self, "logger"):
-                    self.logger.info(f"✅ Applied formatting to {sheet_name}")
+                    self.logger.info(f" Applied formatting to {sheet_name}")
                 else:
-                    print(f"✅ Applied formatting to {sheet_name}")
+                    print(f" Applied formatting to {sheet_name}")
             except HttpError as e:
                 if hasattr(self, "logger"):
-                    self.logger.error(f"❌ Failed to apply formatting: {e}")
+                    self.logger.error(f" Failed to apply formatting: {e}")
                 print(e)
 
 # Legacy compatibility functions
