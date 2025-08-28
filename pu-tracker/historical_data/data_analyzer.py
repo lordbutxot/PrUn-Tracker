@@ -112,14 +112,25 @@ class UnifiedAnalysisProcessor:
         return True
         
     def calculate_saturation(self, supply, demand, traded_volume):
-        """Calculate market saturation (0-100%)"""
-        if pd.isna(supply) or pd.isna(demand) or supply <= 0:
-            return 50
-            
-        supply_demand_ratio = supply / max(demand, 1)
-        trading_factor = 1 - min(traded_volume / max(supply, 1), 1)
-        saturation = min(supply_demand_ratio * trading_factor * 50, 100)
-        
+        """
+        Calculate market saturation as a percentage.
+        High saturation = oversupplied (supply > demand).
+        Low saturation = undersupplied (demand > supply).
+        If demand is zero, returns 100 (fully saturated).
+        If supply is zero, returns 0 (no saturation).
+        """
+        if pd.isna(supply) or pd.isna(demand):
+            return 50  # Neutral if data missing
+
+        if demand <= 0:
+            # No demand: market is fully saturated (oversupplied)
+            return 100.0
+        if supply <= 0:
+            # No supply: market is empty (undersupplied)
+            return 0.0
+
+        saturation = (supply / demand) * 100
+        # Optionally cap at 200 for extreme oversupply, or leave uncapped
         return round(saturation, 2)
         
     def calculate_roi_ask_bid(self, ask_price, bid_price, input_cost):

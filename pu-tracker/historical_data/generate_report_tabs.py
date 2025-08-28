@@ -578,41 +578,41 @@ def compute_arbitrage_opportunities(df, orders_df=None):
     ]
     return pd.DataFrame(arbitrage_rows, columns=columns)
 
-def get_arbitrage_opportunity_size(ticker, buy_ex, sell_ex, orders_df, min_profit_per_unit=0):
+def get_arbitrage_opportunity_size(ticker, buy_ex, sell_ex, orders_df):
     """
-    Simulate order book: buy at asks, sell at bids, stop when profit per unit <= min_profit_per_unit.
-    Only count units where bid > ask (after fees if needed).
+    Calculate the max quantity that can be bought at buy_ex and sold at sell_ex for profit.
+    Assumes orders_df has columns: Ticker, Exchange, Side ('ask' or 'bid'), Price, Quantity
     """
-    print(f"Calculating opportunity size for {ticker} from {buy_ex} to {sell_ex}")
-    asks = orders_df[(orders_df['Ticker'] == ticker) & (orders_df['Exchange'] == buy_ex) & (orders_df['Side'] == 'ask')].copy()
-    bids = orders_df[(orders_df['Ticker'] == ticker) & (orders_df['Exchange'] == sell_ex) & (orders_df['Side'] == 'bid')].copy()
+    asks = orders_df[
+        (orders_df['Ticker'] == ticker) &
+        (orders_df['Exchange'] == buy_ex) &
+        (orders_df['Side'] == 'ask')
+    ].copy()
+    bids = orders_df[
+        (orders_df['Ticker'] == ticker) &
+        (orders_df['Exchange'] == sell_ex) &
+        (orders_df['Side'] == 'bid')
+    ].copy()
     asks = asks.sort_values('Price').reset_index(drop=True)
     bids = bids.sort_values('Price', ascending=False).reset_index(drop=True)
+
     ask_idx, bid_idx = 0, 0
-    total_size = 0
-
-    print("Asks:", asks)
-    print("Bids:", bids)
-
+    matched_qty = 0
     while ask_idx < len(asks) and bid_idx < len(bids):
         ask_price = asks.at[ask_idx, 'Price']
         bid_price = bids.at[bid_idx, 'Price']
-        # Only trade if profitable
-        profit_per_unit = bid_price - ask_price
-        if profit_per_unit < min_profit_per_unit:
+        if bid_price > ask_price:
+            trade_qty = min(asks.at[ask_idx, 'Quantity'], bids.at[bid_idx, 'Quantity'])
+            matched_qty += trade_qty
+            asks.at[ask_idx, 'Quantity'] -= trade_qty
+            bids.at[bid_idx, 'Quantity'] -= trade_qty
+            if asks.at[ask_idx, 'Quantity'] == 0:
+                ask_idx += 1
+            if bids.at[bid_idx, 'Quantity'] == 0:
+                bid_idx += 1
+        else:
             break
-        # Trade up to the minimum available
-        trade_qty = min(asks.at[ask_idx, 'Quantity'], bids.at[bid_idx, 'Quantity'])
-        total_size += trade_qty
-        # Decrement quantities
-        asks.at[ask_idx, 'Quantity'] -= trade_qty
-        bids.at[bid_idx, 'Quantity'] -= trade_qty
-        # Move to next order if depleted
-        if asks.at[asks.index[ask_idx], 'Quantity'] == 0:
-            ask_idx += 1
-        if bids.at[bids.index[bid_idx], 'Quantity'] == 0:
-            bid_idx += 1
-    return total_size
+    return int(matched_qty)
 
 def get_weighted_avg_price(orders_df, ticker, exchange, side, quantity):
     """
@@ -646,19 +646,44 @@ def assign_opportunity_level(df):
     df['Opportunity Level'] = pd.qcut(df['Score'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
     return df
 
+def load_and_prepare_orders():
+    # Load asks (sell orders)
+    asks = pd.read_csv('cache/orders.csv')
+    asks = asks.rename(columns={
+        'MaterialTicker': 'Ticker',
+        'ExchangeCode': 'Exchange',
+        'ItemCount': 'Quantity',
+        'ItemCost': 'Price'
+    })
+    asks['Side'] = 'ask'
+    asks = asks[['Ticker', 'Exchange', 'Side', 'Price', 'Quantity']]
+
+    # Load bids (buy orders)
+    bids = pd.read_csv('cache/bids.csv')
+    bids = bids.rename(columns={
+        'MaterialTicker': 'Ticker',
+        'ExchangeCode': 'Exchange',
+        'ItemCount': 'Quantity',
+        'ItemCost': 'Price'
+    })
+    bids['Side'] = 'bid'
+    bids = bids[['Ticker', 'Exchange', 'Side', 'Price', 'Quantity']]
+
+    # Combine
+    orders_df = pd.concat([asks, bids], ignore_index=True)
+    # Ensure numeric
+    orders_df['Price'] = pd.to_numeric(orders_df['Price'], errors='coerce')
+    orders_df['Quantity'] = pd.to_numeric(orders_df['Quantity'], errors='coerce')
+    return orders_df
+
 def main():
     if not ENHANCED_FILE.exists():
         print(f"[FATAL] Enhanced analysis file not found: {ENHANCED_FILE}")
         return
     all_df = pd.read_csv(ENHANCED_FILE)
-    # Compute arbitrage DataFrame
     arbitrage_df = compute_arbitrage_opportunities(all_df)
-    ORDERS_FILE = CACHE_DIR / "orders.csv"
-    orders_df = None
-    if ORDERS_FILE.exists():
-        orders_df = pd.read_csv(ORDERS_FILE)
-    else:
-        print(f"⚠️ orders.csv not found at {ORDERS_FILE}")
+    # --- FIX: Load and prepare orders with Side column ---
+    orders_df = load_and_prepare_orders()
     sheets = SheetsManager()
     for exch, tab in zip(EXCHANGES, REPORT_TABS):
         exch_df = all_df[all_df['Exchange'] == exch] if 'Exchange' in all_df.columns else all_df

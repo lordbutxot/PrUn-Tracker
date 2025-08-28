@@ -41,6 +41,21 @@ def fetch_orders_csv():
     except Exception as e:
         print(f"[ERROR] Failed to download orders.csv: {e}")
 
+def fetch_bids_csv():
+    url = "https://rest.fnar.net/csv/bids"
+    cache_dir = Path(__file__).parent.parent / "cache"
+    cache_dir.mkdir(exist_ok=True)
+    bids_file = cache_dir / "bids.csv"
+    try:
+        print("[Catch] Downloading bids.csv...")
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        with open(bids_file, "wb") as f:
+            f.write(response.content)
+        print(f"[SUCCESS] Saved bids.csv ({bids_file})")
+    except Exception as e:
+        print(f"[ERROR] Failed to download bids.csv: {e}")
+
 def main():
     print("[Catch] Starting data collection...")
     
@@ -110,7 +125,8 @@ def main():
     
     # Fetch orders CSV
     fetch_orders_csv()
-    
+    # Fetch bids CSV
+    fetch_bids_csv()
     print("[SUCCESS] Data collection completed")
     return True
 
