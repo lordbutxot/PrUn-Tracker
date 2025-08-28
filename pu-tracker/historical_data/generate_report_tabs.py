@@ -72,6 +72,9 @@ def buy_vs_produce_section(df, exch, top_n=None):
         row = ticker_rows[ticker_rows['Exchange'] == exch].iloc[0] if 'Exchange' in ticker_rows.columns and not ticker_rows[ticker_rows['Exchange'] == exch].empty else ticker_rows.iloc[0]
         buy_price = row.get('Ask Price', 0) if not pd.isna(row.get('Ask Price', 0)) else 0
         produce_cost = row.get('Input Cost per Unit', 0) if not pd.isna(row.get('Input Cost per Unit', 0)) else 0
+        # --- FILTER: Only include if buy_price > 0 ---
+        if not buy_price or buy_price == 0:
+            continue
         diff = buy_price - produce_cost
         # Recommendation logic
         if diff < -100:
