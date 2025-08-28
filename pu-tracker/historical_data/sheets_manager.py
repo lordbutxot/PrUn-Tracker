@@ -194,21 +194,9 @@ class SheetsManager:
                 row_data = []
                 for value in row:
                     if pd.isna(value):
-                        row_data.append('')
-                    elif isinstance(value, (int, float, np.integer, np.floating)):
-                        # Handle numeric values properly
-                        try:
-                            numeric_val = float(value)
-                            if np.isnan(numeric_val) or np.isinf(numeric_val):
-                                row_data.append(0)
-                            else:
-                                # Convert to appropriate type
-                                if isinstance(value, (int, np.integer)):
-                                    row_data.append(int(value))
-                                else:
-                                    row_data.append(float(value))
-                        except (ValueError, TypeError, OverflowError):
-                            row_data.append(0)
+                        row_data.append("")
+                    elif isinstance(value, (int, float)):
+                        row_data.append(value)
                     else:
                         row_data.append(str(value))
                 data_to_upload.append(row_data)
@@ -339,19 +327,9 @@ class UnifiedSheetsManager:
                 row_list = []
                 for value in row:
                     if pd.isna(value):
-                        row_list.append(0)
-                    elif isinstance(value, (int, float, np.integer, np.floating)):
-                        try:
-                            numeric_val = float(value)
-                            if np.isnan(numeric_val) or np.isinf(numeric_val):
-                                row_list.append(0)
-                            else:
-                                if isinstance(value, (int, np.integer)):
-                                    row_list.append(int(value))
-                                else:
-                                    row_list.append(float(value))
-                        except (ValueError, TypeError, OverflowError):
-                            row_list.append(0)
+                        row_list.append("")
+                    elif isinstance(value, (int, float)):
+                        row_list.append(value)
                     else:
                         row_list.append(str(value))
                 data_rows.append(row_list)

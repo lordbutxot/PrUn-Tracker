@@ -4,6 +4,7 @@ PrUn-Tracker Unified Pipeline
 import sys
 from pathlib import Path
 import subprocess
+import time
 
 # Add current directory to path
 current_dir = Path(__file__).parent
@@ -19,11 +20,11 @@ def is_market_data_ready():
             return True
     return False
 
-def run_script(script_name, description=None):
+def run_script(script_name, description=None, log_file=None):
     if description:
         print(f"\n\033[1;36m[STEP]\033[0m {description}")
     print(f"\033[1;33m[RUNNING]\033[0m {script_name}")
-    # Use unbuffered output (-u) and stream output live
+    start = time.time()
     process = subprocess.Popen(
         [sys.executable, "-u", script_name],
         cwd=current_dir,
@@ -31,23 +32,32 @@ def run_script(script_name, description=None):
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,
-        encoding="utf-8"  # <-- Add this line
+        encoding="utf-8"
     )
     if process.stdout is not None:
         for line in process.stdout:
-            print(line, end='')  # Print each line as it arrives
+            print(line, end='')
+            if log_file:
+                with open(log_file, "a", encoding="utf-8") as lf:
+                    lf.write(line)
     process.wait()
-    if process.returncode != 0:
-        print(f"\033[1;31m[ERROR]\033[0m {script_name} failed.")
-        return False
-    print(f"\033[1;32m[SUCCESS]\033[0m {script_name} completed.")
-    return True
+    elapsed = time.time() - start
+    msg = f"\033[1;32m[SUCCESS]\033[0m {script_name} completed in {elapsed:.2f} seconds." if process.returncode == 0 else f"\033[1;31m[ERROR]\033[0m {script_name} failed in {elapsed:.2f} seconds."
+    print(msg)
+    if log_file:
+        with open(log_file, "a", encoding="utf-8") as lf:
+            lf.write(msg + "\n")
+    return process.returncode == 0, elapsed
 
 def main(mode='full'):
+    import os
+    log_file = os.environ.get("PRUN_PIPELINE_LOGFILE", None)
     print("\n\033[1;35m========================================\033[0m")
     print("\033[1;35m   PrUn-Tracker Unified Pipeline\033[0m")
     print("\033[1;35m========================================\033[0m")
     print(f"Starting at {Path(__file__).parent} | Mode: {mode}\n")
+
+    step_times = []
 
     # 1. Ensure market data is present
     if not is_market_data_ready():
@@ -56,7 +66,9 @@ def main(mode='full'):
         for fetcher in fetchers:
             fetcher_path = current_dir / fetcher
             if fetcher_path.exists():
-                if not run_script(fetcher, f"Fetching data with {fetcher}"):
+                ok, elapsed = run_script(fetcher, f"Fetching data with {fetcher}", log_file)
+                step_times.append((f"Fetch ({fetcher})", elapsed))
+                if not ok:
                     print(f"\033[1;31m[ERROR]\033[0m {fetcher} failed. Cannot proceed.")
                     return 1
                 if is_market_data_ready():
@@ -68,26 +80,52 @@ def main(mode='full'):
         print("\033[1;32m[INFO]\033[0m Market data found.")
 
     # 2. Process data
-    if not run_script("unified_processor.py", "Processing and merging all data"):
+    ok, elapsed = run_script("unified_processor.py", "Processing and merging all data", log_file)
+    step_times.append(("Process", elapsed))
+    if not ok:
         print("\033[1;31m[FATAL]\033[0m Data processing failed. Exiting.")
         return 1
 
     # 3. Run enhanced analysis
-    if not run_script("data_analyzer.py", "Generating enhanced analysis for upload"):
+    ok, elapsed = run_script("data_analyzer.py", "Generating enhanced analysis for upload", log_file)
+    step_times.append(("Analyze", elapsed))
+    if not ok:
         print("\033[1;31m[FATAL]\033[0m Enhanced analysis failed. Exiting.")
         return 1
 
-    # 4. Upload to Google Sheets
-    if not run_script("upload_enhanced_analysis.py", "Uploading to Google Sheets"):
+    # 4. Fetch orders data for arbitrage calculations (optional step)
+    ok, elapsed = run_script("catch_data.py", "Fetching orders.csv for arbitrage calculations", log_file)
+    step_times.append(("Fetch Orders", elapsed))
+    if not ok:
+        print("\033[1;31m[ERROR]\033[0m Failed to fetch orders.csv. Arbitrage opportunity sizes may be inaccurate.")
+
+    # 5. Upload to Google Sheets
+    ok, elapsed = run_script("upload_enhanced_analysis.py", "Uploading to Google Sheets", log_file)
+    step_times.append(("Upload", elapsed))
+    if not ok:
         print("\033[1;31m[FATAL]\033[0m Upload failed. Exiting.")
         return 1
 
-    # 5. Generate and upload Report Tabs
-    if not run_script("generate_report_tabs.py", "Generating and uploading Report Tabs"):
+    # 6. Generate and upload Report Tabs
+    ok, elapsed = run_script("generate_report_tabs.py", "Generating and uploading Report Tabs", log_file)
+    step_times.append(("Report Tabs", elapsed))
+    if not ok:
         print("\033[1;31m[FATAL]\033[0m Report tab generation failed. Exiting.")
         return 1
 
     print("\n\033[1;32m[SUCCESS]\033[0m Pipeline completed and data uploaded to Google Sheets.")
+    print("\nStep timings:")
+    total = 0
+    for name, t in step_times:
+        print(f"  {name:20s}: {t:.2f} seconds")
+        total += t
+    print(f"  {'Total':20s}: {total:.2f} seconds")
+    if log_file:
+        with open(log_file, "a", encoding="utf-8") as lf:
+            lf.write("\nStep timings:\n")
+            for name, t in step_times:
+                lf.write(f"  {name:20s}: {t:.2f} seconds\n")
+            lf.write(f"  {'Total':20s}: {total:.2f} seconds\n")
     return 0
 
 if __name__ == "__main__":
