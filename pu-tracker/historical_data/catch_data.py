@@ -17,7 +17,6 @@ sys.path.insert(0, str(parent_dir))
 try:
     import fetch_all_tickers
     import fetch_materials 
-    import main_refresh_basics
     import chain_dictionary_generator
     import dictionary_builder_buildings
     import add_tier_to_materials
@@ -56,79 +55,131 @@ def fetch_bids_csv():
     except Exception as e:
         print(f"[ERROR] Failed to download bids.csv: {e}")
 
+def fetch_workforceneeds_json():
+    url = "https://rest.fnar.net/global/workforceneeds"
+    cache_dir = Path(__file__).parent.parent / "cache"
+    cache_dir.mkdir(exist_ok=True)
+    outfile = cache_dir / "workforceneeds.json"
+    try:
+        print("[Catch] Downloading workforceneeds.json...")
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        with open(outfile, "wb") as f:
+            f.write(resp.content)
+        print(f"[SUCCESS] Saved workforceneeds.json ({outfile})")
+    except Exception as e:
+        print(f"[ERROR] Failed to download workforceneeds.json: {e}")
+
+def fetch_market_data_csv():
+    url = "https://rest.fnar.net/csv/marketdata"
+    cache_dir = Path(__file__).parent.parent / "cache"
+    cache_dir.mkdir(exist_ok=True)
+    outfile = cache_dir / "market_data.csv"
+    try:
+        print("[Catch] Downloading market_data.csv...")
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        with open(outfile, "wb") as f:
+            f.write(resp.content)
+        print(f"[SUCCESS] Saved market_data.csv ({outfile})")
+    except Exception as e:
+        print(f"[ERROR] Failed to download market_data.csv: {e}")
+
+def log_step(message):
+    print(f"[STEP] {message}", flush=True)
+
 def main():
-    print("[Catch] Starting data collection...")
-    
-    # Step 1: Fetch basic market data and tickers
-    print("[Catch] Fetching market data and tickers...")
     try:
-        import fetch_all_tickers
-        fetch_all_tickers.main()
-        print("[SUCCESS] Market data and tickers fetched")
-    except Exception as e:
-        print(f"[ERROR] Failed to fetch tickers: {e}")
-    
-    # Step 2: Fetch materials data
-    print("[Catch] Fetching materials data...")
-    try:
-        import fetch_materials
-        fetch_materials.main()
-        print("[SUCCESS] Materials data fetched")
-    except Exception as e:
-        print(f"[ERROR] Failed to fetch materials: {e}")
-    
-    # Step 3: Build dictionaries and reference data
-    print("[Catch] Building chain dictionary...")
-    try:
-        import chain_dictionary_generator
-        chain_dictionary_generator.main()
-        print("[SUCCESS] Chain dictionary built")
-    except Exception as e:
-        print(f"[ERROR] Failed to build chain dictionary: {e}")
-    
-    print("[Catch] Building buildings dictionary...")
-    try:
-        import dictionary_builder_buildings
-        dictionary_builder_buildings.main()
-        print("[SUCCESS] Buildings dictionary built")
-    except Exception as e:
-        print(f"[ERROR] Failed to build buildings dictionary: {e}")
-    
-    print("[Catch] Adding tier information to materials...")
-    try:
-        import add_tier_to_materials
-        add_tier_to_materials.main()
-        print("[SUCCESS] Tier information added")
-    except Exception as e:
-        print(f"[ERROR] Failed to add tier information: {e}")
-    
-    # Step 4: Collect and cache all data
-    try:
-        print("[Catch] Running main data collection...")
+        log_step("Starting data collection...")
         
-        # Import the correct processor
-        from unified_processor import main as process_main
+        # Step 1: Fetch basic market data and tickers
+        log_step("Fetching market data and tickers...")
+        try:
+            import fetch_all_tickers
+            fetch_all_tickers.main()
+            print("[SUCCESS] Market data and tickers fetched")
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch tickers: {e}")
         
-        # Run the processing
-        result = process_main()
+        # Step 2: Fetch materials data
+        log_step("Fetching materials data...")
+        try:
+            import fetch_materials
+            fetch_materials.main()
+            print("[SUCCESS] Materials data fetched")
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch materials: {e}")
         
-        if result:
-            print("[Catch] Data processing completed successfully")
-        else:
-            print("[Catch] Data processing had issues")
-            
-    except ImportError as e:
-        print(f"[ERROR] Failed to import processor: {e}")
-        print("[INFO] Skipping data processing step")
+        # Step 3: Build dictionaries and reference data
+        log_step("Building chain dictionary...")
+        try:
+            import chain_dictionary_generator
+            chain_dictionary_generator.main()
+            print("[SUCCESS] Chain dictionary built")
+        except Exception as e:
+            print(f"[ERROR] Failed to build chain dictionary: {e}")
+        
+        log_step("Building buildings dictionary...")
+        try:
+            import dictionary_builder_buildings
+            dictionary_builder_buildings.main()
+            print("[SUCCESS] Buildings dictionary built")
+        except Exception as e:
+            print(f"[ERROR] Failed to build buildings dictionary: {e}")
+        
+        log_step("Adding tier information to materials...")
+        try:
+            import add_tier_to_materials
+            add_tier_to_materials.main()
+            print("[SUCCESS] Tier information added")
+        except Exception as e:
+            print(f"[ERROR] Failed to add tier information: {e}")
+        
+        # Step 4: Collect and cache all data
+        try:
+            log_step("Running main data collection...")
+            from unified_processor import main as process_main
+            result = process_main()
+            if result:
+                print("[Catch] Data processing completed successfully")
+            else:
+                print("[Catch] Data processing had issues")
+        except ImportError as e:
+            print(f"[ERROR] Failed to import processor: {e}")
+            print("[INFO] Skipping data processing step")
+        except Exception as e:
+            print(f"[ERROR] Failed to run main data collection: {e}")
+        
+        log_step("Fetching orders.csv...")
+        fetch_orders_csv()
+        log_step("Fetching bids.csv...")
+        fetch_bids_csv()
+        log_step("Fetching buildingrecipes.csv...")
+        try:
+            from fetch_buildingrecipes import fetch_buildingrecipes
+            fetch_buildingrecipes()
+            print("[SUCCESS] buildingrecipes.csv fetched")
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch buildingrecipes.csv: {e}")
+
+        log_step("Fetching workforceneeds.json...")
+        fetch_workforceneeds_json()
+
+        print("[SUCCESS] Data collection completed", flush=True)
+        return True
     except Exception as e:
-        print(f"[ERROR] Failed to run main data collection: {e}")
-    
-    # Fetch orders CSV
-    fetch_orders_csv()
-    # Fetch bids CSV
-    fetch_bids_csv()
-    print("[SUCCESS] Data collection completed")
-    return True
+        print(f"[FATAL] Unhandled exception in catch_data.py: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return False
 
 if __name__ == "__main__":
-    main()
+    try:
+        success = main()
+        print(f"[DEBUG] Exiting catch_data.py with code: {0 if success else 1}", flush=True)
+        sys.exit(0 if success else 1)
+    except Exception as e:
+        print(f"[FATAL] Unhandled exception at top level: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

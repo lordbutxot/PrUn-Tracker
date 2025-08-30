@@ -10,9 +10,16 @@ import sys  # FIXED: Added missing import
 from pathlib import Path
 from datetime import datetime
 import logging
+from collections import defaultdict
 
 # Import config
 from unified_config import REQUIRED_DATA_COLUMNS, VALID_EXCHANGES
+from workforce_costs import (
+    load_market_prices,
+    load_workforce_needs,
+    calculate_input_costs_for_recipe,
+    get_market_price,  # <-- Add this line
+)
 
 class UnifiedDataProcessor:
     def __init__(self):
@@ -81,28 +88,30 @@ class UnifiedDataProcessor:
         print("\n\033[1;36m[STEP]\033[0m Loading market data for all exchanges...")
         """Load market data by exchange"""
         market_data = {}
-        
+
         # Try to load general market data first
         general_market = self.cache_dir / 'market_data.csv'
         if general_market.exists():
             try:
                 df = pd.read_csv(general_market)
                 print(f"[INFO] Loaded general market data: {len(df)} records")
-                
-                # If Exchange column exists, split by exchange
+
+                # Always transform to long format if needed
+                if 'Exchange' not in df.columns and 'AI1-AskPrice' in df.columns:
+                    print("[INFO] Detected wide market data format, transforming...")
+                    df = self.transform_market_data_wide_to_long(df)
+                    # Optionally, save the transformed file for future use
+                    df.to_csv(self.cache_dir / 'market_data_long.csv', index=False)
+
+                # Now split by exchange
                 if 'Exchange' in df.columns:
                     for exchange in VALID_EXCHANGES:
-                        exchange_data = df[df['Exchange'] == exchange]
-                        if not exchange_data.empty:
-                            market_data[exchange] = exchange_data
+                        market_data[exchange] = df[df['Exchange'] == exchange].copy()
                 else:
-                    # If no Exchange column, assume it's for all exchanges
-                    for exchange in VALID_EXCHANGES:
-                        market_data[exchange] = df.copy()
-                        
+                    print("[ERROR] Could not find 'Exchange' column after transformation.")
             except Exception as e:
                 print(f"[ERROR] Loading general market data: {e}")
-        
+
         # Try exchange-specific files
         for exchange in VALID_EXCHANGES:
             if exchange in market_data:
@@ -174,8 +183,23 @@ class UnifiedDataProcessor:
                 else:
                     merged[col] = ''
 
+        # --- ENSURE CORRECT COLUMN NAMES FOR DOWNSTREAM ---
+        rename_map = {
+            'Profit_Ask': 'Profit per Unit',
+            'ROI_Ask': 'ROI Ask %',
+            'ROI_Bid': 'ROI Bid %',
+            # REMOVE or COMMENT OUT this line:
+            # 'Traded': 'Traded Volume',
+        }
+        merged = merged.rename(columns=rename_map)
+
         # Add timestamp
         merged['Timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Ensure input cost columns exist before calculating derived fields
+        for col in ['Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour']:
+            if col not in merged.columns:
+                merged[col] = 0.0
 
         # Calculate derived fields
         merged = self.calculate_derived_fields(merged)
@@ -194,6 +218,103 @@ class UnifiedDataProcessor:
         # Reorder to match required columns
         merged = merged[REQUIRED_DATA_COLUMNS]
 
+        # --- BEGIN: Input cost calculation integration ---
+        market_prices = load_market_prices()
+
+        # Ensure market_prices is in long format
+        if market_prices is not None and 'Exchange' not in market_prices.columns:
+            print("[INFO] Transforming market_prices to long format for input cost calculations...")
+            exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1']
+            records = []
+            for _, row in market_prices.iterrows():
+                ticker = row['Ticker']
+                for exch in exchanges:
+                    ask_price = row.get(f"{exch}-AskPrice", None)
+                    bid_price = row.get(f"{exch}-BidPrice", None)
+                    if pd.notnull(ask_price) or pd.notnull(bid_price):
+                        records.append({
+                            'Ticker': ticker,
+                            'Exchange': exch,
+                            'Ask_Price': pd.to_numeric(ask_price, errors='coerce') if pd.notnull(ask_price) else 0,
+                            'Bid_Price': pd.to_numeric(bid_price, errors='coerce') if pd.notnull(bid_price) else 0,
+                        })
+            market_prices = pd.DataFrame(records)
+
+        wf_consumables = load_workforce_needs()
+        inputs_by_recipe = build_input_materials_dict()
+
+        # You may need to join recipe/building/workforce info to get these columns:
+        # 'Recipe', 'WorkforceType', 'HoursPerRecipe', 'UnitsPerRecipe'
+        # For demonstration, let's assume you have them or fill with defaults
+
+        # Preload all recipe/building/workforce info
+        recipe_outputs = pd.read_csv(self.cache_dir / "recipe_outputs.csv")
+        recipe_inputs = pd.read_csv(self.cache_dir / "recipe_inputs.csv")
+        buildingrecipes = pd.read_csv(self.cache_dir / "buildingrecipes.csv")
+        workforces = pd.read_csv(self.cache_dir / "workforces.csv")
+        wf_consumables = load_workforce_needs()
+        market_prices = load_market_prices()
+
+        # Build lookup dicts
+        building_to_workforce = defaultdict(list)
+        for _, row in workforces.iterrows():
+            building_to_workforce[row['Building']].append(row['Level'])
+
+        buildingrecipes_dict = buildingrecipes.set_index('Key').to_dict('index')
+
+        for idx, row in merged.iterrows():
+            ticker = row['Ticker']
+            exchange = row['Exchange']
+            recipes = recipe_outputs[recipe_outputs['Material'] == ticker]
+            min_cost = None
+            for _, recipe_row in recipes.iterrows():
+                recipe_id = recipe_row['Key']
+                # Get input materials
+                inputs = recipe_inputs[recipe_inputs['Key'] == recipe_id]
+                input_materials = {r['Material']: float(r['Amount']) for _, r in inputs.iterrows()}
+                # Get building and duration
+                if recipe_id in buildingrecipes_dict:
+                    b_row = buildingrecipes_dict[recipe_id]
+                    building = b_row['Building']
+                    duration_sec = float(b_row['Duration'])
+                    hours_per_recipe = duration_sec / 3600
+                    units_per_recipe = float(recipe_row['Amount'])
+                    # Get workforce type(s)
+                    workforce_types = building_to_workforce.get(building, ['PIONEER'])
+                    for workforce_type in workforce_types:
+                        # Workforce needs per hour
+                        consumables = wf_consumables.get(workforce_type, {})
+                        wf_cost = 0
+                        for ticker_c, amt_per_day in consumables.items():
+                            amt_per_hour = amt_per_day  # Already divided by 24 in loader
+                            qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
+                            price = get_market_price(ticker_c, market_prices, exchange)
+                            wf_cost += qty * price
+                        # Material input cost
+                        direct_input_cost = sum(
+                            qty * get_market_price(t, market_prices, exchange)
+                            for t, qty in input_materials.items()
+                        )
+                        total_input_cost = direct_input_cost + wf_cost
+                        input_cost_per_unit = total_input_cost / units_per_recipe if units_per_recipe else 0
+                        input_cost_per_stack = input_cost_per_unit * units_per_recipe  # FIX: use units_per_recipe, not 100
+                        input_cost_per_hour = total_input_cost / hours_per_recipe if hours_per_recipe else 0
+                        if min_cost is None or input_cost_per_unit < min_cost['Input Cost per Unit']:
+                            min_cost = {
+                                'Input Cost per Unit': input_cost_per_unit,
+                                'Input Cost per Stack': input_cost_per_stack,
+                                'Input Cost per Hour': input_cost_per_hour
+                            }
+            if min_cost:
+                merged.at[idx, 'Input Cost per Unit'] = min_cost['Input Cost per Unit']
+                merged.at[idx, 'Input Cost per Stack'] = min_cost['Input Cost per Stack']
+                merged.at[idx, 'Input Cost per Hour'] = min_cost['Input Cost per Hour']
+            else:
+                merged.at[idx, 'Input Cost per Unit'] = 0
+                merged.at[idx, 'Input Cost per Stack'] = 0
+                merged.at[idx, 'Input Cost per Hour'] = 0
+        # --- END: Input cost calculation integration ---
+
         print(f"[SUCCESS] Created complete dataset: {len(merged)} total records")
         return merged
     
@@ -206,43 +327,80 @@ class UnifiedDataProcessor:
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-            
-            # Price spread
-            df['Price_Spread'] = df['Ask_Price'] - df['Bid_Price']
-            
-            # Basic profit calculations
-            df['Profit_Ask'] = df['Ask_Price'] - df['Input_Cost']
-            df['Profit_Bid'] = df['Bid_Price'] - df['Input_Cost']
-            
-            # ROI calculations
-            df['ROI_Ask'] = df.apply(lambda row: 
-                (row['Profit_Ask'] / row['Input_Cost'] * 100) if row['Input_Cost'] > 0 else 0, axis=1)
-            df['ROI_Bid'] = df.apply(lambda row: 
-                (row['Profit_Bid'] / row['Input_Cost'] * 100) if row['Input_Cost'] > 0 else 0, axis=1)
-            
-            # Investment score (simplified)
-            df['Investment_Score'] = df.apply(lambda row:
-                min(100, max(0, row['ROI_Ask'] * 0.5 + (row['Supply'] * 0.1 if row['Supply'] > 0 else 0))), axis=1)
-            
-            # Risk assessment
-            df['Risk'] = df.apply(lambda row: 
-                'High' if row['Ask_Price'] > 0 and row['Price_Spread'] > row['Ask_Price'] * 0.2 else
-                'Medium' if row['Ask_Price'] > 0 and row['Price_Spread'] > row['Ask_Price'] * 0.1 else 'Low', axis=1)
-            
-            # Viability
-            df['Viability'] = df.apply(lambda row:
-                'Excellent' if row['ROI_Ask'] > 50 else
-                'Good' if row['ROI_Ask'] > 20 else
-                'Fair' if row['ROI_Ask'] > 0 else 'Poor', axis=1)
-            
-            # Recommendations
-            df['Recommendation'] = df.apply(lambda row:
-                'Buy' if row['Viability'] in ['Excellent', 'Good'] and row['Risk'] != 'High' else
-                'Hold' if row['Viability'] == 'Fair' else 'Avoid', axis=1)
-                
+
+            # Profit per Unit
+            df['Profit_Ask'] = df['Ask_Price'] - df['Input Cost per Unit']
+            df['Profit_Bid'] = df['Bid_Price'] - df['Input Cost per Unit']
+
+            # Profit per Stack (assuming stack size 100, adjust if needed)
+            df['Profit_per_Stack'] = df['Profit_Ask'] * 100
+
+            # ROI Ask % and ROI Bid %
+            df['ROI_Ask'] = df.apply(
+                lambda row: (row['Profit_Ask'] / row['Input_Cost'] * 100) if row['Input_Cost'] > 0 else 0,
+                axis=1
+            )
+            df['ROI_Bid'] = df.apply(
+                lambda row: (row['Profit_Bid'] / row['Input_Cost'] * 100) if row['Input_Cost'] > 0 else 0,
+                axis=1
+            )
+
+            # Saturation
+            def calc_saturation(row):
+                supply = row.get('Supply', 0)
+                demand = row.get('Demand', 0)
+                if pd.isna(supply) or pd.isna(demand) or demand == 0:
+                    return 100.0
+                return min(200.0, round((supply / demand) * 100, 2))
+            df['Saturation'] = df.apply(calc_saturation, axis=1)
+
+            # Market Cap
+            df['Market_Cap'] = df['Supply'] * df['Ask_Price']
+
+            # Liquidity Ratio
+            df['Liquidity_Ratio'] = df.apply(
+                lambda row: row['Traded'] / (row['Supply'] + row['Demand']) if (row['Supply'] + row['Demand']) > 0 else 0,
+                axis=1
+            )
+
+            # Risk Level
+            df['Risk'] = df.apply(
+                lambda row: 'High' if row['Ask_Price'] > 0 and (row['Ask_Price'] - row['Bid_Price']) > row['Ask_Price'] * 0.2
+                else ('Medium' if row['Ask_Price'] > 0 and (row['Ask_Price'] - row['Bid_Price']) > row['Ask_Price'] * 0.1
+                else 'Low'),
+                axis=1
+            )
+
+            # Input Cost per Stack (assuming stack size 100)
+            df['Input_Cost_per_Stack'] = df['Input_Cost'] * 100
+
+            # Input Cost per Hour (if you have recipe duration in seconds)
+            if 'Recipe_Duration' in df.columns:
+                df['Input_Cost_per_Hour'] = df.apply(
+                    lambda row: (row['Input_Cost'] * (3600 / row['Recipe_Duration'])) if row['Recipe_Duration'] > 0 else 0,
+                    axis=1
+                )
+            else:
+                df['Input_Cost_per_Hour'] = 0
+
+            # Traded Volume
+            if 'Traded' not in df.columns:
+                df['Traded'] = 0.0
+            df['Traded'] = pd.to_numeric(df['Traded'], errors='coerce').fillna(0)
+            df['Traded_Volume'] = df['Traded']
+
+            # Ensure all required columns exist for downstream
+            required_cols = [
+                'Profit_Ask', 'Profit_Bid', 'Profit_per_Stack', 'ROI_Ask', 'ROI_Bid',
+                'Saturation', 'Market_Cap', 'Liquidity_Ratio', 'Investment_Score', 'Risk',
+                'Input_Cost_per_Stack', 'Input_Cost_per_Hour', 'Traded_Volume'
+            ]
+            for col in required_cols:
+                if col not in df.columns:
+                    df[col] = 0
+
         except Exception as e:
             print(f"[WARNING] Error calculating derived fields: {e}")
-            
         return df
     
     def save_processed_data(self, complete_df):
@@ -270,7 +428,6 @@ class UnifiedDataProcessor:
 
     def transform_market_data_wide_to_long(self, wide_df):
         print("\n\033[1;36m[STEP]\033[0m Transforming wide market data to long format...")
-        """Convert wide market_data.csv to long format for all exchanges."""
         records = []
         exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1']
         for _, row in wide_df.iterrows():
@@ -281,7 +438,6 @@ class UnifiedDataProcessor:
                 supply = row.get(f"{exch}-AskAvail", None)
                 demand = row.get(f"{exch}-BidAvail", None)
                 traded = row.get(f"{exch}-AskAmt", None)
-                # Only add if at least one price exists
                 if pd.notnull(ask_price) or pd.notnull(bid_price):
                     records.append({
                         'Ticker': ticker,
@@ -293,6 +449,21 @@ class UnifiedDataProcessor:
                         'Traded': pd.to_numeric(traded, errors='coerce') if pd.notnull(traded) else 0,
                     })
         return pd.DataFrame(records)
+
+def build_input_materials_dict():
+    """
+    Builds a dictionary mapping recipe Key to a dict of {ticker: qty} using recipe_inputs.csv.
+    """
+    recipe_inputs_path = Path(__file__).parent.parent / "cache" / "recipe_inputs.csv"
+    recipe_inputs_df = pd.read_csv(recipe_inputs_path)
+    inputs_by_recipe = {}
+    recipe_id_col = "Key"
+    for _, r in recipe_inputs_df.iterrows():
+        rid = r[recipe_id_col]
+        ticker = r['Material']
+        qty = r['Amount']
+        inputs_by_recipe.setdefault(rid, {})[ticker] = qty
+    return inputs_by_recipe
 
 def main():
     print("\n\033[1;35m[UNIFIED PROCESSOR]\033[0m")

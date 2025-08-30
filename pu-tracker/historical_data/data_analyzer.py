@@ -35,16 +35,18 @@ class UnifiedAnalysisProcessor:
         self.target_columns = [
             'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe', 
             'Amount per Recipe', 'Weight', 'Volume', 
-            'Ask Price', 'Bid Price',  # <-- Add these
-            'Input Cost per Unit', 'Input Cost per Stack', 
+            'Ask_Price', 'Bid_Price',
+            'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour',
             'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
             'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
             'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Volatility',
-            'Exchange'  # <-- Add this
+            'Exchange'
         ]
         
         self._materials_cache = None
         self._materials_mtime = None
+        self.buildingrecipes_df = self.load_buildingrecipes()
+        self.workforceneeds = self.load_workforceneeds()
         
     def load_cache_data(self):
         print("\n\033[1;36m[STEP]\033[0m Loading cache data...")
@@ -271,13 +273,43 @@ class UnifiedAnalysisProcessor:
                     continue
         return 1
 
+    def load_buildingrecipes(self):
+        path = self.cache_dir / "buildingrecipes.csv"
+        if not path.exists():
+            print("[WARN] buildingrecipes.csv not found, workforce costs will be skipped.")
+            return None
+        df = pd.read_csv(path)
+        # Use 'Key' as the recipe identifier
+        if "Key" not in df.columns:
+            print("[WARN] buildingrecipes.csv missing 'Key' column.")
+            return None
+        return df.set_index("Key")
+
+    def load_workforceneeds(self):
+        path = self.cache_dir / "workforceneeds.json"
+        if not path.exists():
+            print("[WARN] workforceneeds.json not found, using static mapping.")
+            return {}
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        # Convert to: { "Pioneers": {"RAT": 0.5, ...}, ... }
+        needs = {}
+        for wf in data:
+            name = wf.get("name")
+            needs[name] = {}
+            for need in wf.get("needs", []):
+                ticker = need.get("ticker")
+                per_hour = need.get("amountPerWorkerPerHour")
+                needs[name][ticker] = per_hour
+        return needs
+
     def calculate_input_cost(self, ticker, market_prices):
         """
         For a given product ticker, find all recipes that produce it.
-        For each recipe, sum the cost of all inputs (from recipe_inputs.csv) using market prices.
+        For each recipe, sum the cost of all inputs (from recipe_inputs.csv) using market prices,
+        plus workforce consumables for the recipe time (from workforceneeds.json).
         Return the minimum input cost found (best recipe).
         """
-        # Find all recipes that produce this ticker
         recipes = self.recipe_outputs[self.recipe_outputs['Material'] == ticker]
         if recipes.empty:
             return 0  # No recipe found
@@ -285,14 +317,43 @@ class UnifiedAnalysisProcessor:
         min_cost = None
         for _, recipe_row in recipes.iterrows():
             recipe_key = recipe_row['Key']
-            # Find all inputs for this recipe
+            # 1. Material input cost
             inputs = self.recipe_inputs[self.recipe_inputs['Key'] == recipe_key]
-            total_cost = 0
+            material_input_cost = 0
             for _, inp in inputs.iterrows():
                 input_ticker = inp['Material']
-                amount = inp['Amount']
-                price = market_prices.get(input_ticker, 0)
-                total_cost += amount * price
+                try:
+                    amount = float(inp['Amount'])
+                except Exception:
+                    amount = 0
+                price = float(market_prices.get(input_ticker, 0))
+                material_input_cost += amount * price
+
+            # 2. Workforce consumable cost
+            workforce_cost = 0
+            if self.buildingrecipes_df is not None and recipe_key in self.buildingrecipes_df.index:
+                recipe_info = self.buildingrecipes_df.loc[recipe_key]
+                try:
+                    time_minutes = float(recipe_info.get("Time", 0))
+                    time_hours = time_minutes / 60
+                    workforce_type = recipe_info.get("Workforce", None)
+                    workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
+                    if workforce_type and workforce_type in self.workforceneeds:
+                        consumables = self.workforceneeds[workforce_type]
+                        for item, per_hour in consumables.items():
+                            try:
+                                total_needed = float(per_hour) * workforce_amount * time_hours
+                            except Exception:
+                                total_needed = 0
+                            price = float(market_prices.get(item, 0))
+                            workforce_cost += total_needed * price
+                    else:
+                        if workforce_type:
+                            print(f"[WARN] Workforce type '{workforce_type}' not found in workforceneeds.json")
+                except Exception as e:
+                    print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
+
+            total_cost = material_input_cost + workforce_cost
             if min_cost is None or total_cost < min_cost:
                 min_cost = total_cost
         return min_cost if min_cost is not None else 0
@@ -362,169 +423,102 @@ class UnifiedAnalysisProcessor:
         
         # Generate analysis data
         analysis_data = []
-        
-        # If you have price_history loaded:
-        # price_history = pd.read_csv(self.cache_dir / 'prices_all.csv')  # Example
 
         for _, row in base_df.iterrows():
-            # Get ticker/material identification
-            ticker = self.get_ticker_from_row(row)
-            if not ticker:
-                continue
-                
-            # Basic material info
-            info = self.get_material_info(ticker)
-            material_name = info['Material Name']
-            category = info['Category']
-            tier = info['Tier']
-            weight = info['Weight']
-            volume = info['Volume']
-            
-            # Recipe info
-            recipe = self.get_recipe(ticker)
-            amount_per_recipe = self.parse_output_amount_from_recipe(recipe, ticker)
-            input_cost = self.calculate_input_cost(ticker, market_prices)
-            input_cost_per_unit = input_cost / amount_per_recipe if amount_per_recipe else 0
-            input_cost_per_stack = input_cost_per_unit * amount_per_recipe
-            
-            # Market data
-            current_price = self.get_price_data(row, 'current')
-            ask_price = self.get_price_data(row, 'ask') or current_price
-            bid_price = self.get_price_data(row, 'bid') or current_price
-            supply = self.get_market_data(row, 'supply')
-            demand = self.get_market_data(row, 'demand')
-            traded_volume = self.get_market_data(row, 'traded') or (supply + demand if supply and demand else 0)
-            
-            # Calculate profits
-            profit_per_unit = current_price - input_cost_per_unit if current_price and input_cost_per_unit else 0
-            profit_per_stack = profit_per_unit * 100
-            
-            # Calculate ROI
-            roi_ask, roi_bid = self.calculate_roi_ask_bid(ask_price, bid_price, input_cost_per_unit)
-            
-            # Calculate market metrics
-            market_cap = current_price * supply if current_price and supply else 0
-            liquidity_ratio = (traded_volume / supply * 100) if supply > 0 else 0
-            saturation = self.calculate_saturation(supply, demand, traded_volume)
-            
-            # Compute volatility if price_history is available
-            price_volatility = None
-            vw_volatility = None
-            # Uncomment and use if you have price_history loaded
-            # if 'price_history' in locals():
-            #     price_volatility, vw_volatility = self.compute_volatility(price_history, material_name)
-            
-            # Calculate scores
-            investment_score = self.calculate_investment_score(
-                roi_ask, liquidity_ratio, saturation, supply, demand, traded_volume, price_volatility
-            )
-            risk_level = self.calculate_risk_level(
-                saturation, liquidity_ratio, profit_per_unit, traded_volume, supply, demand, price_volatility
-            )
-
-            # Build row
+            ticker = row['Ticker']
+            material_info = self.get_material_info(ticker)
             analysis_row = {
-                'Material Name': material_name,
+                'Material Name': material_info.get('Material Name', ''),
                 'Ticker': ticker,
-                'Category': category,
-                'Tier': tier,
-                'Recipe': recipe,
-                'Amount per Recipe': amount_per_recipe,
-                'Weight': weight,
-                'Volume': volume,
-                'Ask Price': ask_price,
-                'Bid Price': bid_price,
-                'Input Cost per Unit': input_cost_per_unit,
-                'Input Cost per Stack': input_cost_per_stack,
-                'Profit per Unit': profit_per_unit,
-                'Profit per Stack': profit_per_stack,
-                'ROI Ask %': roi_ask,
-                'ROI Bid %': roi_bid,
-                'Supply': supply,
-                'Demand': demand,
-                'Traded Volume': traded_volume,
-                'Saturation': saturation,
-                'Market Cap': market_cap,
-                'Liquidity Ratio': liquidity_ratio,
-                'Investment Score': investment_score,
-                'Risk Level': risk_level,
-                'Volatility': price_volatility if price_volatility is not None else abs(roi_ask - roi_bid) if roi_ask and roi_bid else 0
+                'Category': material_info.get('Category', ''),
+                'Tier': material_info.get('Tier', ''),
+                'Recipe': self.get_recipe(ticker),
+                'Amount per Recipe': self.get_amount_per_recipe(ticker),
+                'Weight': material_info.get('Weight', ''),
+                'Volume': material_info.get('Volume', ''),
+                'Ask_Price': row.get('Ask_Price', ''),
+                'Bid_Price': row.get('Bid_Price', ''),
+                'Input Cost per Unit': row.get('Input Cost per Unit', ''),
+                'Input Cost per Stack': row.get('Input Cost per Stack', ''),
+                'Input Cost per Hour': row.get('Input Cost per Hour', ''),
+                'Profit per Unit': row.get('Profit_Ask', ''),
+                'Profit per Stack': '',  # You can compute this if needed
+                'ROI Ask %': row.get('ROI_Ask', ''),
+                'ROI Bid %': row.get('ROI_Bid', ''),
+                'Supply': row.get('Supply', ''),
+                'Demand': row.get('Demand', ''),
+                'Traded Volume': row.get('Traded', row.get('Traded Volume', 0)),  # Ensure this is filled
+                'Saturation': row.get('Saturation', ''),
+                'Market Cap': '',  # Compute if you have the data
+                'Liquidity Ratio': '',  # Compute if you have the data
+                'Investment Score': row.get('Investment_Score', ''),
+                'Risk Level': row.get('Risk', ''),
+                'Volatility': '',  # Compute if you have the data
+                'Exchange': row.get('Exchange', ''),
             }
-            # Add Exchange if present in base_df
-            if 'Exchange' in row:
-                analysis_row['Exchange'] = row['Exchange']
-            else:
-                analysis_row['Exchange'] = ''  # or set to None
-
             analysis_data.append(analysis_row)
-            
-        # Create final DataFrame
+
         result_df = pd.DataFrame(analysis_data)
-        
-        # Ensure all target columns exist
+        # Ensure all required columns are present and in the correct order
         for col in self.target_columns:
             if col not in result_df.columns:
-                result_df[col] = None
-                
-        # Reorder columns
+                result_df[col] = ""
         result_df = result_df[self.target_columns]
-        
-        # Fill NA values for ROI columns with 0 for normalization
-        result_df[['ROI Ask %', 'ROI Bid %']] = result_df[['ROI Ask %', 'ROI Bid %']].fillna(0)
 
-        # Penalize negative ROI Ask % by setting them to zero (or a small negative weight if you want to keep them visible)
-        result_df['ROI Ask %'] = result_df['ROI Ask %'].apply(lambda x: x if x > 0 else 0)
+        # --- ENSURE CORRECT COLUMN NAMES FOR DOWNSTREAM ---
+        rename_map = {
+            'Profit_Ask': 'Profit per Unit',
+            'Profit per Unit': 'Profit per Unit',
+            'ROI_Ask': 'ROI Ask %',
+            'ROI Bid %': 'ROI Bid %',
+            'Traded': 'Traded Volume',
+            'Traded Volume': 'Traded Volume',
+        }
+        result_df = result_df.rename(columns=rename_map)
 
-        # Normalize columns (0-1 scale)
-        scaler = MinMaxScaler()
-        result_df[['ROI_Norm', 'Liquidity_Norm', 'Saturation_Norm']] = scaler.fit_transform(
-            result_df[['ROI Ask %', 'Liquidity Ratio', 'Saturation']]
+        # Add missing columns for upload compatibility
+        for col in [
+            'ROI Ask %', 'ROI Bid %', 'Traded Volume'
+        ]:
+            if col not in result_df.columns:
+                result_df[col] = 0
+
+        # Add/correct formulas for missing columns
+        result_df['Profit per Unit'] = pd.to_numeric(result_df['Ask_Price'], errors='coerce').fillna(0) - pd.to_numeric(result_df['Input Cost per Unit'], errors='coerce').fillna(0)
+        # FIX: Use Amount per Recipe for stack calculation
+        result_df['Input Cost per Stack'] = result_df['Input Cost per Unit'] * result_df['Amount per Recipe']
+        result_df['Profit per Stack'] = result_df['Profit per Unit'] * result_df['Amount per Recipe']
+        result_df['ROI Ask %'] = result_df.apply(
+            lambda row: (row['Profit per Unit'] / row['Input Cost per Unit'] * 100) if row['Input Cost per Unit'] > 0 else 0,
+            axis=1
         )
+        result_df['ROI Bid %'] = result_df.apply(
+            lambda row: ((row['Bid_Price'] - row['Input Cost per Unit']) / row['Input Cost per Unit'] * 100) if row['Input Cost per Unit'] > 0 else 0,
+            axis=1
+        )
+        result_df['Saturation'] = result_df.apply(
+            lambda row: min(200.0, round((row['Supply'] / row['Demand']) * 100, 2)) if row['Demand'] > 0 else 100.0,
+            axis=1
+        )
+        result_df['Market Cap'] = result_df['Supply'] * result_df['Ask_Price']
+        result_df['Liquidity Ratio'] = result_df.apply(
+            lambda row: row['Traded Volume'] / (row['Supply'] + row['Demand']) if (row['Supply'] + row['Demand']) > 0 else 0,
+            axis=1
+        )
+        result_df['Risk Level'] = result_df.apply(
+            lambda row: 'High' if row['Ask_Price'] > 0 and (row['Ask_Price'] - row['Bid_Price']) > row['Ask_Price'] * 0.2
+            else ('Medium' if row['Ask_Price'] > 0 and (row['Ask_Price'] - row['Bid_Price']) > row['Ask_Price'] * 0.1
+            else 'Low'),
+            axis=1
+        )
+        result_df['Input Cost per Stack'] = result_df['Input Cost per Unit'] * result_df['Amount per Recipe']
 
-        # Invert saturation (lower is better)
-        result_df['Saturation_Norm'] = 1 - result_df['Saturation_Norm']
+        # --- ADD THIS: Apply the new investment score ---
+        result_df['Investment Score'] = result_df.apply(self.compute_investment_score, axis=1)
 
-        # Add volatility and market cap normalization if available
-        if 'Volatility' in result_df.columns:
-            result_df['Volatility_Norm'] = 1 - scaler.fit_transform(result_df[['Volatility']])
-        else:
-            result_df['Volatility_Norm'] = 1
-
-        if 'Market Cap' in result_df.columns:
-            result_df['MarketCap_Norm'] = scaler.fit_transform(result_df[['Market Cap']])
-        else:
-            result_df['MarketCap_Norm'] = 1
-
-        # Normalize Traded Volume (0-1 scale)
-        if 'Traded Volume' in result_df.columns:
-            result_df['TradedVolume_Norm'] = scaler.fit_transform(result_df[['Traded Volume']])
-        else:
-            result_df['TradedVolume_Norm'] = 0
-
-        # Normalize Profit per Unit (0-1 scale)
-        if 'Profit per Unit' in result_df.columns:
-            result_df['Profit_Norm'] = MinMaxScaler().fit_transform(result_df[['Profit per Unit']])
-        else:
-            result_df['Profit_Norm'] = 0
-
-        # Weighted sum (adjust weights as needed)
-        result_df['Investment Score'] = (
-            0.30 * result_df['ROI_Norm'] +
-            0.20 * result_df['Liquidity_Norm'] +
-            0.15 * result_df['Saturation_Norm'] +
-            0.10 * result_df['Profit_Norm'] +         # <-- Add profit here!
-            0.05 * result_df['Volatility_Norm'] +
-            0.05 * result_df['MarketCap_Norm'] +
-            0.15 * result_df['TradedVolume_Norm']
-        ) * 100
-        
-        # Save result
-        output_path = self.cache_dir / 'daily_analysis_enhanced.csv'
-        result_df.to_csv(output_path, index=False)
-        
-        print(f"\n Generated analysis: {len(result_df)} rows, 24 columns")
-        print(f" Saved to: {output_path}")
-        
+        result_df.to_csv(self.cache_dir / "daily_analysis_enhanced.csv", index=False)
+        print(f"\n Generated analysis: {len(result_df)} rows, {len(result_df.columns)} columns")
+        print(f" Saved to: {self.cache_dir / 'daily_analysis_enhanced.csv'}")
         return result_df
         
     def get_ticker_from_row(self, row):
@@ -581,6 +575,61 @@ class UnifiedAnalysisProcessor:
         )
         return mat_hist['Price_Std'].iloc[-1], mat_hist['VW_Volatility'].iloc[-1]
 
+    @staticmethod
+    def compute_investment_score(row):
+        """
+        Compute a robust investment score for PrUn-Tracker.
+        Returns a value between 0 (avoid) and 100 (top investment).
+        """
+        def to_num(val, default=0):
+            try:
+                return float(val)
+            except Exception:
+                return default
+
+        roi = max(to_num(row.get('ROI Ask %', 0)), to_num(row.get('ROI Bid %', 0)))
+        profit = max(to_num(row.get('Profit per Unit', 0)), 0)
+        liquidity_ratio = to_num(row.get('Liquidity Ratio', 0))
+        traded = to_num(row.get('Traded Volume', 0))
+        supply = to_num(row.get('Supply', 0))
+        demand = to_num(row.get('Demand', 0))
+        saturation = to_num(row.get('Saturation', 100))
+        spread = abs(to_num(row.get('Ask_Price', 0)) - to_num(row.get('Bid_Price', 0)))
+        ask_price = to_num(row.get('Ask_Price', 0))
+        volatility = to_num(row.get('Volatility', 0))
+
+        if demand < 1 or supply < 1 or traded < 1:
+            return 0
+        if roi <= 0 or profit <= 0:
+            return 0
+        if ask_price <= 0:
+            return 0
+
+        roi_score = min(roi / 50, 1)
+        liquidity_score = min(liquidity_ratio / 0.2, 1)
+        traded_score = min(traded / 1000, 1)
+        saturation_score = 1 - abs(saturation - 100) / 100
+        spread_score = 1 - min(spread / ask_price, 1) if ask_price else 0
+        volatility_score = 1 - min(volatility / 50, 1)
+
+        score = (
+            0.35 * roi_score +
+            0.20 * liquidity_score +
+            0.15 * traded_score +
+            0.10 * saturation_score +
+            0.10 * spread_score +
+            0.10 * volatility_score
+        ) * 100
+
+        if saturation > 180 or saturation < 20:
+            score *= 0.7
+        if ask_price and spread / ask_price > 0.5:
+            score *= 0.7
+        if volatility > 50:
+            score *= 0.7
+
+        return round(score, 2)
+
 def main():
     print("\n\033[1;35m[DATA ANALYZER]\033[0m")
     """Main entry point"""
@@ -598,7 +647,7 @@ def main():
             print(f" File size: {output_file.stat().st_size / 1024:.1f} KB")
             # Show sample data
             print(f"\n Sample data (first 3 rows):")
-            print(result.head(3)[['Material Name', 'Ticker', 'Ask Price', 'Bid Price', 'Investment Score']].to_string())
+            print(result.head(3)[['Material Name', 'Ticker', 'Ask_Price', 'Bid_Price', 'Investment Score']].to_string())
             return True
         else:
             print(f"\n FAILED: Could not generate analysis")

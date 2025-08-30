@@ -2,8 +2,6 @@ import pandas as pd
 from pathlib import Path
 import sys
 import time
-import math
-import os
 import concurrent.futures
 
 try:
@@ -24,36 +22,29 @@ REPORT_COLUMNS = [
     "Buy Exchange", "Sell Exchange", "ROI", "Opportunity Size", "Opportunity Level"
 ]
 
-def section_header(title):
-    return [[title.upper()] + [""] * (len(REPORT_COLUMNS) - 1)]
+def section_header(title, width):
+    return [[title.upper()] + [""] * (width - 1)]
 
 def summary_section(df):
-    total_arbitrage = len(df[df['Profit per Unit'] > 0])
-    avg_profit = df['Profit per Unit'].mean()
-    avg_roi = df['ROI Ask %'].mean()
-    high_risk = (df['Risk Level'] == 'High').sum()
+    width = 4
+    # --- ENSURE COLUMN NAMES EXIST ---
+    profit_col = 'Profit per Unit' if 'Profit per Unit' in df.columns else 'Profit_Ask'
+    roi_col = 'ROI_Ask' if 'ROI_Ask' in df.columns else 'ROI Ask %'
     rows = [
-        ["Key", "Value"] + [""] * (len(REPORT_COLUMNS) - 2),
-        ["Total Arbitrage Opportunities", total_arbitrage] + [""] * (len(REPORT_COLUMNS) - 2),
-        ["Avg Profit", f"${avg_profit:,.2f}"] + [""] * (len(REPORT_COLUMNS) - 2),
-        ["Avg ROI", f"{avg_roi:.2f}%"] + [""] * (len(REPORT_COLUMNS) - 2),
-        ["High Risk Products", high_risk] + [""] * (len(REPORT_COLUMNS) - 2),
-        [""] * len(REPORT_COLUMNS)
+        ["SUMMARY", "", "", ""],
+        ["Total Products", len(df), "", ""],
+        ["Average Profit", f"{df[profit_col].mean():,.2f}" if profit_col in df else "", "", ""],
+        ["Average ROI", f"{df[roi_col].mean():.2f}%" if roi_col in df else "", "", ""],
+        ["", "", "", ""]
     ]
-    return section_header("Summary") + rows
+    return rows
 
 def arbitrage_section(arbitrage_df, exch, top_n=None, orders_df=None):
-    """
-    List all arbitrage opportunities for the given exchange.
-    Includes all opportunities with profit > 0 and opportunity size > 0, sorted by level and size.
-    Adds a subheader row.
-    """
     df = arbitrage_df[arbitrage_df['Buy Exchange'] == exch].copy()
-    # Only keep real opportunities
     df = df[(df['Profit'] > 0) & (df['Opportunity Size'] > 0)]
     level_order = {'Very High': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Very Low': 4}
     df['LevelSort'] = df['Opportunity Level'].map(level_order).astype('float64').fillna(99)
-    df = df.sort_values(['LevelSort', 'Opportunity Size'], ascending=[True, False])
+    df = df.sort_values(['Sell Exchange', 'LevelSort', 'Opportunity Size'], ascending=[True, True, False])
     df = df.drop(columns=['LevelSort'])
     for col in ["Buy Price", "Sell Price", "Profit"]:
         if col in df.columns:
@@ -61,7 +52,7 @@ def arbitrage_section(arbitrage_df, exch, top_n=None, orders_df=None):
             df[col] = df[col].map('{:,.2f}'.format)
     subheader = REPORT_COLUMNS
     rows = df[REPORT_COLUMNS].values.tolist()
-    return section_header("Arbitrage Opportunities") + [subheader] + rows + [[""] * len(subheader)]
+    return section_header("Arbitrage Opportunities", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
 def buy_vs_produce_section(df, exch, top_n=None):
     all_tickers = df['Ticker'].unique()
@@ -69,14 +60,32 @@ def buy_vs_produce_section(df, exch, top_n=None):
     subheader = ["Name", "Ticker", "Buy Price", "Produce Cost", "Difference", "Recommendation", "Level", "Trend"]
     for ticker in all_tickers:
         ticker_rows = df[df['Ticker'] == ticker]
-        row = ticker_rows[ticker_rows['Exchange'] == exch].iloc[0] if 'Exchange' in ticker_rows.columns and not ticker_rows[ticker_rows['Exchange'] == exch].empty else ticker_rows.iloc[0]
-        buy_price = row.get('Ask Price', 0) if not pd.isna(row.get('Ask Price', 0)) else 0
-        produce_cost = row.get('Input Cost per Unit', 0) if not pd.isna(row.get('Input Cost per Unit', 0)) else 0
-        # --- FILTER: Only include if buy_price > 0 ---
-        if not buy_price or buy_price == 0:
-            continue
+        if ticker_rows.empty:
+            continue  # <-- skip if no rows for this ticker
+        exch_rows = ticker_rows[ticker_rows['Exchange'] == exch] if 'Exchange' in ticker_rows.columns else ticker_rows
+        if not exch_rows.empty:
+            row = exch_rows.iloc[0]
+        else:
+            row = ticker_rows.iloc[0]
+        # Try both possible column names for Ask Price
+        buy_price = (
+            row.get('Ask Price', None)
+            if 'Ask Price' in row else
+            row.get('Ask_Price', None)
+        )
+        if buy_price is None or pd.isna(buy_price):
+            buy_price = 0
+        produce_cost = (
+            row.get('Input Cost per Unit', None)
+            if 'Input Cost per Unit' in row else
+            row.get('Input_Cost_per_Unit', None)
+        )
+        if produce_cost is None or pd.isna(produce_cost):
+            produce_cost = 0
+        # Optionally, comment out this filter to show all tickers:
+        # if not buy_price or buy_price == 0:
+        #     continue
         diff = buy_price - produce_cost
-        # Recommendation logic
         if diff < -100:
             rec, level = "Buy", "High"
         elif diff < -20:
@@ -100,7 +109,6 @@ def buy_vs_produce_section(df, exch, top_n=None):
             level,
             trend
         ])
-    # Custom sort: Buy (by abs(diff) desc), then Produce (by abs(diff) desc), then Neutral, then Depends
     def sort_key(x):
         rec_order = {"Buy": 0, "Produce": 1, "Neutral": 2, "Depends": 3}
         rec = x[5]
@@ -110,79 +118,203 @@ def buy_vs_produce_section(df, exch, top_n=None):
             diff_val = 0
         return (rec_order.get(rec, 99), -diff_val)
     rows = sorted(rows, key=sort_key)
-    return section_header("Buy vs Produce") + [subheader] + rows + [[""] * len(subheader)]
+    return section_header("Buy vs Produce", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
 def top_invest_section(df, exch, top_n=20):
+    df = df.copy()
+    # Use Bid/Ask for profit if available
+    if "Buy Price" not in df.columns and "Ask_Price" in df.columns:
+        df["Buy Price"] = df["Ask_Price"]
+    if "Sell Price" not in df.columns and "Bid_Price" in df.columns:
+        df["Sell Price"] = df["Bid_Price"]
+    # Use Bid/Ask profit if possible
+    if "Bid_Price" in df.columns and "Ask_Price" in df.columns:
+        df["Profit"] = df["Bid_Price"] - df["Ask_Price"]
+    elif "Sell Price" in df.columns and "Buy Price" in df.columns:
+        df["Profit"] = df["Sell Price"] - df["Buy Price"]
+    else:
+        df["Profit"] = 0
+    # --- FILL 'Investment Score' IF MISSING ---
+    if "Investment Score" not in df.columns and "Investment_Score" in df.columns:
+        df["Investment Score"] = df["Investment_Score"]
     top_invest = df.sort_values("Investment Score", ascending=False).head(top_n)
-    subheader = ["Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit", "Buy Exchange", "Sell Exchange", "Investment Score"]
+    subheader = ["Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit", "Investment Score"]
     rows = []
     for _, row in top_invest.iterrows():
         rows.append([
-            row['Ticker'],
-            row['Material Name'],
-            row.get('Product', ''),
-            f"{row['Ask Price']:,.2f}",
-            f"{row['Bid Price']:,.2f}",
-            f"{row['Profit per Unit']:,.2f}",
-            exch, exch,
-            f"{row['Investment Score']:,.2f}"
+            row.get("Ticker", ""),
+            row.get("Name", row.get("Material Name", "")),
+            row.get("Product", ""),
+            row.get("Buy Price", ""),
+            row.get("Sell Price", ""),
+            row.get("Profit", ""),
+            row.get("Investment Score", ""),
         ])
-    return section_header("Top 20 Materials to Invest In") + [subheader] + rows + [[""] * len(REPORT_COLUMNS)]
+    return section_header("TOP MATERIALS TO INVEST IN", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
-def bottleneck_section(df, exch, top_n=20):
-    bottlenecks = df[(df['Supply'] < 100) & (df['Demand'] > 500)].sort_values("Demand", ascending=False).head(top_n)
-    subheader = ["Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit", "Buy Exchange", "Sell Exchange", "Demand"]
+def bottleneck_section(df, exch, top_n=None):
+    df = df.copy()
+    # Add this block to ensure Sell Price exists
+    if "Sell Price" not in df.columns and "Bid_Price" in df.columns:
+        df["Sell Price"] = df["Bid_Price"]
+    if "Buy Price" not in df.columns and "Ask_Price" in df.columns:
+        df["Buy Price"] = df["Ask_Price"]
+    if "Input Cost per Unit" not in df.columns:
+        df["Input Cost per Unit"] = 0
+    df["Profit"] = df["Sell Price"] - df["Input Cost per Unit"]
+
+    # Add InputCount if available
+    if "InputCount" not in df.columns and "Ticker" in df.columns:
+        recipe_inputs_path = Path(__file__).parent.parent / "cache" / "recipe_inputs.csv"
+        if recipe_inputs_path.exists():
+            recipe_inputs = pd.read_csv(recipe_inputs_path)
+            input_counts = recipe_inputs['Material'].value_counts().to_dict()
+            df['InputCount'] = df['Ticker'].map(input_counts).fillna(0)
+        else:
+            df['InputCount'] = 0
+
+    # Normalize for composite score
+    df['SupplyNorm'] = 1 - (df['Supply'] / (df['Supply'].max() or 1))
+    df['DemandNorm'] = df['Demand'] / (df['Demand'].max() or 1)
+    df['ProfitNorm'] = df['Profit'] / (df['Profit'].max() or 1)
+    df['InputNorm'] = df['InputCount'] / (df['InputCount'].max() or 1)
+
+    # Composite score (tune weights as needed)
+    df['BottleneckScore'] = (
+        0.4 * df['SupplyNorm'] +
+        0.3 * df['DemandNorm'] +
+        0.2 * df['ProfitNorm'] +
+        0.1 * df['InputNorm']
+    )
+
+    # Filter: show only items with high score (top 20% or score > 0.6)
+    score_thresh = df['BottleneckScore'].quantile(0.8)
+    filtered = df[df['BottleneckScore'] >= score_thresh]
+
+    if filtered.empty:
+        return section_header("CHOKEPOINTS/BOTTLENECKS", 10) + [[""] * 10]
+
+    # Compute Chokepoint Type and Level
+    chokepoint_types = []
+    levels = []
+    for _, row in filtered.iterrows():
+        supply = row.get("Supply", 0)
+        demand = row.get("Demand", 0)
+        if supply < 100 and demand > 0:
+            ctype = "Low Supply & High Demand"
+        elif supply < 100:
+            ctype = "Low Supply"
+        elif demand > 0:
+            ctype = "High Demand"
+        else:
+            ctype = ""
+        if supply < 25 or demand > 500:
+            level = "High"
+        elif supply < 60 or demand > 200:
+            level = "Medium"
+        else:
+            level = "Low"
+        chokepoint_types.append(ctype)
+        levels.append(level)
+    filtered = filtered.copy()
+    filtered["Chokepoint Type"] = chokepoint_types
+    filtered["Level"] = levels
+
+    # Filter out rows with empty Chokepoint Type
+    filtered = filtered[filtered["Chokepoint Type"] != ""]
+
+    # Sort by Chokepoint Type, then Level (High > Medium > Low)
+    level_order = {"High": 0, "Medium": 1, "Low": 2}
+    filtered["LevelSort"] = filtered["Level"].map(level_order)
+    filtered = filtered.sort_values(["Chokepoint Type", "LevelSort"])
+    subheader = [
+        "Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit",
+        "Supply", "Demand", "Chokepoint Type", "Level"
+    ]
     rows = []
-    for _, row in bottlenecks.iterrows():
+    for _, row in filtered.iterrows():
         rows.append([
-            row['Ticker'],
-            row['Material Name'],
-            row.get('Product', ''),
-            f"{row['Ask Price']:,.2f}",
-            f"{row['Bid Price']:,.2f}",
-            f"{row['Profit per Unit']:,.2f}",
-            exch, exch,
-            f"{row['Demand']:,.0f}"
+            row.get("Ticker", ""),
+            row.get("Name", row.get("Material Name", "")),
+            row.get("Product", ""),
+            row.get("Buy Price", ""),
+            row.get("Sell Price", ""),
+            row.get("Profit", ""),
+            row.get("Supply", ""),
+            row.get("Demand", ""),
+            row.get("Chokepoint Type", ""),
+            row.get("Level", "")
         ])
-    return section_header("Chokepoints/Bottlenecks") + [subheader] + rows + [[""] * len(REPORT_COLUMNS)]
+    return section_header("CHOKEPOINTS/BOTTLENECKS", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
-def pad_section(section, n_rows):
-    """Pad section (list of lists) to n_rows with empty rows."""
-    width = len(section[0])
+def pad_section(section, n_rows, width):
     while len(section) < n_rows:
         section.append([""] * width)
     return section
 
-def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None):
-    # Build each section as a list of lists
+def top_20_traded_section(market_data_path, exch=None):
+    df = pd.read_csv(market_data_path)
+    # Filter by exchange if provided and column exists
+    if exch and 'Exchange' in df.columns:
+        df = df[df['Exchange'] == exch]
+    # Show top 20 for this exchange
+    if 'Traded' in df.columns and 'Ticker' in df.columns:
+        traded = df.groupby('Ticker')['Traded'].sum().reset_index()
+        traded = traded.sort_values('Traded', ascending=False).head(20)
+        subheader = ["Ticker", "Total Traded Amount"]
+        rows = traded.values.tolist()
+    else:
+        amt_cols = [col for col in df.columns if col.endswith('Amt')]
+        if amt_cols and 'Ticker' in df.columns:
+            df['TotalAmt'] = df[amt_cols].sum(axis=1)
+            traded = df.groupby('Ticker')['TotalAmt'].sum().reset_index()
+            traded = traded.sort_values('TotalAmt', ascending=False).head(20)
+            subheader = ["Ticker", "Total Traded Amount"]
+            rows = traded.values.tolist()
+        else:
+            subheader = ["Ticker", "Total Traded Amount"]
+            rows = [["", ""]]
+    return section_header("Top Traded Products", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
+
+def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data_path=None):
     summary = summary_section(df)
     arbitrage = arbitrage_section(arbitrage_df, exch, orders_df=orders_df)
     buy_vs_produce = buy_vs_produce_section(all_df, exch)
     top_invest = top_invest_section(df, exch)
-    bottleneck = bottleneck_section(df, exch)
+    bottleneck = bottleneck_section(df, exch, top_n=20)
+    top_traded = top_20_traded_section(market_data_path, exch=exch) if market_data_path else []
 
-    # Find the max number of rows among all sections
-    max_rows = max(len(summary), len(arbitrage), len(buy_vs_produce), len(top_invest), len(bottleneck))
+    max_rows = max(len(summary), len(arbitrage), len(buy_vs_produce), len(top_invest), len(bottleneck), len(top_traded))
 
-    # Pad each section to the same number of rows
-    summary = pad_section(summary, max_rows)
-    arbitrage = pad_section(arbitrage, max_rows)
-    buy_vs_produce = pad_section(buy_vs_produce, max_rows)
-    top_invest = pad_section(top_invest, max_rows)
-    bottleneck = pad_section(bottleneck, max_rows)
+    summary = pad_section(summary, max_rows, len(summary[0]))
+    arbitrage = pad_section(arbitrage, max_rows, len(arbitrage[0]))
+    buy_vs_produce = pad_section(buy_vs_produce, max_rows, len(buy_vs_produce[0]))
+    top_invest = pad_section(top_invest, max_rows, len(top_invest[0]))
+    bottleneck = pad_section(bottleneck, max_rows, len(bottleneck[0]))
+    top_traded = pad_section(top_traded, max_rows, len(top_traded[0]))
 
-    # Convert each to DataFrame
+    # Debug: print section shapes
+    print("Section shapes:")
+    print("  summary:", len(summary[0]), "cols")
+    print("  arbitrage:", len(arbitrage[0]), "cols")
+    print("  buy_vs_produce:", len(buy_vs_produce[0]), "cols")
+    print("  top_invest:", len(top_invest[0]), "cols")
+    print("  bottleneck:", len(bottleneck[0]), "cols")
+    print("  top_traded:", len(top_traded[0]), "cols")
+
     summary_df = pd.DataFrame(summary)
     arbitrage_df = pd.DataFrame(arbitrage)
     buy_vs_produce_df = pd.DataFrame(buy_vs_produce)
     top_invest_df = pd.DataFrame(top_invest)
     bottleneck_df = pd.DataFrame(bottleneck)
+    top_traded_df = pd.DataFrame(top_traded)
 
-    # Concatenate horizontally
     report_df = pd.concat(
-        [summary_df, arbitrage_df, buy_vs_produce_df, top_invest_df, bottleneck_df],
+        [summary_df, arbitrage_df, buy_vs_produce_df, top_invest_df, bottleneck_df, top_traded_df],
         axis=1
     )
+    print("Final report_df shape:", report_df.shape)
+    print("First row of report_df:", report_df.iloc[0].tolist())
     return report_df
 
 def apply_report_tab_formatting(sheets_manager, sheet_name, df):
@@ -207,11 +339,12 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
 
     # Section info: (header, color, width)
     section_defs = [
-        ("SUMMARY", {"red": 0.2, "green": 0.4, "blue": 0.8}, len(REPORT_COLUMNS)),
+        ("SUMMARY", {"red": 0.2, "green": 0.4, "blue": 0.8}, 4),
         ("ARBITRAGE OPPORTUNITIES", {"red": 0.2, "green": 0.7, "blue": 0.2}, len(REPORT_COLUMNS)),
         ("BUY VS PRODUCE", {"red": 1.0, "green": 0.8, "blue": 0.2}, 8),
-        ("TOP 20 MATERIALS TO INVEST IN", {"red": 0.85, "green": 0.6, "blue": 0.15}, len(REPORT_COLUMNS)),
-        ("CHOKEPOINTS/BOTTLENECKS", {"red": 0.8, "green": 0.2, "blue": 0.2}, len(REPORT_COLUMNS)),
+        ("TOP MATERIALS TO INVEST IN", {"red": 0.85, "green": 0.6, "blue": 0.15}, 7),
+        ("CHOKEPOINTS/BOTTLENECKS", {"red": 0.8, "green": 0.2, "blue": 0.2}, 10),  # <-- was 9
+        ("TOP TRADED PRODUCTS", {"red": 0.5, "green": 0.2, "blue": 0.7}, 2),
     ]
 
     # Find section start columns by scanning the first row for each header
@@ -489,8 +622,8 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
                 }
             })
 
-    # 5. Top 20 Materials: Investment Score (yellow to green gradient)
-    invest_score_col = find_col_idx(section_starts, "TOP 20 MATERIALS TO INVEST IN", "Investment Score")
+    # 5. Top Materials: Investment Score (yellow to green gradient)
+    invest_score_col = find_col_idx(section_starts, "TOP MATERIALS TO INVEST IN", "Investment Score")
     if invest_score_col is not None:
         requests.append({
             "addConditionalFormatRule": {
@@ -511,6 +644,90 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
             }
         })
 
+    # Chokepoints: Level (color code)
+    bottleneck_level_col = find_col_idx(section_starts, "CHOKEPOINTS/BOTTLENECKS", "Level")
+    if bottleneck_level_col is not None:
+        for val, color in [("High", {"red": 0.8, "green": 0.2, "blue": 0.2}),
+                           ("Medium", {"red": 1, "green": 1, "blue": 0.2}),
+                           ("Low", {"red": 0.2, "green": 0.8, "blue": 0.2})]:
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": bottleneck_level_col,
+                            "endColumnIndex": bottleneck_level_col+1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": val}]
+                            },
+                            "format": {"backgroundColor": color, "textFormat": {"bold": True}}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
+    # Chokepoints: Chokepoint Type (distinct color for each type)
+    bottleneck_type_col = find_col_idx(section_starts, "CHOKEPOINTS/BOTTLENECKS", "Chokepoint Type")
+    if bottleneck_type_col is not None:
+        type_colors = {
+            "Low Supply & High Demand": {"red": 0.8, "green": 0.4, "blue": 0.0},
+            "Low Supply": {"red": 0.2, "green": 0.6, "blue": 0.9},
+            "High Demand": {"red": 0.9, "green": 0.8, "blue": 0.2},
+            "": {"red": 1, "green": 1, "blue": 1}  # Default for empty
+        }
+        for val, color in type_colors.items():
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": bottleneck_type_col,
+                            "endColumnIndex": bottleneck_type_col+1
+                        }],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "TEXT_EQ",
+                                "values": [{"userEnteredValue": val}]
+                            },
+                            "format": {"backgroundColor": color, "textFormat": {"bold": True}}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
+    # --- ARBITRAGE SECTION: Visual Borders Between Sell Exchanges ---
+    arb_section = next(((col_idx, width) for col_idx, _, width, header in section_starts if header == "ARBITRAGE OPPORTUNITIES"), None)
+    if arb_section:
+        arb_start_col, arb_width = arb_section
+        # Find the rows for bottom border
+        bottom_border_rows = find_arbitrage_bottom_border_rows(df, arb_start_col, arb_width)
+        for row_idx in bottom_border_rows:
+            requests.append({
+                "updateBorders": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx + 1,  # +1 because Google Sheets is 0-based and header rows
+                        "endRowIndex": row_idx + 2,
+                        "startColumnIndex": arb_start_col,
+                        "endColumnIndex": arb_start_col + arb_width
+                    },
+                    "bottom": {
+                        "style": "SOLID_THICK",
+                        "width": 2,
+                        "color": {"red": 0, "green": 0, "blue": 0}
+                    }
+                }
+            })
+
     # Send batchUpdate request
     if requests:
         try:
@@ -523,49 +740,47 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
             print(f" Formatting failed for {sheet_name}: {e}")
 
 def compute_arbitrage_opportunities(df, orders_df=None):
+    """
+    Compute arbitrage opportunities using full order book crossing.
+    For each ticker, for each buy/sell exchange pair, simulate crossing asks and bids.
+    Returns a DataFrame with weighted average buy/sell price, profit per unit, ROI, and opportunity size.
+    """
     arbitrage_rows = []
     exchanges = df['Exchange'].unique()
     tickers = df['Ticker'].unique()
 
-    def process_ticker(ticker):
-        mat_rows = df[df['Ticker'] == ticker]
-        ticker_arbitrage_rows = []
+    for ticker in tickers:
         for buy_ex in exchanges:
-            buy_row = mat_rows[mat_rows['Exchange'] == buy_ex]
-            if buy_row.empty:
-                continue
-            buy_price = buy_row.iloc[0].get('Ask Price', None)
-            name = buy_row.iloc[0].get('Material Name', ticker)
-            product = buy_row.iloc[0].get('Product', '')
-            if pd.isna(buy_price) or buy_price == 0:
-                continue
             for sell_ex in exchanges:
-                if sell_ex == buy_ex:
+                if buy_ex == sell_ex:
                     continue
-                sell_row = mat_rows[mat_rows['Exchange'] == sell_ex]
-                if sell_row.empty:
-                    continue
-                sell_price = sell_row.iloc[0].get('Bid Price', None)
-                if pd.isna(sell_price) or sell_price == 0:
-                    continue
-                # Use the correct function here:
                 if orders_df is not None:
-                    size, total_profit, _ = compute_arbitrage_opportunity_size(orders_df, ticker, buy_ex, sell_ex)
-                else:
-                    size = 0
-                    total_profit = 0
-                profit_per_unit = sell_price - buy_price if (sell_price and buy_price) else 0
-                roi = (profit_per_unit / buy_price * 100) if buy_price else 0
-                ticker_arbitrage_rows.append([
-                    ticker, name, product, buy_price, sell_price, profit_per_unit,
-                    buy_ex, sell_ex, roi, size, None  # Opportunity Level assigned later
-                ])
-        return ticker_arbitrage_rows
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_ticker, tickers))
-    for rows in results:
-        arbitrage_rows.extend(rows)
+                    size, total_profit, matches = compute_arbitrage_opportunity_size(orders_df, ticker, buy_ex, sell_ex)
+                    if size > 0 and matches:
+                        # Weighted average buy/sell price for matched units
+                        total_buy = sum(m[0] * m[2] for m in matches)
+                        total_sell = sum(m[1] * m[2] for m in matches)
+                        avg_buy = total_buy / size if size else 0
+                        avg_sell = total_sell / size if size else 0
+                        profit_per_unit = total_profit / size if size else 0
+                        roi = (profit_per_unit / avg_buy * 100) if avg_buy > 0 else 0
+                        # Get name/product from df
+                        mat_rows = df[df['Ticker'] == ticker]
+                        name = mat_rows.iloc[0].get('Material Name', ticker) if not mat_rows.empty else ticker
+                        product = mat_rows.iloc[0].get('Product', '') if not mat_rows.empty else ''
+                        arbitrage_rows.append([
+                            ticker,
+                            name,
+                            product,
+                            round(avg_buy, 2),
+                            round(avg_sell, 2),
+                            round(profit_per_unit, 2),
+                            buy_ex,
+                            sell_ex,
+                            round(roi, 4),
+                            int(size),
+                            None  # Opportunity Level assigned later
+                        ])
     columns = [
         "Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit",
         "Buy Exchange", "Sell Exchange", "ROI", "Opportunity Size", "Opportunity Level"
@@ -576,6 +791,7 @@ def compute_arbitrage_opportunity_size(orders_df, ticker, buy_ex, sell_ex):
     """
     For a given ticker, buy_ex (where you buy), and sell_ex (where you sell),
     compute the maximum arbitrage size and total profit using the full order book.
+    Returns (matched_qty, total_profit, matches) where matches is a list of (ask_price, bid_price, qty_matched).
     """
     # Get asks from buy_ex (where you buy)
     asks = orders_df[
@@ -601,62 +817,19 @@ def compute_arbitrage_opportunity_size(orders_df, ticker, buy_ex, sell_ex):
         if bid_price >= ask_price:
             qty = min(ask_qty, bid_qty)
             profit = (bid_price - ask_price) * qty
+            matches.append((ask_price, bid_price, qty))
             matched_qty += qty
             total_profit += profit
-            matches.append((ask_price, bid_price, qty, profit))
+            # Decrement quantities
             asks.at[asks.index[ask_idx], 'Quantity'] -= qty
             bids.at[bids.index[bid_idx], 'Quantity'] -= qty
-            if asks.at[asks.index[ask_idx], 'Quantity'] == 0:
+            if asks.iloc[ask_idx]['Quantity'] <= 0:
                 ask_idx += 1
-            if bids.at[bids.index[bid_idx], 'Quantity'] == 0:
+            if bids.iloc[bid_idx]['Quantity'] <= 0:
                 bid_idx += 1
         else:
-            break  # No more profitable matches
-    if matched_qty == 0:
-        print(f"[DEBUG] No arbitrage for {ticker} {buy_ex}->{sell_ex}")
-    else:
-        print(f"[DEBUG] Arbitrage for {ticker} {buy_ex}->{sell_ex}: size={matched_qty}, profit={total_profit}")
-    return matched_qty, total_profit, matches
-
-def get_weighted_avg_price(orders_df, ticker, exchange, side, quantity):
-    """
-    Simulate buying/selling up to 'quantity' units at best available prices.
-    side: 'ask' for buying, 'bid' for selling
-    """
-    book = orders_df[(orders_df['Ticker'] == ticker) & (orders_df['Exchange'] == exchange)]
-    book = book[book['Side'] == side].sort_values('Price', ascending=(side == 'ask'))
-    total_qty = 0
-    total_cost = 0
-    for _, row in book.iterrows():
-        avail = min(row['Quantity'], quantity - total_qty)
-        total_cost += avail * row['Price']
-        total_qty += avail
-        if total_qty >= quantity:
             break
-    return total_cost / total_qty if total_qty else None
-
-def assign_opportunity_level(df):
-    """
-    Assigns opportunity level based on composite score of ROI, size, volatility, and risk.
-    """
-    # Add default columns if missing
-    if 'Volatility' not in df.columns:
-        df['Volatility'] = 0
-    if 'Risk Level' not in df.columns:
-        df['Risk Level'] = 'Medium'
-    # Normalize columns (min-max scaling)
-    df['ROI_norm'] = (df['ROI'] - df['ROI'].min()) / (df['ROI'].max() - df['ROI'].min()) if df['ROI'].max() != df['ROI'].min() else 0
-    df['Size_norm'] = (df['Opportunity Size'] - df['Opportunity Size'].min()) / (df['Opportunity Size'].max() - df['Opportunity Size'].min()) if df['Opportunity Size'].max() != df['Opportunity Size'].min() else 0
-    df['Volatility_norm'] = 1 - ((df['Volatility'] - df['Volatility'].min()) / (df['Volatility'].max() - df['Volatility'].min())) if df['Volatility'].max() != df['Volatility'].min() else 1
-    df['Risk_norm'] = df['Risk Level'].map({'Low': 1, 'Medium': 0.5, 'High': 0}).fillna(0.5)
-    # Composite score (adjust weights as needed)
-    df['Score'] = 0.5 * df['ROI_norm'] + 0.3 * df['Size_norm'] + 0.1 * df['Volatility_norm'] + 0.1 * df['Risk_norm']
-    # Only assign levels if Score is not all NaN or constant
-    if df['Score'].nunique() > 1:
-        df['Opportunity Level'] = pd.qcut(df['Score'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
-    else:
-        df['Opportunity Level'] = 'Medium'
-    return df
+    return matched_qty, total_profit, matches
 
 def load_and_prepare_orders():
     base_dir = Path(__file__).parent.parent / "cache"
@@ -696,28 +869,34 @@ def load_and_prepare_orders():
     return orders_df
 
 def main():
+    print("[STEP] Starting report tab generation...", flush=True)
     if not ENHANCED_FILE.exists():
         print(f"[FATAL] Enhanced analysis file not found: {ENHANCED_FILE}")
         return
 
     all_df = pd.read_csv(ENHANCED_FILE)
-    orders_df = load_and_prepare_orders()  # Load orders first!
-    arbitrage_df = compute_arbitrage_opportunities(all_df, orders_df=orders_df)  # Pass orders_df here!
-    # --- FIX: Assign opportunity levels ---
+    orders_df = load_and_prepare_orders()
+    arbitrage_df = compute_arbitrage_opportunities(all_df, orders_df=orders_df)
     if not arbitrage_df.empty:
         arbitrage_df = assign_opportunity_level(arbitrage_df)
     else:
         print("[WARN] No arbitrage opportunities found.")
 
-    # --- FIX: Load and prepare orders with Side column ---
+    # Load and prepare orders with Side column
     orders_df = load_and_prepare_orders()
     print(orders_df.head(20))
     print(orders_df['Side'].value_counts())
+
+    market_data_path = CACHE_DIR / "market_data.csv"
     sheets = SheetsManager()
     for exch, tab in zip(EXCHANGES, REPORT_TABS):
         exch_df = all_df[all_df['Exchange'] == exch] if 'Exchange' in all_df.columns else all_df
         print(f"[DEBUG] {tab}: {len(exch_df)} rows")
-        report_df = build_report_tab(exch_df, exch, arbitrage_df, all_df, orders_df=orders_df)
+        report_df = build_report_tab(
+            exch_df, exch, arbitrage_df, all_df,
+            orders_df=orders_df,
+            market_data_path=market_data_path
+        )
         print(f"[DEBUG] {tab} report_df: {len(report_df)} rows")
         upload_df_method = getattr(sheets, "upload_dataframe_to_sheet", None)
         upload_sheet_method = getattr(sheets, "upload_to_sheet", None)
@@ -729,9 +908,84 @@ def main():
             print(" No valid upload method found in SheetsManager")
         apply_report_tab_formatting(sheets, tab, report_df)
         time.sleep(2)
+
     print(f"[DEBUG] Arbitrage DataFrame rows: {len(arbitrage_df)}")
     print(arbitrage_df.head())
     print(arbitrage_df[['Ticker', 'Buy Exchange', 'Sell Exchange', 'Opportunity Size']].sort_values('Opportunity Size', ascending=False).head(20))
+    print(arbitrage_df[['Ticker', 'Buy Exchange', 'Sell Exchange', 'Opportunity Size']].sort_values('Opportunity Size', ascending=False).head(20))
+    # After generating the main report and before finishing, add the new section:
+
+def input_bottleneck_section(df, recipe_inputs_path, top_n=20):
+    # Load recipe inputs
+    recipe_inputs = pd.read_csv(recipe_inputs_path)
+    # Count how many recipes use each material as input
+    input_counts = recipe_inputs['Material'].value_counts().to_dict()
+    df['InputCount'] = df['Ticker'].map(input_counts).fillna(0)
+    # Filter for low supply and high input count
+    bottlenecks = df[(df['Supply'] < 100) & (df['InputCount'] > 2)].sort_values("InputCount", ascending=False).head(top_n)
+    subheader = ["Ticker", "Name", "Supply", "InputCount", "Chokepoint Type"]
+    rows = []
+    for _, row in bottlenecks.iterrows():
+        rows.append([
+            row.get('Ticker', ''),
+            row.get('Material Name', ''),
+            f"{row.get('Supply', 0):,.0f}",
+            int(row.get('InputCount', 0)),
+            "Input Bottleneck"
+        ])
+    return section_header("Input Bottlenecks", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
+
+def find_arbitrage_bottom_border_rows(df, arb_start_col, arb_width):
+    """
+    Returns the row indices (in the report DataFrame) where a bottom border should be applied
+    (i.e., the last row of each Sell Exchange group in the arbitrage section).
+    """
+    # Subheader is row 2, data starts at row 3 (index 2)
+    sell_ex_col = None
+    subheader = df.iloc[1, arb_start_col:arb_start_col+arb_width]
+    for i, col_name in enumerate(subheader):
+        if str(col_name).strip().lower() == "sell exchange":
+            sell_ex_col = arb_start_col + i
+            break
+    if sell_ex_col is None:
+        return []
+
+    # Data rows start at row 3 (index 2)
+    data_rows = []
+    prev_val = None
+    last_row_idx = None
+    for row_idx in range(3, len(df)):
+        val = df.iloc[row_idx, sell_ex_col]
+        if prev_val is not None and val != prev_val:
+            # The previous row was the last of its group
+            data_rows.append(row_idx - 1)
+        prev_val = val
+        last_row_idx = row_idx
+    if last_row_idx is not None:
+        data_rows.append(last_row_idx)  # Always add the last row
+    return data_rows
+
+def assign_opportunity_level(arbitrage_df):
+    """
+    Assigns an Opportunity Level based on ROI and Opportunity Size (amount you can sell for profit).
+    Higher ROI and higher Opportunity Size yield higher levels.
+    """
+    def level(row):
+        roi = row.get('ROI', 0)
+        size = row.get('Opportunity Size', 0)
+        # Require at least 100 units to consider "High" or above, and at least 10 for "Medium"
+        if roi > 100 and size >= 1000:
+            return "Very High"
+        elif roi > 50 and size >= 500:
+            return "High"
+        elif roi > 20 and size >= 100:
+            return "Medium"
+        elif roi > 5 and size >= 10:
+            return "Low"
+        else:
+            return "Very Low"
+    arbitrage_df['Opportunity Level'] = arbitrage_df.apply(level, axis=1)
+    return arbitrage_df
 
 if __name__ == "__main__":
     main()

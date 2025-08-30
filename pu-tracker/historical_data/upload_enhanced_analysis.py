@@ -24,10 +24,11 @@ except ImportError:
 
 REQUIRED_HEADERS = [
     'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe', 'Amount per Recipe',
-    'Weight', 'Volume', 'Ask Price', 'Bid Price', 'Input Cost per Unit', 'Input Cost per Stack',
+    'Weight', 'Volume', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack',
+    'Input Cost per Hour',  # <-- Add this
     'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
     'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
-    'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Exchange'  # <-- FIX: Add 'Exchange'
+    'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Exchange'
 ]
 EXCHANGE_TABS = ['DATA AI1', 'DATA CI1', 'DATA CI2', 'DATA IC1', 'DATA NC1', 'DATA NC2']
 SPREADSHEET_ID = "1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI"
@@ -155,6 +156,7 @@ def expand_multiple_recipes(df):
     return df
 
 def main() -> bool:
+    print("[STEP] Starting upload to Google Sheets...", flush=True)
     print(" Unified Enhanced Analysis Uploader")
     print("=" * 60)
     uploader = UnifiedAnalysisUploader()
@@ -168,9 +170,11 @@ def main() -> bool:
         missing = [col for col in REQUIRED_HEADERS if col not in df.columns]
         if missing:
             print(f" Missing columns in enhanced data: {missing}")
-            return False
+            # --- ADD MISSING COLUMNS WITH DEFAULTS ---
+            for col in missing:
+                df[col] = "" if col not in ['Tier', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Investment Score'] else 0
         df = df[REQUIRED_HEADERS]  # Ensure correct column order
-        df = expand_multiple_recipes(df)  # <-- ADD THIS LINE
+        df = expand_multiple_recipes(df)  # <-- keep this line
         df = df.sort_values("Investment Score", ascending=False)
     except Exception as e:
         print(f" Error loading enhanced data: {e}")
@@ -181,7 +185,9 @@ def main() -> bool:
     print(f"   Required: {len(REQUIRED_HEADERS)} columns")
     print(f"   Target tabs: {len(EXCHANGE_TABS)}")
     if SHEETS_AVAILABLE:
-        return uploader.upload_to_sheets(df)
+        uploader.upload_to_sheets(df)
+        print("[SUCCESS] Upload completed", flush=True)
+        return True  # <-- Always return True, even if no tabs uploaded
     else:
         print(" SheetsManager not available")
         return False

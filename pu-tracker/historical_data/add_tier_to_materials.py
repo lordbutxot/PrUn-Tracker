@@ -49,6 +49,9 @@ def main():
             json.dump(tiers_dict, f, indent=2)
         print(f"Created {tiers_path} with {len(tiers_dict)} tier mappings")
         
+        # Display the top 3 materials with their details
+        print(df.head(3)[['Ticker', 'Name', 'Category', 'Tier']].to_string())
+        
     except Exception as e:
         print(f"Error adding tier to materials: {e}")
         raise

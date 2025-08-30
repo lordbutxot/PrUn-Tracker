@@ -5,6 +5,7 @@ import time
 import hashlib
 from datetime import datetime, timedelta
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,10 @@ class SmartCache:
         with open(self.cache_metadata_file, 'w') as f:
             json.dump(self.metadata, f, indent=2)
     
-    def _get_file_hash(self, filepath):
+    def _get_file_hash(self, filepath: Optional[str]) -> Optional[str]:
         """Get hash of file contents."""
-        if not os.path.exists(filepath):
+        if not filepath or not isinstance(filepath, str) or not os.path.exists(filepath):
             return None
-        
         with open(filepath, 'rb') as f:
             return hashlib.md5(f.read()).hexdigest()
     
@@ -47,38 +47,49 @@ class SmartCache:
         
         return age < timedelta(minutes=max_age_minutes)
     
-    def get_cached_data(self, cache_key: str, file_path: str = None):
+    def get_cached_data(self, cache_key: str, file_path: Optional[str] = None):
         """Get cached data if valid."""
         if not self.is_cache_valid(cache_key):
             return None
-        
-        if file_path and os.path.exists(file_path):
+
+        if file_path is not None and os.path.exists(file_path):
             if file_path.endswith('.csv'):
                 return pd.read_csv(file_path)
             elif file_path.endswith('.json'):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-        
+
         return None
     
-    def cache_data(self, cache_key: str, data, file_path: str = None):
+    def cache_data(self, cache_key: str, data, file_path: Optional[str] = None):
         """Cache data with metadata."""
-        if file_path:
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-            if file_path.endswith('.csv') and hasattr(data, 'to_csv'):
-                data.to_csv(file_path, index=False)
-            elif file_path.endswith('.json'):
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, indent=2)
-        
+        if file_path is None:
+            # Only update metadata, don't try to save a file
+            self.metadata[cache_key] = {
+                'timestamp': datetime.now().isoformat(),
+                'file_path': "",
+                'file_hash': None
+            }
+            self._save_metadata()
+            logger.info(f"Cached data for key: {cache_key} (no file)")
+            return
+
+        # At this point, file_path is guaranteed to be a str
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        if file_path.endswith('.csv') and hasattr(data, 'to_csv'):
+            data.to_csv(file_path, index=False)
+        elif file_path.endswith('.json'):
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+
         # Update metadata
         self.metadata[cache_key] = {
             'timestamp': datetime.now().isoformat(),
             'file_path': file_path,
-            'file_hash': self._get_file_hash(file_path) if file_path else None
+            'file_hash': self._get_file_hash(file_path)
         }
-        
+
         self._save_metadata()
         logger.info(f"Cached data for key: {cache_key}")
     

@@ -100,11 +100,11 @@ def main(mode='full'):
         print("\033[1;31m[FATAL]\033[0m Enhanced analysis failed. Exiting.")
         return 1
 
-    # 4. Fetch orders data for arbitrage calculations (optional step)
-    ok, elapsed = run_script("catch_data.py", "Fetching orders.csv for arbitrage calculations", log_file)
-    step_times.append(("Fetch Orders", elapsed))
+    # 4. Fetch only orders.csv and bids.csv for arbitrage calculations
+    ok, elapsed = run_script("fetch_orders_and_bids.py", "Fetching orders.csv and bids.csv for arbitrage calculations", log_file)
+    step_times.append(("Fetch Orders/Bids", elapsed))
     if not ok:
-        print("\033[1;31m[ERROR]\033[0m Failed to fetch orders.csv. Arbitrage opportunity sizes may be inaccurate.")
+        print("\033[1;31m[ERROR]\033[0m Failed to fetch orders/bids. Arbitrage opportunity sizes may be inaccurate.")
 
     # 5. Upload to Google Sheets
     ok, elapsed = run_script("upload_enhanced_analysis.py", "Uploading to Google Sheets", log_file)
