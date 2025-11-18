@@ -1,4 +1,18 @@
 {
+  "AAF:10xSAR-1xSNM-1000xSPT-1xSST-2xTOR-4xTRS=>1xGWS": {
+    "inputs": [
+      "sar",
+      "snm",
+      "spt",
+      "sst",
+      "tor",
+      "trs"
+    ],
+    "outputs": [
+      "gws"
+    ],
+    "building": "AAF:10xSAR-1xSNM-1000xSPT-1xSST-2xTOR-4xTRS=>1xGWS"
+  },
   "AAF:1xBMF-1xSNM=>1xNV2": {
     "inputs": [
       "bmf",
@@ -23,6 +37,17 @@
       "cru"
     ],
     "building": "AAF:1xCST-10xES-3xFC-6xFLP-1xPCB-1xSAR-1xWAI=>1xCRU"
+  },
+  "AAF:1xPFG-1xSDM-200xWRH=>1xSST": {
+    "inputs": [
+      "pfg",
+      "sdm",
+      "wrh"
+    ],
+    "outputs": [
+      "sst"
+    ],
+    "building": "AAF:1xPFG-1xSDM-200xWRH=>1xSST"
   },
   "AAF:1xBMF-1xDA-1xSA=>1xTAC": {
     "inputs": [
@@ -58,6 +83,18 @@
       "sts"
     ],
     "building": "AAF:1xTPU-1xWAI=>1xSTS"
+  },
+  "AAF:2xCBM-1xFFC-2xFIR-2xRAG=>1xPFG": {
+    "inputs": [
+      "cbm",
+      "ffc",
+      "fir",
+      "rag"
+    ],
+    "outputs": [
+      "pfg"
+    ],
+    "building": "AAF:2xCBM-1xFFC-2xFIR-2xRAG=>1xPFG"
   },
   "AML:4xAL-1xBOR-1xSI=>4xBOS": {
     "inputs": [
@@ -109,6 +146,16 @@
       "w"
     ],
     "building": "AML:5xBTS=>1xW"
+  },
+  "APF:1xSTS-10xTRS=>1xSDM": {
+    "inputs": [
+      "sts",
+      "trs"
+    ],
+    "outputs": [
+      "sdm"
+    ],
+    "building": "APF:1xSTS-10xTRS=>1xSDM"
   },
   "APF:1xAWF-1xFC-12xFLP-1xPCB-1xSEN-1xWAI=>1xWR": {
     "inputs": [
@@ -302,6 +349,26 @@
       "fal"
     ],
     "building": "ASM:3xAL-3xFE=>6xFAL"
+  },
+  "ASM:4xRE-2xW=>6xWRH": {
+    "inputs": [
+      "re",
+      "w"
+    ],
+    "outputs": [
+      "wrh"
+    ],
+    "building": "ASM:4xRE-2xW=>6xWRH"
+  },
+  "ASM:1xAL-5xRE=>6xALR": {
+    "inputs": [
+      "al",
+      "re"
+    ],
+    "outputs": [
+      "alr"
+    ],
+    "building": "ASM:1xAL-5xRE=>6xALR"
   },
   "BMP:100xPE-25xPG=>20xOVE": {
     "inputs": [
@@ -638,6 +705,16 @@
     ],
     "building": "CHP:10xREA-6xVEG=>6xOLF"
   },
+  "CLF:1xKV-10xMTC=>100xSPT": {
+    "inputs": [
+      "kv",
+      "mtc"
+    ],
+    "outputs": [
+      "spt"
+    ],
+    "building": "CLF:1xKV-10xMTC=>100xSPT"
+  },
   "CLF:6xGC-1xIND-1xNL=>10xHMS": {
     "inputs": [
       "gc",
@@ -879,6 +956,20 @@
     ],
     "building": "ECA:4xLI-1xNCS=>1xPOW"
   },
+  "ECA:1xACS-1xAFR-20xCTF-10xKRE-1xPFG-1xRCS=>1xVOR": {
+    "inputs": [
+      "acs",
+      "afr",
+      "ctf",
+      "kre",
+      "pfg",
+      "rcs"
+    ],
+    "outputs": [
+      "vor"
+    ],
+    "building": "ECA:1xACS-1xAFR-20xCTF-10xKRE-1xPFG-1xRCS=>1xVOR"
+  },
   "ECA:4xBCO-1xBRO-2xCU-2xSI=>12xSOL": {
     "inputs": [
       "bco",
@@ -1005,6 +1096,18 @@
       "bid"
     ],
     "building": "EDM:2xCD-1xKV-2xSAR=>2xBID"
+  },
+  "EEP:1xES-4xFLX-16xKR-4xREA=>4xKRE": {
+    "inputs": [
+      "es",
+      "flx",
+      "kr",
+      "rea"
+    ],
+    "outputs": [
+      "kre"
+    ],
+    "building": "EEP:1xES-4xFLX-16xKR-4xREA=>4xKRE"
   },
   "EEP:1xES-4xFLX-4xREA=>1xEES": {
     "inputs": [
@@ -2658,6 +2761,17 @@
     ],
     "building": "PP4:125xNR-2xRBH=>2xABH"
   },
+  "PP4:8xHSE-100xMFK-4xPSH=>1xTRS": {
+    "inputs": [
+      "hse",
+      "mfk",
+      "psh"
+    ],
+    "outputs": [
+      "trs"
+    ],
+    "building": "PP4:8xHSE-100xMFK-4xPSH=>1xTRS"
+  },
   "PPF:10xPG=>1xPSS": {
     "inputs": [
       "pg"
@@ -2759,6 +2873,16 @@
       "ff"
     ],
     "building": "REF:4xH-2xHE3=>100xFF"
+  },
+  "REF:4xH-2xKRE=>2000xVF": {
+    "inputs": [
+      "h",
+      "kre"
+    ],
+    "outputs": [
+      "vf"
+    ],
+    "building": "REF:4xH-2xKRE=>2000xVF"
   },
   "REF:3xTS=>2xHE3": {
     "inputs": [
@@ -3001,6 +3125,17 @@
     ],
     "building": "SKF:50xFET-4xMFK=>1xMSL"
   },
+  "SKF:24xMFK-80xSRP-50xZR=>1xVFT": {
+    "inputs": [
+      "mfk",
+      "srp",
+      "zr"
+    ],
+    "outputs": [
+      "vft"
+    ],
+    "building": "SKF:24xMFK-80xSRP-50xZR=>1xVFT"
+  },
   "SKF:1xMFK-5xZR=>1xSFL": {
     "inputs": [
       "mfk",
@@ -3215,6 +3350,29 @@
     ],
     "building": "SME:1xC-6xFEO-1xO=>3xFE"
   },
+  "SME:1xC-1xFLX-1xO-8xREO=>5xRE": {
+    "inputs": [
+      "c",
+      "flx",
+      "o",
+      "reo"
+    ],
+    "outputs": [
+      "re"
+    ],
+    "building": "SME:1xC-1xFLX-1xO-8xREO=>5xRE"
+  },
+  "SME:1xC-1xO-8xREO=>4xRE": {
+    "inputs": [
+      "c",
+      "o",
+      "reo"
+    ],
+    "outputs": [
+      "re"
+    ],
+    "building": "SME:1xC-1xO-8xREO=>4xRE"
+  },
   "SPF:1xCHA-10xFAL-2xMFK=>1xNOZ": {
     "inputs": [
       "cha",
@@ -3280,6 +3438,17 @@
       "bfp"
     ],
     "building": "SPF:50xPG-1xSFK-5xTHP=>1xBFP"
+  },
+  "SPF:1xCBL-1xVOR-40xWAL=>1xVOE": {
+    "inputs": [
+      "cbl",
+      "vor",
+      "wal"
+    ],
+    "outputs": [
+      "voe"
+    ],
+    "building": "SPF:1xCBL-1xVOR-40xWAL=>1xVOE"
   },
   "SPF:1xCHA-20xFET-4xMFK=>1xANZ": {
     "inputs": [
@@ -3469,6 +3638,17 @@
     ],
     "building": "TNP:1xTC=>3xTCS"
   },
+  "UPF:1xCRU-100xFLO-1xLIS=>1xCPU": {
+    "inputs": [
+      "cru",
+      "flo",
+      "lis"
+    ],
+    "outputs": [
+      "cpu"
+    ],
+    "building": "UPF:1xCRU-100xFLO-1xLIS=>1xCPU"
+  },
   "UPF:1xCOM-10xFET-1xNV1-10xPSL-20xPSM-5xSAR=>1xBR1": {
     "inputs": [
       "com",
@@ -3546,6 +3726,21 @@
     ],
     "building": "UPF:1xADR-12xPSL-8xPSM=>1xTCU"
   },
+  "UPF:1xBSU-1xCPU-1xFUN-1000xPFE-1xSU-1xTCU-1xWOR=>1xHAM": {
+    "inputs": [
+      "bsu",
+      "cpu",
+      "fun",
+      "pfe",
+      "su",
+      "tcu",
+      "wor"
+    ],
+    "outputs": [
+      "ham"
+    ],
+    "building": "UPF:1xBSU-1xCPU-1xFUN-1000xPFE-1xSU-1xTCU-1xWOR=>1xHAM"
+  },
   "UPF:1xBID-1xBWS-4xPCB-8xPSL=>1xFUN": {
     "inputs": [
       "bid",
@@ -3557,6 +3752,18 @@
       "fun"
     ],
     "building": "UPF:1xBID-1xBWS-4xPCB-8xPSL=>1xFUN"
+  },
+  "UPF:60xDDT-1xHAB-1xLIS-200xPFE=>1xBSU": {
+    "inputs": [
+      "ddt",
+      "hab",
+      "lis",
+      "pfe"
+    ],
+    "outputs": [
+      "bsu"
+    ],
+    "building": "UPF:60xDDT-1xHAB-1xLIS-200xPFE=>1xBSU"
   },
   "UPF:1xDA-10xPSL-6xPSM-1xWS=>1xLU": {
     "inputs": [
@@ -3734,6 +3941,16 @@
       "mhl"
     ],
     "building": "WEL:1xFE-1xHE-1xI=>1xMHL"
+  },
+  "WEL:200xALR-40xHE=>1xTOR": {
+    "inputs": [
+      "alr",
+      "he"
+    ],
+    "outputs": [
+      "tor"
+    ],
+    "building": "WEL:200xALR-40xHE=>1xTOR"
   },
   "WEL:2xAL-1xHE-20xNFI=>6xSSC": {
     "inputs": [

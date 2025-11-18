@@ -24,7 +24,7 @@ echo Logging to %LOGFILE%
 echo.
 
 REM --- RUN THE MAIN PIPELINE ---
-python historical_data\main.py | python dual_logger.py "%LOGFILE%"
+..\.venv\Scripts\python.exe historical_data\main.py | ..\.venv\Scripts\python.exe dual_logger.py "%LOGFILE%"
 
 REM --- COMPLETION STATUS ---
 set PIPELINE_RESULT=%errorlevel%

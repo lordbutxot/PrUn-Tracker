@@ -89,10 +89,30 @@
     "engineers": 0,
     "scientists": 0
   },
+  "CFL": {
+    "name": "corporationProjectFTLLaboratory",
+    "category": "Unknown",
+    "expertise": "",
+    "pioneers": 0,
+    "settlers": 0,
+    "technicians": 0,
+    "engineers": 0,
+    "scientists": 0
+  },
   "CHP": {
     "name": "chemPlant",
     "category": "Unknown",
     "expertise": "CHEMISTRY",
+    "pioneers": 0,
+    "settlers": 0,
+    "technicians": 0,
+    "engineers": 0,
+    "scientists": 0
+  },
+  "CIM": {
+    "name": "corporationProjectImmortality",
+    "category": "Unknown",
+    "expertise": "",
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
@@ -149,8 +169,28 @@
     "engineers": 0,
     "scientists": 0
   },
+  "COR": {
+    "name": "corporationProjectHeadquarters",
+    "category": "Unknown",
+    "expertise": "",
+    "pioneers": 0,
+    "settlers": 0,
+    "technicians": 0,
+    "engineers": 0,
+    "scientists": 0
+  },
   "CRC": {
     "name": "corporationProjectRepresentationCenter",
+    "category": "Unknown",
+    "expertise": "",
+    "pioneers": 0,
+    "settlers": 0,
+    "technicians": 0,
+    "engineers": 0,
+    "scientists": 0
+  },
+  "CTE": {
+    "name": "corporationProjectTerraforming",
     "category": "Unknown",
     "expertise": "",
     "pioneers": 0,

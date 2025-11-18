@@ -78,6 +78,17 @@ def main(mode='full'):
             return 1
     else:
         print("\033[1;32m[INFO]\033[0m Market data found.")
+    
+    # 1.5 Ensure workforceneeds.json exists
+    workforceneeds_file = CACHE_DIR / "workforceneeds.json"
+    if not workforceneeds_file.exists():
+        print("\033[1;36m[STEP]\033[0m workforceneeds.json missing. Fetching...")
+        ok, elapsed = run_script("catch_data.py", "Fetching required data files", log_file)
+        step_times.append(("Fetch Data", elapsed))
+        if not ok:
+            print("\033[1;33m[WARN]\033[0m catch_data.py had issues, but continuing...")
+        if not workforceneeds_file.exists():
+            print("\033[1;33m[WARN]\033[0m workforceneeds.json still missing. Some calculations may fail.")
 
     # --- ADD THIS STEP ---
     ok, elapsed = run_script("add_tier_to_materials.py", "Assigning tiers to materials", log_file)
