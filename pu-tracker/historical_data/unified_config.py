@@ -86,7 +86,7 @@ class UnifiedConfig:
         self.ONN_HISTORICAL_DATA_SPREADSHEET_ID = '1JhIzAhi435loaUxBog2qeJzYAKWPdmlL1GVDBm0lWiQ'
         
         # Credentials file
-        self.CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-7e0c3bafd690.json'
+        self.CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
         self.GOOGLE_SERVICE_ACCOUNT_FILE = self.CREDENTIALS_FILE  # Compatibility alias
         
         # Sheet names configuration
@@ -239,7 +239,7 @@ REPORT_COLUMNS = [
 ]
 
 # File paths
-CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-7e0c3bafd690.json'
+CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
 CACHE_DIR = Path(__file__).parent.parent / 'cache'
 
 # API settings

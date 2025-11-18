@@ -29,7 +29,7 @@ except ImportError:
     # Fallback values
     TARGET_SPREADSHEET_ID = "1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI"
     PRUN_SPREADSHEET_ID = TARGET_SPREADSHEET_ID
-    CREDENTIALS_FILE = current_dir / 'prun-profit-7e0c3bafd690.json'
+    CREDENTIALS_FILE = current_dir / 'prun-profit-42c5889f620d.json'
     VALID_EXCHANGES = ['AI1', 'IC1', 'CI1', 'CI2', 'NC1', 'NC2']
 
 logger = logging.getLogger(__name__)

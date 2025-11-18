@@ -52,7 +52,7 @@ class UnifiedAnalysisUploader:
             print(f" Enhanced analysis file missing: {enhanced_file}")
             print("    Run: python historical_data/data_analyzer.py")
             return False
-        creds_file = Path(__file__).parent / 'prun-profit-7e0c3bafd690.json'
+        creds_file = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
         if not creds_file.exists():
             print(f" Credentials file missing: {creds_file}")
             return False

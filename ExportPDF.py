@@ -14,7 +14,7 @@ CREDENTIALS_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "pu-tracker",
     "historical_data",
-    "prun-profit-7e0c3bafd690.json"
+    "prun-profit-42c5889f620d.json"
 )
 print("Looking for credentials at:", CREDENTIALS_PATH)
 DPI = 300  # resolución de las imágenes

@@ -165,7 +165,7 @@ PrUn-Tracker/
 │   │   # Generates and uploads report tabs to Google Sheets.
 │   ├── main.py
 │   │   # Main orchestrator for the full pipeline (fetch, process, analyze, upload).
-│   ├── prun-profit-7e0c3bafd690.json
+│   ├── prun-profit-42c5889f620d.json
 │   │   # Google API credentials for Sheets access.
 │   ├── rate_limiter.py
 │   │   # Handles API rate limiting for data fetching.
