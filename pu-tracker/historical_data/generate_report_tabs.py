@@ -1491,7 +1491,7 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["-" * 40])
     all_rows.append([])
     
-    all_rows.append(["Faction", "GDP (ICA)", "% of Economy"])
+    all_rows.append(["Faction", "GDP", "% of Total GDP"])
     for faction, value in sorted(gdp['by_faction'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         all_rows.append([faction, f"{value:,.2f}", f"{pct_economy:.2f}%"])
@@ -1503,7 +1503,7 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["-" * 40])
     all_rows.append([])
     
-    all_rows.append(["Exchange", "GDP (ICA)", "% of Total Economy", "% of Faction"])
+    all_rows.append(["Exchange", "GDP", "% of Total GDP"])
     faction_map = {
         'AI1': 'AIC (Antares)',
         'CI1': 'CIS (Castillo)',
@@ -1515,10 +1515,7 @@ def build_financial_overview(financial_data, all_df):
     
     for exch, value in sorted(gdp['by_exchange'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        faction = faction_map.get(exch, 'UNKNOWN')
-        faction_gdp = gdp['by_faction'].get(faction, 1)
-        pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
-        all_rows.append([exch, f"{value:,.2f}", f"{pct_economy:.2f}%", f"{pct_faction:.2f}%"])
+        all_rows.append([exch, f"{value:,.2f}", f"{pct_economy:.2f}%"])
     all_rows.append([])
     all_rows.append([])
     
@@ -1550,34 +1547,30 @@ def build_financial_overview(financial_data, all_df):
                     else:
                         profession_by_faction[faction][profession] = profession_value
     
-    all_rows.append(["Profession/Sector", "Total GDP", "% Economy", 
-                     "AIC GDP", "% AIC", "CIS GDP", "% CIS", 
-                     "ICA GDP", "% ICA", "NCC GDP", "% NCC"])
+    all_rows.append(["Profession/Sector", "Total GDP", "% of GDP", 
+                     "AIC GDP", "AIC % of GDP", "CIS GDP", "CIS % of GDP", 
+                     "ICA GDP", "ICA % of GDP", "NCC GDP", "NCC % of GDP"])
     
     for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
         aic_val = profession_by_faction.get('AIC (Antares)', {}).get(profession, 0)
-        aic_faction_gdp = gdp['by_faction'].get('AIC (Antares)', 1)
-        aic_pct = (aic_val / aic_faction_gdp * 100) if aic_faction_gdp > 0 else 0
+        aic_pct_of_total = (aic_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
         cis_val = profession_by_faction.get('CIS (Castillo)', {}).get(profession, 0)
-        cis_faction_gdp = gdp['by_faction'].get('CIS (Castillo)', 1)
-        cis_pct = (cis_val / cis_faction_gdp * 100) if cis_faction_gdp > 0 else 0
+        cis_pct_of_total = (cis_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
         ica_val = profession_by_faction.get('ICA (Insitor)', {}).get(profession, 0)
-        ica_faction_gdp = gdp['by_faction'].get('ICA (Insitor)', 1)
-        ica_pct = (ica_val / ica_faction_gdp * 100) if ica_faction_gdp > 0 else 0
+        ica_pct_of_total = (ica_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
         ncc_val = profession_by_faction.get('NCC (Neo Brasilia)', {}).get(profession, 0)
-        ncc_faction_gdp = gdp['by_faction'].get('NCC (Neo Brasilia)', 1)
-        ncc_pct = (ncc_val / ncc_faction_gdp * 100) if ncc_faction_gdp > 0 else 0
+        ncc_pct_of_total = (ncc_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
         all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%",
-                        f"{aic_val:,.2f}", f"{aic_pct:.2f}%",
-                        f"{cis_val:,.2f}", f"{cis_pct:.2f}%",
-                        f"{ica_val:,.2f}", f"{ica_pct:.2f}%",
-                        f"{ncc_val:,.2f}", f"{ncc_pct:.2f}%"])
+                        f"{aic_val:,.2f}", f"{aic_pct_of_total:.2f}%",
+                        f"{cis_val:,.2f}", f"{cis_pct_of_total:.2f}%",
+                        f"{ica_val:,.2f}", f"{ica_pct_of_total:.2f}%",
+                        f"{ncc_val:,.2f}", f"{ncc_pct_of_total:.2f}%"])
     all_rows.append([])
     all_rows.append([])
     
@@ -1617,11 +1610,11 @@ def build_financial_overview(financial_data, all_df):
             faction_top_products[faction] = []
     
     # Create header row
-    header = ["Rank", "Universe", "GDP", "% Econ",
-              "AIC", "GDP", "% AIC",
-              "CIS", "GDP", "% CIS",
-              "ICA", "GDP", "% ICA",
-              "NCC", "GDP", "% NCC"]
+    header = ["Rank", "Universe", "Universe GDP", "Universe % GDP",
+              "AIC", "AIC GDP", "AIC % GDP",
+              "CIS", "CIS GDP", "CIS % GDP",
+              "ICA", "ICA GDP", "ICA % GDP",
+              "NCC", "NCC GDP", "NCC % GDP"]
     all_rows.append(header)
     
     # Create data rows (50 rows for top 50)
@@ -1643,8 +1636,8 @@ def build_financial_overview(financial_data, all_df):
             
             if rank - 1 < len(faction_list):
                 ticker, value = faction_list[rank - 1]
-                pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
-                row.extend([ticker, f"{value:,.0f}", f"{pct_faction:.2f}%"])
+                pct_of_total_gdp = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+                row.extend([ticker, f"{value:,.0f}", f"{pct_of_total_gdp:.2f}%"])
             else:
                 row.extend(["", "", ""])
         
