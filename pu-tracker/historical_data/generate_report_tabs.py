@@ -1547,13 +1547,11 @@ def build_financial_overview(financial_data, all_df):
                     else:
                         profession_by_faction[faction][profession] = profession_value
     
-    all_rows.append(["Profession/Sector", "Total GDP", "% of GDP", 
+    all_rows.append(["Profession/Sector", "Total GDP", 
                      "AIC GDP", "AIC % of GDP", "CIS GDP", "CIS % of GDP", 
                      "ICA GDP", "ICA % of GDP", "NCC GDP", "NCC % of GDP"])
     
     for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
-        pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        
         aic_val = profession_by_faction.get('AIC (Antares)', {}).get(profession, 0)
         aic_pct_of_total = (aic_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
@@ -1566,7 +1564,7 @@ def build_financial_overview(financial_data, all_df):
         ncc_val = profession_by_faction.get('NCC (Neo Brasilia)', {}).get(profession, 0)
         ncc_pct_of_total = (ncc_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
-        all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%",
+        all_rows.append([profession, f"{value:,.2f}",
                         f"{aic_val:,.2f}", f"{aic_pct_of_total:.2f}%",
                         f"{cis_val:,.2f}", f"{cis_pct_of_total:.2f}%",
                         f"{ica_val:,.2f}", f"{ica_pct_of_total:.2f}%",
@@ -1766,22 +1764,9 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
         }
     })
     
-    # 0.5. Hide GDP_RAW columns (column C in most sections, column D in product sections)
-    # We'll hide columns C and D to be safe
-    requests.append({
-        "updateDimensionProperties": {
-            "range": {
-                "sheetId": sheet_id,
-                "dimension": "COLUMNS",
-                "startIndex": 2,  # Column C (0-indexed)
-                "endIndex": 4     # Up to but not including column E
-            },
-            "properties": {
-                "hiddenByUser": True
-            },
-            "fields": "hiddenByUser"
-        }
-    })
+    # 0.5. Hide GDP_RAW columns - REMOVED
+    # The Financial Overview tab now properly shows all columns including percentages
+    # No columns should be hidden by default
     
     # 1. Center all text
     requests.append({
