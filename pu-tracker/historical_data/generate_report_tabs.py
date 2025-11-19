@@ -55,18 +55,28 @@ def arbitrage_section(arbitrage_df, exch, top_n=None, orders_df=None):
     return section_header("Arbitrage Opportunities", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
 def buy_vs_produce_section(df, exch, top_n=None):
-    all_tickers = df['Ticker'].unique()
+    # Show EACH recipe separately instead of aggregating by ticker
+    exch_df = df[df['Exchange'] == exch] if 'Exchange' in df.columns else df
     rows = []
-    subheader = ["Name", "Ticker", "Buy Price", "Produce Cost", "Difference", "Recommendation", "Level", "Trend"]
-    for ticker in all_tickers:
-        ticker_rows = df[df['Ticker'] == ticker]
-        if ticker_rows.empty:
-            continue  # <-- skip if no rows for this ticker
-        exch_rows = ticker_rows[ticker_rows['Exchange'] == exch] if 'Exchange' in ticker_rows.columns else ticker_rows
-        if not exch_rows.empty:
-            row = exch_rows.iloc[0]
+    subheader = ["Name", "Ticker", "Recipe", "Building", "Buy Price", "Produce Cost", "Difference", "Recommendation", "Level"]
+    
+    for _, row in exch_df.iterrows():
+        ticker = row.get('Ticker', '')
+        recipe = row.get('Recipe', 'N/A')
+        building = row.get('Building', 'N/A')
+        
+        # Convert recipe to string and handle NaN/None
+        if pd.isna(recipe) or recipe is None or recipe == '':
+            recipe = 'N/A'
         else:
-            row = ticker_rows.iloc[0]
+            recipe = str(recipe)
+        
+        # Convert building to string and handle NaN/None
+        if pd.isna(building) or building is None or building == '':
+            building = 'N/A'
+        else:
+            building = str(building)
+        
         # Try both possible column names for Ask Price
         buy_price = (
             row.get('Ask Price', None)
@@ -82,9 +92,11 @@ def buy_vs_produce_section(df, exch, top_n=None):
         )
         if produce_cost is None or pd.isna(produce_cost):
             produce_cost = 0
-        # Optionally, comment out this filter to show all tickers:
-        # if not buy_price or buy_price == 0:
-        #     continue
+        
+        # Skip N/A recipes (raw materials)
+        if recipe == 'N/A':
+            continue
+            
         diff = buy_price - produce_cost
         if diff < -100:
             rec, level = "Buy", "High"
@@ -98,22 +110,23 @@ def buy_vs_produce_section(df, exch, top_n=None):
             rec, level = "Produce", "Medium"
         else:
             rec, level = "Depends", "Low"
-        trend = "Unknown"
+        
         rows.append([
             row.get('Material Name', ticker),
             ticker,
+            recipe[:30] if len(recipe) > 30 else recipe,  # Truncate long recipe names
+            building,
             f"{buy_price:,.2f}" if buy_price else "0",
             f"{produce_cost:,.2f}" if produce_cost else "0",
             f"{diff:,.2f}" if not pd.isna(diff) else "0",
             rec,
-            level,
-            trend
+            level
         ])
     def sort_key(x):
         rec_order = {"Buy": 0, "Produce": 1, "Neutral": 2, "Depends": 3}
-        rec = x[5]
+        rec = x[7]  # Updated from 5 to 7 (Recommendation column)
         try:
-            diff_val = abs(float(x[4].replace(',', ''))) if x[4] != "N/A" else 0
+            diff_val = abs(float(x[6].replace(',', ''))) if x[6] != "N/A" else 0  # Updated from 4 to 6 (Difference column)
         except Exception:
             diff_val = 0
         return (rec_order.get(rec, 99), -diff_val)
@@ -177,6 +190,39 @@ def bottleneck_section(df, exch, top_n=None):
         else:
             df['InputCount'] = 0
 
+    # Detect No Stock and No Buyers situations
+    critical_issues = []
+    for _, row in df.iterrows():
+        supply = row.get("Supply", 0)
+        demand = row.get("Demand", 0)
+        
+        if supply == 0 and demand > 0:
+            critical_issues.append({
+                'Ticker': row.get('Ticker', ''),
+                'Name': row.get('Material Name', row.get('Name', '')),
+                'Product': row.get('Product', ''),
+                'Buy Price': row.get('Buy Price', 0),
+                'Sell Price': row.get('Sell Price', 0),
+                'Profit': row.get('Profit', 0),
+                'Supply': 0,
+                'Demand': demand,
+                'Chokepoint Type': 'No Stock',
+                'Level': 'Critical'
+            })
+        elif demand == 0 and supply > 0:
+            critical_issues.append({
+                'Ticker': row.get('Ticker', ''),
+                'Name': row.get('Material Name', row.get('Name', '')),
+                'Product': row.get('Product', ''),
+                'Buy Price': row.get('Buy Price', 0),
+                'Sell Price': row.get('Sell Price', 0),
+                'Profit': row.get('Profit', 0),
+                'Supply': supply,
+                'Demand': 0,
+                'Chokepoint Type': 'No Buyers',
+                'Level': 'Critical'
+            })
+
     # Normalize for composite score
     df['SupplyNorm'] = 1 - (df['Supply'] / (df['Supply'].max() or 1))
     df['DemandNorm'] = df['Demand'] / (df['Demand'].max() or 1)
@@ -195,10 +241,7 @@ def bottleneck_section(df, exch, top_n=None):
     score_thresh = df['BottleneckScore'].quantile(0.8)
     filtered = df[df['BottleneckScore'] >= score_thresh]
 
-    if filtered.empty:
-        return section_header("CHOKEPOINTS/BOTTLENECKS", 10) + [[""] * 10]
-
-    # Compute Chokepoint Type and Level
+    # Compute Chokepoint Type and Level for filtered items
     chokepoint_types = []
     levels = []
     for _, row in filtered.iterrows():
@@ -227,15 +270,33 @@ def bottleneck_section(df, exch, top_n=None):
     # Filter out rows with empty Chokepoint Type
     filtered = filtered[filtered["Chokepoint Type"] != ""]
 
-    # Sort by Chokepoint Type, then Level (High > Medium > Low)
-    level_order = {"High": 0, "Medium": 1, "Low": 2}
+    # Sort by Chokepoint Type, then Level (Critical > High > Medium > Low)
+    level_order = {"Critical": -1, "High": 0, "Medium": 1, "Low": 2}
     filtered["LevelSort"] = filtered["Level"].map(level_order)
     filtered = filtered.sort_values(["Chokepoint Type", "LevelSort"])
+    
     subheader = [
         "Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit",
         "Supply", "Demand", "Chokepoint Type", "Level"
     ]
     rows = []
+    
+    # Add critical issues first (No Stock, No Buyers)
+    for issue in critical_issues:
+        rows.append([
+            issue["Ticker"],
+            issue["Name"],
+            issue["Product"],
+            issue["Buy Price"],
+            issue["Sell Price"],
+            issue["Profit"],
+            issue["Supply"],
+            issue["Demand"],
+            issue["Chokepoint Type"],
+            issue["Level"]
+        ])
+    
+    # Add other bottlenecks
     for _, row in filtered.iterrows():
         rows.append([
             row.get("Ticker", ""),
@@ -249,6 +310,10 @@ def bottleneck_section(df, exch, top_n=None):
             row.get("Chokepoint Type", ""),
             row.get("Level", "")
         ])
+    
+    if not rows:
+        return section_header("CHOKEPOINTS/BOTTLENECKS", len(subheader)) + [[""] * len(subheader)]
+    
     return section_header("CHOKEPOINTS/BOTTLENECKS", len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
 def pad_section(section, n_rows, width):
@@ -291,6 +356,7 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     # NEW: Add profession sections
     metallurgy = profession_section(df, exch, "METALLURGY")
     manufacturing = profession_section(df, exch, "MANUFACTURING")
+    construction = profession_section(df, exch, "CONSTRUCTION")
     chemistry = profession_section(df, exch, "CHEMISTRY")
     food = profession_section(df, exch, "FOOD_INDUSTRIES")
     agriculture = profession_section(df, exch, "AGRICULTURE")
@@ -301,8 +367,8 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     max_rows = max(
         len(summary), len(arbitrage), len(buy_vs_produce), len(top_invest), 
         len(bottleneck), len(top_traded), len(metallurgy), len(manufacturing),
-        len(chemistry), len(food), len(agriculture), len(fuel), len(electronics),
-        len(extraction)
+        len(construction), len(chemistry), len(food), len(agriculture), len(fuel), 
+        len(electronics), len(extraction)
     )
 
     summary = pad_section(summary, max_rows, len(summary[0]))
@@ -313,6 +379,7 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     top_traded = pad_section(top_traded, max_rows, len(top_traded[0]))
     metallurgy = pad_section(metallurgy, max_rows, len(metallurgy[0]))
     manufacturing = pad_section(manufacturing, max_rows, len(manufacturing[0]))
+    construction = pad_section(construction, max_rows, len(construction[0]))
     chemistry = pad_section(chemistry, max_rows, len(chemistry[0]))
     food = pad_section(food, max_rows, len(food[0]))
     agriculture = pad_section(agriculture, max_rows, len(agriculture[0]))
@@ -330,6 +397,7 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     print("  top_traded:", len(top_traded[0]), "cols")
     print("  metallurgy:", len(metallurgy[0]), "cols")
     print("  manufacturing:", len(manufacturing[0]), "cols")
+    print("  construction:", len(construction[0]), "cols")
     print("  chemistry:", len(chemistry[0]), "cols")
     print("  food:", len(food[0]), "cols")
     print("  agriculture:", len(agriculture[0]), "cols")
@@ -345,6 +413,7 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     top_traded_df = pd.DataFrame(top_traded)
     metallurgy_df = pd.DataFrame(metallurgy)
     manufacturing_df = pd.DataFrame(manufacturing)
+    construction_df = pd.DataFrame(construction)
     chemistry_df = pd.DataFrame(chemistry)
     food_df = pd.DataFrame(food)
     agriculture_df = pd.DataFrame(agriculture)
@@ -354,8 +423,8 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
 
     report_df = pd.concat(
         [summary_df, arbitrage_df, buy_vs_produce_df, top_invest_df, bottleneck_df, 
-         top_traded_df, metallurgy_df, manufacturing_df, chemistry_df, food_df, 
-         agriculture_df, fuel_df, electronics_df, extraction_df],
+         top_traded_df, metallurgy_df, manufacturing_df, construction_df, chemistry_df, 
+         food_df, agriculture_df, fuel_df, electronics_df, extraction_df],
         axis=1
     )
     print("Final report_df shape:", report_df.shape)
@@ -386,18 +455,19 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
     section_defs = [
         ("SUMMARY", {"red": 0.2, "green": 0.4, "blue": 0.8}, 4),
         ("ARBITRAGE OPPORTUNITIES", {"red": 0.2, "green": 0.7, "blue": 0.2}, len(REPORT_COLUMNS)),
-        ("BUY VS PRODUCE", {"red": 1.0, "green": 0.8, "blue": 0.2}, 8),
-        ("TOP MATERIALS TO INVEST IN", {"red": 0.85, "green": 0.6, "blue": 0.15}, 7),
+        ("BUY VS PRODUCE", {"red": 1.0, "green": 0.8, "blue": 0.2}, 9),  # Updated from 8 to 9 (added Recipe)
+        ("TOP MATERIALS TO INVEST IN", {"red": 0.85, "green": 0.6, "blue": 0.15}, 8),  # Updated from 7 to 8 (added Recipe)
         ("CHOKEPOINTS/BOTTLENECKS", {"red": 0.8, "green": 0.2, "blue": 0.2}, 10),
         ("TOP TRADED PRODUCTS", {"red": 0.5, "green": 0.2, "blue": 0.7}, 2),
-        ("METALLURGY", {"red": 0.6, "green": 0.6, "blue": 0.6}, 8),
-        ("MANUFACTURING", {"red": 0.4, "green": 0.5, "blue": 0.7}, 8),
-        ("CHEMISTRY", {"red": 0.3, "green": 0.8, "blue": 0.5}, 8),
-        ("FOOD_INDUSTRIES", {"red": 0.9, "green": 0.7, "blue": 0.3}, 8),
-        ("AGRICULTURE", {"red": 0.5, "green": 0.8, "blue": 0.3}, 8),
-        ("FUEL_REFINING", {"red": 0.7, "green": 0.3, "blue": 0.2}, 8),
-        ("ELECTRONICS", {"red": 0.2, "green": 0.4, "blue": 0.9}, 8),
-        ("RESOURCE_EXTRACTION", {"red": 0.6, "green": 0.4, "blue": 0.2}, 8),
+        ("METALLURGY", {"red": 0.6, "green": 0.6, "blue": 0.6}, 9),  # Updated from 8 to 9 (added Recipe)
+        ("MANUFACTURING", {"red": 0.4, "green": 0.5, "blue": 0.7}, 9),  # Updated from 8 to 9
+        ("CONSTRUCTION", {"red": 0.9, "green": 0.5, "blue": 0.2}, 9),  # Construction materials (orange/brown)
+        ("CHEMISTRY", {"red": 0.3, "green": 0.8, "blue": 0.5}, 9),  # Updated from 8 to 9
+        ("FOOD_INDUSTRIES", {"red": 0.9, "green": 0.7, "blue": 0.3}, 9),  # Updated from 8 to 9
+        ("AGRICULTURE", {"red": 0.5, "green": 0.8, "blue": 0.3}, 9),  # Updated from 8 to 9
+        ("FUEL_REFINING", {"red": 0.7, "green": 0.3, "blue": 0.2}, 9),  # Updated from 8 to 9
+        ("ELECTRONICS", {"red": 0.2, "green": 0.4, "blue": 0.9}, 9),  # Updated from 8 to 9
+        ("RESOURCE_EXTRACTION", {"red": 0.6, "green": 0.4, "blue": 0.2}, 9),  # Updated from 8 to 9
     ]
 
     # Find section start columns by scanning the first row for each header
@@ -700,7 +770,8 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
     # Chokepoints: Level (color code)
     bottleneck_level_col = find_col_idx(section_starts, "CHOKEPOINTS/BOTTLENECKS", "Level")
     if bottleneck_level_col is not None:
-        for val, color in [("High", {"red": 0.8, "green": 0.2, "blue": 0.2}),
+        for val, color in [("Critical", {"red": 1.0, "green": 0.0, "blue": 0.0}),
+                           ("High", {"red": 0.8, "green": 0.2, "blue": 0.2}),
                            ("Medium", {"red": 1, "green": 1, "blue": 0.2}),
                            ("Low", {"red": 0.2, "green": 0.8, "blue": 0.2})]:
             requests.append({
@@ -718,7 +789,7 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
                                 "type": "TEXT_EQ",
                                 "values": [{"userEnteredValue": val}]
                             },
-                            "format": {"backgroundColor": color, "textFormat": {"bold": True}}
+                            "format": {"backgroundColor": color, "textFormat": {"bold": True, "foregroundColor": {"red": 1, "green": 1, "blue": 1}}}
                         }
                     },
                     "index": 0
@@ -729,6 +800,8 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
     bottleneck_type_col = find_col_idx(section_starts, "CHOKEPOINTS/BOTTLENECKS", "Chokepoint Type")
     if bottleneck_type_col is not None:
         type_colors = {
+            "No Stock": {"red": 1.0, "green": 0.0, "blue": 0.0},  # Bright red for critical
+            "No Buyers": {"red": 0.5, "green": 0.0, "blue": 0.5},  # Purple for critical
             "Low Supply & High Demand": {"red": 0.8, "green": 0.4, "blue": 0.0},
             "Low Supply": {"red": 0.2, "green": 0.6, "blue": 0.9},
             "High Demand": {"red": 0.9, "green": 0.8, "blue": 0.2},
@@ -750,7 +823,7 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
                                 "type": "TEXT_EQ",
                                 "values": [{"userEnteredValue": val}]
                             },
-                            "format": {"backgroundColor": color, "textFormat": {"bold": True}}
+                            "format": {"backgroundColor": color, "textFormat": {"bold": True, "foregroundColor": {"red": 1, "green": 1, "blue": 1}}}
                         }
                     },
                     "index": 0
@@ -996,6 +1069,244 @@ def load_and_prepare_orders():
     orders_df['Quantity'] = pd.to_numeric(orders_df['Quantity'], errors='coerce')
     return orders_df
 
+def fetch_financial_data(sheets_manager, external_spreadsheet_id):
+    """
+    Fetch economic, financial, and monetary/currency data from external spreadsheet.
+    
+    Args:
+        sheets_manager: SheetsManager instance
+        external_spreadsheet_id: ID of the external financial data spreadsheet
+    
+    Returns:
+        dict: Dictionary containing all financial data sheets
+    """
+    print("[STEP] Fetching financial data from external spreadsheet...", flush=True)
+    
+    financial_data = {}
+    
+    try:
+        # Get all sheets from the external spreadsheet
+        spreadsheet = sheets_manager.sheets_service.spreadsheets().get(
+            spreadsheetId=external_spreadsheet_id
+        ).execute()
+        
+        sheets_list = spreadsheet.get('sheets', [])
+        
+        # Fetch data from each sheet
+        for sheet in sheets_list:
+            sheet_name = sheet['properties']['title']
+            print(f"[INFO] Fetching data from sheet: {sheet_name}", flush=True)
+            
+            # Read data from the sheet
+            result = sheets_manager.sheets_service.spreadsheets().values().get(
+                spreadsheetId=external_spreadsheet_id,
+                range=f"'{sheet_name}'!A:Z"  # Read all columns
+            ).execute()
+            
+            values = result.get('values', [])
+            
+            if values:
+                # Convert to DataFrame
+                df = pd.DataFrame(values[1:], columns=values[0]) if len(values) > 1 else pd.DataFrame()
+                financial_data[sheet_name] = df
+                print(f"[INFO] Loaded {len(df)} rows from {sheet_name}", flush=True)
+            else:
+                print(f"[WARN] No data found in {sheet_name}", flush=True)
+        
+        # Save financial data to cache for offline access
+        cache_financial_data(financial_data)
+        
+        return financial_data
+    
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch financial data: {e}", flush=True)
+        # Try to load from cache
+        return load_cached_financial_data()
+
+def cache_financial_data(financial_data):
+    """
+    Save financial data to cache directory as CSV files.
+    """
+    financial_cache_dir = CACHE_DIR / "financial_data"
+    financial_cache_dir.mkdir(exist_ok=True)
+    
+    for sheet_name, df in financial_data.items():
+        if not df.empty:
+            safe_name = sheet_name.replace('/', '_').replace('\\', '_')
+            cache_path = financial_cache_dir / f"{safe_name}.csv"
+            df.to_csv(cache_path, index=False)
+            print(f"[INFO] Cached {sheet_name} to {cache_path}", flush=True)
+
+def load_cached_financial_data():
+    """
+    Load financial data from cache.
+    """
+    financial_cache_dir = CACHE_DIR / "financial_data"
+    financial_data = {}
+    
+    if financial_cache_dir.exists():
+        for csv_file in financial_cache_dir.glob("*.csv"):
+            sheet_name = csv_file.stem
+            df = pd.read_csv(csv_file)
+            financial_data[sheet_name] = df
+            print(f"[INFO] Loaded {sheet_name} from cache", flush=True)
+    
+    return financial_data
+
+def build_financial_overview(financial_data, all_df):
+    """
+    Create Financial Overview tab combining external financial data with our calculated data.
+    
+    Args:
+        financial_data: dict of DataFrames from external spreadsheet
+        all_df: our enhanced analysis data
+    
+    Returns:
+        DataFrame for the Financial Overview tab
+    """
+    print("[STEP] Building Financial Overview...", flush=True)
+    
+    all_rows = []
+    
+    # Add title
+    all_rows.append(["FINANCIAL OVERVIEW - ECONOMIC & MONETARY DATA"])
+    all_rows.append([])
+    
+    # Process each financial data sheet
+    for sheet_name, df in financial_data.items():
+        if df.empty:
+            continue
+        
+        # Add section header
+        all_rows.append([f"=== {sheet_name.upper()} ==="])
+        all_rows.append([])
+        
+        # Add the data
+        # Header row
+        all_rows.append(df.columns.tolist())
+        
+        # Data rows
+        for _, row in df.iterrows():
+            all_rows.append(row.tolist())
+        
+        # Add blank separator
+        all_rows.append([])
+        all_rows.append([])
+    
+    # Add our calculated market statistics
+    all_rows.append(["=== CALCULATED MARKET STATISTICS ==="])
+    all_rows.append([])
+    
+    # Calculate overall market metrics
+    market_stats = []
+    market_stats.append(["Metric", "Value"])
+    market_stats.append(["Total Materials Tracked", len(all_df['Ticker'].unique())])
+    market_stats.append(["Total Data Points", len(all_df)])
+    market_stats.append(["Total Exchanges", len(all_df['Exchange'].unique()) if 'Exchange' in all_df.columns else 0])
+    
+    profit_col = 'Profit per Unit' if 'Profit per Unit' in all_df.columns else 'Profit_Ask'
+    if profit_col in all_df.columns:
+        market_stats.append(["Average Market Profit", f"{all_df[profit_col].mean():,.2f}"])
+        market_stats.append(["Median Market Profit", f"{all_df[profit_col].median():,.2f}"])
+        market_stats.append(["Max Market Profit", f"{all_df[profit_col].max():,.2f}"])
+        market_stats.append(["Min Market Profit", f"{all_df[profit_col].min():,.2f}"])
+    
+    roi_col = 'ROI Ask %' if 'ROI Ask %' in all_df.columns else 'ROI_Ask'
+    if roi_col in all_df.columns:
+        market_stats.append(["Average Market ROI", f"{all_df[roi_col].mean():.2f}%"])
+        market_stats.append(["Median Market ROI", f"{all_df[roi_col].median():.2f}%"])
+    
+    all_rows.extend(market_stats)
+    
+    # Convert to DataFrame
+    max_cols = max(len(row) for row in all_rows)
+    padded_rows = [row + [""] * (max_cols - len(row)) for row in all_rows]
+    
+    return pd.DataFrame(padded_rows)
+
+def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
+    """
+    Apply formatting to the Financial Overview tab.
+    """
+    from googleapiclient.errors import HttpError
+    
+    sheet_id = sheets_manager._get_sheet_id(sheet_name)
+    requests = []
+    
+    # 0. Clear all formatting
+    requests.append({
+        "updateCells": {
+            "range": {"sheetId": sheet_id},
+            "fields": "userEnteredFormat"
+        }
+    })
+    
+    # 1. Center all text
+    requests.append({
+        "repeatCell": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": len(df) + 1,
+                "startColumnIndex": 0,
+                "endColumnIndex": len(df.columns)
+            },
+            "cell": {
+                "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                }
+            },
+            "fields": "userEnteredFormat(horizontalAlignment)"
+        }
+    })
+    
+    # 2. Format section headers (rows starting with "===")
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip()
+        if first_cell.startswith("===") or first_cell == "FINANCIAL OVERVIEW - ECONOMIC & MONETARY DATA":
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx + 1,
+                        "endRowIndex": row_idx + 2,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": len(df.columns)
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": {"red": 0.2, "green": 0.4, "blue": 0.8},
+                            "textFormat": {"bold": True, "fontSize": 14, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
+                            "horizontalAlignment": "CENTER"
+                        }
+                    },
+                    "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                }
+            })
+    
+    # 3. Auto-resize all columns
+    requests.append({
+        "autoResizeDimensions": {
+            "dimensions": {
+                "sheetId": sheet_id,
+                "dimension": "COLUMNS",
+                "startIndex": 0,
+                "endIndex": len(df.columns)
+            }
+        }
+    })
+    
+    # Send batchUpdate request
+    if requests:
+        try:
+            sheets_manager.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=sheets_manager.spreadsheet_id,
+                body={"requests": requests}
+            ).execute()
+            print(f"✓ Formatting applied to {sheet_name}")
+        except HttpError as e:
+            print(f"✗ Formatting failed for {sheet_name}: {e}")
+
 def main():
     print("[STEP] Starting report tab generation...", flush=True)
     if not ENHANCED_FILE.exists():
@@ -1041,10 +1352,8 @@ def main():
     
     # Generate Overall Report
     print("[STEP] Generating Overall Report...", flush=True)
-    overall_sections = build_overall_report(all_df)
-    # Convert sections list to DataFrame
-    overall_df = pd.DataFrame(overall_sections)
-    print(f"[DEBUG] Overall Report: {len(overall_df)} rows")
+    overall_df = build_overall_report(all_df)
+    print(f"[DEBUG] Overall Report: {len(overall_df)} rows, {len(overall_df.columns)} cols")
     
     # Upload Overall Report
     if callable(upload_df_method):
@@ -1056,6 +1365,29 @@ def main():
     
     # Apply formatting to Overall Report
     apply_overall_report_formatting(sheets, "Overall Report", overall_df)
+    
+    # Generate Financial Overview
+    print("[STEP] Generating Financial Overview...", flush=True)
+    # External financial data spreadsheet ID
+    FINANCIAL_SPREADSHEET_ID = "17MvM86qR-mN7fSPX86L7TbvDXLBYRCT5IlCd5zfXddA"
+    
+    # Fetch financial data from external spreadsheet
+    financial_data = fetch_financial_data(sheets, FINANCIAL_SPREADSHEET_ID)
+    
+    # Build Financial Overview tab
+    financial_overview_df = build_financial_overview(financial_data, all_df)
+    print(f"[DEBUG] Financial Overview: {len(financial_overview_df)} rows, {len(financial_overview_df.columns)} cols")
+    
+    # Upload Financial Overview
+    if callable(upload_df_method):
+        upload_df_method("Financial Overview", financial_overview_df)
+    elif callable(upload_sheet_method):
+        upload_sheet_method(SPREADSHEET_ID, "Financial Overview", financial_overview_df)
+    else:
+        print(" No valid upload method found in SheetsManager")
+    
+    # Apply formatting to Financial Overview
+    apply_financial_overview_formatting(sheets, "Financial Overview", financial_overview_df)
     
     print("[SUCCESS] All reports generated successfully!")
     print(f"[DEBUG] Arbitrage DataFrame rows: {len(arbitrage_df)}")
@@ -1151,6 +1483,7 @@ def apply_overall_report_formatting(sheets_manager, sheet_name, df):
     # 2. Find section headers and format them
     section_colors = {
         "EXCHANGE COMPARISON BY PROFESSION": {"red": 0.2, "green": 0.5, "blue": 0.8},
+        "MOST PROFITABLE EXCHANGE COUNT": {"red": 0.3, "green": 0.7, "blue": 0.5},
         "BEST & WORST EXCHANGES PER TICKER": {"red": 0.8, "green": 0.4, "blue": 0.2}
     }
     
@@ -1245,6 +1578,31 @@ def apply_overall_report_formatting(sheets_manager, sheet_name, df):
             except ValueError:
                 pass
             
+            # Format Median Profit column in frequency section
+            try:
+                median_profit_idx = header_row.index("Median Profit")
+                # Add gradient to Median Profit column
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": row_idx + 2,
+                                "endRowIndex": len(df) + 1,
+                                "startColumnIndex": median_profit_idx,
+                                "endColumnIndex": median_profit_idx + 1
+                            }],
+                            "gradientRule": {
+                                "minpoint": {"color": {"red": 1, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                                "maxpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "500"}
+                            }
+                        },
+                        "index": 0
+                    }
+                })
+            except ValueError:
+                pass
+            
             try:
                 avg_roi_idx = header_row.index("Avg ROI")
                 # Add gradient to Avg ROI column (remove % sign for comparison)
@@ -1302,6 +1660,46 @@ def apply_overall_report_formatting(sheets_manager, sheet_name, df):
                 except ValueError:
                     pass
     
+    # 7. Color code exchange names throughout the report
+    # Define distinct colors for each exchange
+    exchange_colors = {
+        "AI1": {"red": 0.2, "green": 0.6, "blue": 1.0},      # Light Blue
+        "CI1": {"red": 1.0, "green": 0.4, "blue": 0.4},      # Coral Red
+        "CI2": {"red": 1.0, "green": 0.6, "blue": 0.2},      # Orange
+        "IC1": {"red": 0.4, "green": 0.8, "blue": 0.4},      # Light Green
+        "NC1": {"red": 0.8, "green": 0.4, "blue": 0.8},      # Purple
+        "NC2": {"red": 1.0, "green": 0.8, "blue": 0.2}       # Yellow
+    }
+    
+    # Scan all cells and apply colors to exchange names
+    for row_idx in range(len(df)):
+        for col_idx in range(len(df.columns)):
+            cell_value = str(df.iloc[row_idx, col_idx]).strip().upper()
+            if cell_value in exchange_colors:
+                requests.append({
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": row_idx + 1,
+                            "endRowIndex": row_idx + 2,
+                            "startColumnIndex": col_idx,
+                            "endColumnIndex": col_idx + 1
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "backgroundColor": exchange_colors[cell_value],
+                                "textFormat": {
+                                    "bold": True,
+                                    "fontSize": 11,
+                                    "foregroundColor": {"red": 0, "green": 0, "blue": 0}
+                                },
+                                "horizontalAlignment": "CENTER"
+                            }
+                        },
+                        "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                    }
+                })
+    
     # Send batchUpdate request
     if requests:
         try:
@@ -1338,18 +1736,23 @@ def assign_opportunity_level(arbitrage_df):
 def build_overall_report(all_df):
     """
     Creates an Overall Report tab with:
-    1. Exchange comparison by sector/profession
+    1. Exchange comparison by sector/profession (side-by-side sections)
+       - Section 1A: Average metrics per profession/exchange
+       - Section 1B: Exchange frequency and median profit per profession
     2. Best/worst exchanges for each ticker
+    Returns a properly structured DataFrame for upload.
     """
-    sections = []
     
-    # Section 1: Exchange Comparison by Profession
-    professions = ["METALLURGY", "MANUFACTURING", "CHEMISTRY", "FOOD_INDUSTRIES", "AGRICULTURE", "FUEL_REFINING", "ELECTRONICS", "RESOURCE_EXTRACTION"]
+    # Section 1: Exchange Comparison by Profession (building-based)
+    professions = ["METALLURGY", "MANUFACTURING", "CONSTRUCTION", "CHEMISTRY", "FOOD_INDUSTRIES", "AGRICULTURE", "FUEL_REFINING", "ELECTRONICS", "RESOURCE_EXTRACTION"]
     
     # Load buildings and recipes for profession mapping
     buildings_path = CACHE_DIR / "buildings.csv"
     recipe_outputs_path = CACHE_DIR / "recipe_outputs.csv"
     buildingrecipes_path = CACHE_DIR / "buildingrecipes.csv"
+    
+    section1a_rows = []
+    section1b_rows = []
     
     if buildings_path.exists() and recipe_outputs_path.exists() and buildingrecipes_path.exists():
         buildings = pd.read_csv(buildings_path)
@@ -1359,20 +1762,29 @@ def build_overall_report(all_df):
         building_expertise = buildings.set_index('Ticker')['Expertise'].to_dict()
         recipe_to_building = buildingrecipes.set_index('Key')['Building'].to_dict()
         
-        # Build profession comparison
+        # Section 1A: Build profession comparison (avg metrics per exchange)
         comparison_data = []
+        
+        # Section 1B: Build profession exchange frequency and median profit
+        frequency_data = []
+        
         for profession in professions:
-            # Get materials for this profession
+            # PRIMARY: Get materials for this profession based on building expertise
             relevant_tickers = set()
             for recipe_key, material in recipe_outputs[['Key', 'Material']].values:
                 building = recipe_to_building.get(recipe_key)
                 if building and building_expertise.get(building, '') == profession:
                     relevant_tickers.add(material)
             
+            # SECONDARY: Category-based fallback ONLY for tier 0 resources (no buildings produce these)
+            if profession == "RESOURCE_EXTRACTION":
+                tier_0_materials = all_df[all_df.get('Tier', 999) == 0.0]['Ticker'].unique()
+                relevant_tickers.update(tier_0_materials)
+            
             if not relevant_tickers:
                 continue
             
-            # Calculate avg profit and ROI per exchange
+            # For Section 1A: Calculate avg profit and ROI per exchange
             for exch in EXCHANGES:
                 exch_data = all_df[(all_df['Exchange'] == exch) & (all_df['Ticker'].isin(relevant_tickers))]
                 if exch_data.empty:
@@ -1389,12 +1801,63 @@ def build_overall_report(all_df):
                     f"{avg_profit:,.2f}",
                     f"{avg_roi:,.2f}%"
                 ])
+            
+            # For Section 1B: Count which exchange is most profitable for each material
+            prof_data = all_df[all_df['Ticker'].isin(relevant_tickers)]
+            if not prof_data.empty:
+                # For each material, find which exchange has the highest profit
+                profit_col = 'Profit per Unit' if 'Profit per Unit' in prof_data.columns else 'Profit_Ask'
+                most_profitable_counts = {exch: 0 for exch in EXCHANGES}
+                
+                for ticker in relevant_tickers:
+                    ticker_data = prof_data[prof_data['Ticker'] == ticker]
+                    if not ticker_data.empty and profit_col in ticker_data.columns:
+                        # Find exchange with highest profit for this ticker
+                        max_profit_idx = ticker_data[profit_col].idxmax()
+                        best_exchange = ticker_data.loc[max_profit_idx, 'Exchange']
+                        if best_exchange in most_profitable_counts:
+                            most_profitable_counts[best_exchange] += 1
+                
+                # Calculate median profit for the entire profession
+                all_profits = prof_data.get('Profit per Unit', prof_data.get('Profit_Ask', pd.Series([0])))
+                median_profit = all_profits.median()
+                
+                # Create row showing which exchange is most profitable most often
+                frequency_row = [profession]
+                for exch in EXCHANGES:
+                    count = most_profitable_counts.get(exch, 0)
+                    frequency_row.append(str(count))
+                frequency_row.append(f"{median_profit:,.2f}")
+                
+                frequency_data.append(frequency_row)
         
+        # Build Section 1A
         comparison_header = ["Profession", "Exchange", "Material Count", "Avg Profit", "Avg ROI"]
-        sections.extend(section_header("EXCHANGE COMPARISON BY PROFESSION", len(comparison_header)))
-        sections.append(comparison_header)
-        sections.extend(comparison_data)
-        sections.append([""] * len(comparison_header))
+        section1a_rows.append(["EXCHANGE COMPARISON BY PROFESSION", "", "", "", ""])
+        section1a_rows.append(comparison_header)
+        section1a_rows.extend(comparison_data)
+        
+        # Build Section 1B
+        frequency_header = ["Profession"] + EXCHANGES + ["Median Profit"]
+        section1b_rows.append(["MOST PROFITABLE EXCHANGE COUNT", "", "", "", "", "", ""])
+        section1b_rows.append(frequency_header)
+        section1b_rows.extend(frequency_data)
+    
+    # Combine sections side by side
+    max_rows = max(len(section1a_rows), len(section1b_rows))
+    
+    # Pad sections to same height
+    while len(section1a_rows) < max_rows:
+        section1a_rows.append([""] * 5)
+    while len(section1b_rows) < max_rows:
+        section1b_rows.append([""] * 8)  # 1 profession + 6 exchanges + 1 median
+    
+    # Combine horizontally with a blank column separator
+    combined_rows = []
+    for i in range(max_rows):
+        combined_rows.append(section1a_rows[i] + [""] + section1b_rows[i])
+    
+    combined_rows.append([""] * (5 + 1 + 8))  # Blank row separator
     
     # Section 2: Best & Worst Exchanges per Ticker
     ticker_comparison = []
@@ -1437,26 +1900,26 @@ def build_overall_report(all_df):
     ticker_comparison.sort(key=lambda x: float(x[6].replace(',', '')), reverse=True)
     
     ticker_header = ["Ticker", "Name", "Best Exchange", "Best Profit", "Worst Exchange", "Worst Profit", "Difference"]
-    sections.extend(section_header("BEST & WORST EXCHANGES PER TICKER", len(ticker_header)))
-    sections.append(ticker_header)
-    sections.extend(ticker_comparison)
-    sections.append([""] * len(ticker_header))
+    # Add section header
+    combined_rows.append(["BEST & WORST EXCHANGES PER TICKER", "", "", "", "", "", ""])
+    combined_rows.append(ticker_header)
+    combined_rows.extend(ticker_comparison)
     
-    # Flatten any remaining nested lists
-    flattened_sections = []
-    for section in sections:
-        if isinstance(section, list) and len(section) > 0 and isinstance(section[0], list):
-            # This is a nested list from section_header, flatten it
-            flattened_sections.extend(section)
-        else:
-            flattened_sections.append(section)
+    # Convert to DataFrame with proper structure
+    max_cols = max(len(row) for row in combined_rows)
+    # Pad all rows to same length
+    padded_rows = [row + [""] * (max_cols - len(row)) for row in combined_rows]
     
-    return flattened_sections
+    return pd.DataFrame(padded_rows)
 
-def profession_section(df, exch, profession_name, top_n=15):
+def profession_section(df, exch, profession_name, top_n=None):
     """
-    Creates a section for a specific profession showing top materials by profit and ROI.
-    profession_name: METALLURGY, MANUFACTURING, CHEMISTRY, FOOD_INDUSTRIES, AGRICULTURE, FUEL_REFINING
+    Creates a section for a specific profession showing ALL materials by profit and ROI.
+    Materials are assigned based on the building type that produces them (building expertise).
+    
+    profession_name: METALLURGY, MANUFACTURING, CONSTRUCTION, CHEMISTRY, FOOD_INDUSTRIES, 
+                    AGRICULTURE, FUEL_REFINING, ELECTRONICS, RESOURCE_EXTRACTION
+    top_n: Ignored (kept for backwards compatibility) - now shows all materials
     """
     # Load buildings to map Ticker to Expertise
     buildings_path = CACHE_DIR / "buildings.csv"
@@ -1479,7 +1942,8 @@ def profession_section(df, exch, profession_name, top_n=15):
     # Map recipe key to building
     recipe_to_building = buildingrecipes.set_index('Key')['Building'].to_dict()
     
-    # Get all materials produced in buildings of this profession
+    # PRIMARY METHOD: Get materials produced in buildings of this profession
+    # This is the most accurate method based on actual building expertise
     relevant_tickers = set()
     for recipe_key, material in recipe_outputs[['Key', 'Material']].values:
         building = recipe_to_building.get(recipe_key)
@@ -1487,6 +1951,13 @@ def profession_section(df, exch, profession_name, top_n=15):
             expertise = building_expertise.get(building, '')
             if expertise == profession_name:
                 relevant_tickers.add(material)
+    
+    # SECONDARY METHOD: Category-based fallback ONLY for specific cases
+    # Only add materials that truly belong but don't have production buildings (like tier 0 resources)
+    if profession_name == "RESOURCE_EXTRACTION":
+        # Include all tier 0 materials (raw resources extracted from planets)
+        tier_0_materials = df[df.get('Tier', 999) == 0.0]['Ticker'].unique()
+        relevant_tickers.update(tier_0_materials)
     
     # Filter dataframe to only these materials
     prof_df = df[df['Ticker'].isin(relevant_tickers)].copy()
@@ -1502,20 +1973,26 @@ def profession_section(df, exch, profession_name, top_n=15):
     else:
         prof_df['SortProfit'] = 0
     
-    prof_df = prof_df.sort_values('SortProfit', ascending=False).head(top_n)
+    # Show ALL materials (sorted by profit), not just top N
+    prof_df = prof_df.sort_values('SortProfit', ascending=False)
     
-    subheader = ["Ticker", "Name", "Building", "Buy Price", "Input Cost", "Profit", "ROI %", "Investment Score"]
+    subheader = ["Ticker", "Name", "Recipe", "Building", "Buy Price", "Input Cost", "Profit", "ROI %", "Investment Score"]
     rows = []
     for _, row in prof_df.iterrows():
         ticker = row.get('Ticker', '')
-        # Find the building for this material
-        material_recipes = recipe_outputs[recipe_outputs['Material'] == ticker]
-        building_name = 'N/A'
-        for recipe_key in material_recipes['Key'].values:
-            building = recipe_to_building.get(recipe_key)
-            if building and building_expertise.get(building) == profession_name:
-                building_name = building
-                break
+        recipe = row.get('Recipe', 'N/A')
+        building = row.get('Building', 'N/A')
+        
+        # Convert to string and handle NaN
+        if pd.isna(recipe) or recipe is None or recipe == '':
+            recipe = 'N/A'
+        else:
+            recipe = str(recipe)
+        
+        if pd.isna(building) or building is None or building == '':
+            building = 'N/A'
+        else:
+            building = str(building)
         
         profit = row.get('Profit per Unit', row.get('Profit_Ask', 0))
         roi = row.get('ROI Ask %', row.get('ROI_Ask', 0))
@@ -1523,7 +2000,8 @@ def profession_section(df, exch, profession_name, top_n=15):
         rows.append([
             ticker,
             row.get('Material Name', row.get('Name', ticker)),
-            building_name,
+            recipe[:30] if len(recipe) > 30 else recipe,
+            building,
             f"{row.get('Ask_Price', row.get('Ask Price', 0)):,.2f}",
             f"{row.get('Input Cost per Unit', 0):,.2f}",
             f"{profit:,.2f}",

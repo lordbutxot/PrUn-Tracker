@@ -262,7 +262,7 @@ class UnifiedDataProcessor:
 
         buildingrecipes_dict = buildingrecipes.set_index('Key').to_dict('index')
 
-        # NEW APPROACH: Create separate rows for each recipe
+        # NEW APPROACH: Create separate rows for each recipe with unique input costs
         expanded_rows = []
         for idx, row in merged.iterrows():
             ticker = row['Ticker']
@@ -304,7 +304,7 @@ class UnifiedDataProcessor:
                         qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
                         price = get_market_price(ticker_c, market_prices, exchange)
                         wf_cost += qty * price
-                    # Material input cost
+                    # Material input cost - THIS IS RECIPE-SPECIFIC
                     direct_input_cost = sum(
                         qty * get_market_price(t, market_prices, exchange)
                         for t, qty in input_materials.items()
@@ -314,17 +314,19 @@ class UnifiedDataProcessor:
                     input_cost_per_stack = input_cost_per_unit * units_per_recipe
                     input_cost_per_hour = total_input_cost / hours_per_recipe if hours_per_recipe else 0
                     
-                    # Create a new row for this recipe
+                    # Create a new row for this recipe with its unique costs
                     row_copy = row.copy()
                     row_copy['Input Cost per Unit'] = input_cost_per_unit
                     row_copy['Input Cost per Stack'] = input_cost_per_stack
                     row_copy['Input Cost per Hour'] = input_cost_per_hour
                     row_copy['Recipe'] = recipe_id
                     row_copy['Building'] = building
+                    # Important: Each recipe variant is now a separate row with unique input costs
                     expanded_rows.append(row_copy)
         
-        # Replace merged with expanded dataset
+        # Replace merged with expanded dataset - now each recipe has its own row with accurate costs
         merged = pd.DataFrame(expanded_rows)
+        print(f"[INFO] Expanded to {len(merged)} rows with recipe-specific input costs")
         # --- END: Input cost calculation integration ---
 
         print(f"[SUCCESS] Created complete dataset: {len(merged)} total records")

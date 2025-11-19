@@ -383,6 +383,9 @@ class UnifiedAnalysisProcessor:
         if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
             base_df = data['processed_data.csv'].copy()
             print(f"\n Using processed_data.csv as base ({len(base_df)} rows)")
+            # processed_data.csv already has recipe-specific rows with individual costs
+            # Each row represents one recipe for one material at one exchange
+            print(f"    Recipe expansion already done - preserving {len(base_df)} recipe-specific rows")
         elif 'market_data.csv' in data and not data['market_data.csv'].empty:
             base_df = data['market_data.csv'].copy()
             print(f"\n Using market_data.csv as base ({len(base_df)} rows)")
@@ -427,13 +430,30 @@ class UnifiedAnalysisProcessor:
         for _, row in base_df.iterrows():
             ticker = row['Ticker']
             material_info = self.get_material_info(ticker)
+            
+            # Preserve Recipe and Building if already present (from processed_data.csv)
+            recipe_value = row.get('Recipe', self.get_recipe(ticker))
+            building_value = row.get('Building', '')
+            
+            # If Recipe column exists and is not empty/NaN, use it (it's recipe-specific)
+            if 'Recipe' in base_df.columns and pd.notna(recipe_value) and recipe_value != '':
+                recipe = recipe_value
+            else:
+                recipe = self.get_recipe(ticker)
+            
+            # Get amount per recipe - if it's already in the row, use it
+            if 'Amount per Recipe' in base_df.columns and pd.notna(row.get('Amount per Recipe')):
+                amount_per_recipe = row.get('Amount per Recipe')
+            else:
+                amount_per_recipe = self.get_amount_per_recipe(ticker)
+            
             analysis_row = {
                 'Material Name': material_info.get('Material Name', ''),
                 'Ticker': ticker,
                 'Category': material_info.get('Category', ''),
                 'Tier': material_info.get('Tier', ''),
-                'Recipe': self.get_recipe(ticker),
-                'Amount per Recipe': self.get_amount_per_recipe(ticker),
+                'Recipe': recipe,  # Use preserved recipe-specific value
+                'Amount per Recipe': amount_per_recipe,
                 'Weight': material_info.get('Weight', ''),
                 'Volume': material_info.get('Volume', ''),
                 'Ask_Price': row.get('Ask_Price', ''),
