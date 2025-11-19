@@ -402,11 +402,13 @@ class UnifiedSheetsManager:
             
             # For pie charts, we need both label column and data column
             # The data_range should span from label column to data column
+            # First column in range = labels (domain), second column = values (series)
             chart_spec = {
                 "title": title,
                 "pieChart": {
                     "legendPosition": "RIGHT_LEGEND",
                     "pieHole": 0.0,  # Set to 0.4 for donut chart
+                    "pieSliceLabel": "PERCENTAGE",  # Show percentage on slices
                     "domain": {
                         "sourceRange": {
                             "sources": [{
@@ -414,7 +416,7 @@ class UnifiedSheetsManager:
                                 "startRowIndex": data_range['startRowIndex'],
                                 "endRowIndex": data_range['endRowIndex'],
                                 "startColumnIndex": data_range['startColumnIndex'],
-                                "endColumnIndex": data_range['startColumnIndex'] + 1  # Just the label column
+                                "endColumnIndex": data_range['startColumnIndex'] + 1  # Label column
                             }]
                         }
                     },
@@ -424,8 +426,8 @@ class UnifiedSheetsManager:
                                 "sheetId": sheet_id,
                                 "startRowIndex": data_range['startRowIndex'],
                                 "endRowIndex": data_range['endRowIndex'],
-                                "startColumnIndex": data_range['endColumnIndex'] - 1,  # The numeric data column
-                                "endColumnIndex": data_range['endColumnIndex']
+                                "startColumnIndex": data_range['startColumnIndex'] + 1,  # Data column (next to labels)
+                                "endColumnIndex": data_range['startColumnIndex'] + 2
                             }]
                         }
                     }
