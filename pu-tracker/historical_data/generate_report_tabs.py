@@ -1480,7 +1480,6 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append([])
     
     gdp = calculate_gdp_metrics(all_df, PROFESSION_ORDER)
-    ppp = calculate_ppp_metrics(all_df)
     
     all_rows.append(["Metric", "Value (ICA)"])
     all_rows.append(["Total Universe GDP", f"{gdp['total_market_value']:,.2f}"])
@@ -1495,25 +1494,10 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["└─────────────────────────────────────────┘"])
     all_rows.append([])
     
-    all_rows.append(["Faction", "GDP (ICA)", "% of Universe GDP", "GDP PPP", "% of Economy", "", "", ""])
-    # Calculate weighted average PPP for each faction
-    faction_ppp_gdp = {}
-    for faction in gdp['by_faction'].keys():
-        faction_exch = [exch for exch, f in {'AI1': 'AIC (Antares)', 'CI1': 'CIS (Castillo)', 'CI2': 'CIS (Castillo)', 'IC1': 'ICA (Insitor)', 'NC1': 'NCC (Neo Brasilia)', 'NC2': 'NCC (Neo Brasilia)'}.items() if f == faction]
-        if faction_exch:
-            # Use weighted average PPP based on exchange GDP
-            total_gdp = sum(gdp['by_exchange'].get(exch, 0) for exch in faction_exch)
-            weighted_ppp = sum((gdp['by_exchange'].get(exch, 0) / ppp.get(exch, {}).get('ppp_index', 1.0)) for exch in faction_exch if exch in ppp)
-            faction_ppp_gdp[faction] = weighted_ppp
-        else:
-            faction_ppp_gdp[faction] = gdp['by_faction'][faction]
-    
-    total_ppp_gdp = sum(faction_ppp_gdp.values())
+    all_rows.append(["Faction", "GDP (ICA)", "% of Economy", "", "", "", "", ""])
     for faction, value in sorted(gdp['by_faction'].items(), key=lambda x: x[1], reverse=True):
-        pct = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        ppp_gdp = faction_ppp_gdp.get(faction, value)
-        pct_economy = (ppp_gdp / total_ppp_gdp * 100) if total_ppp_gdp > 0 else 0
-        all_rows.append([faction, f"{value:,.2f}", f"{pct:.2f}%", f"{ppp_gdp:,.2f}", f"{pct_economy:.2f}%", "", "", ""])
+        pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        all_rows.append([faction, f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", "", "", ""])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
@@ -1526,7 +1510,7 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["└─────────────────────────────────────────┘"])
     all_rows.append([])
     
-    all_rows.append(["Exchange", "GDP (ICA)", "% of Universe", "% of Faction", "GDP PPP", "% of Economy", "", "", ""])
+    all_rows.append(["Exchange", "GDP (ICA)", "% of Economy", "% of Faction", "", "", "", "", ""])
     faction_map = {
         'AI1': 'AIC (Antares)',
         'CI1': 'CIS (Castillo)',
@@ -1536,21 +1520,12 @@ def build_financial_overview(financial_data, all_df):
         'NC2': 'NCC (Neo Brasilia)'
     }
     
-    # Calculate PPP-adjusted GDP for each exchange
-    exchange_ppp_gdp = {}
-    for exch, value in gdp['by_exchange'].items():
-        ppp_index = ppp.get(exch, {}).get('ppp_index', 1.0)
-        exchange_ppp_gdp[exch] = value / ppp_index
-    total_exchange_ppp = sum(exchange_ppp_gdp.values())
-    
     for exch, value in sorted(gdp['by_exchange'].items(), key=lambda x: x[1], reverse=True):
-        pct_universe = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         faction = faction_map.get(exch, 'UNKNOWN')
         faction_gdp = gdp['by_faction'].get(faction, 1)
         pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
-        ppp_gdp = exchange_ppp_gdp.get(exch, value)
-        pct_economy = (ppp_gdp / total_exchange_ppp * 100) if total_exchange_ppp > 0 else 0
-        all_rows.append([exch, f"{value:,.2f}", f"{pct_universe:.2f}%", f"{pct_faction:.2f}%", f"{ppp_gdp:,.2f}", f"{pct_economy:.2f}%", "", "", ""])
+        all_rows.append([exch, f"{value:,.2f}", f"{pct_economy:.2f}%", f"{pct_faction:.2f}%", "", "", "", "", ""])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
@@ -1563,13 +1538,10 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["└─────────────────────────────────────────┘"])
     all_rows.append([])
     
-    all_rows.append(["Profession/Sector", "GDP (ICA)", "% of Universe GDP", "GDP PPP", "% of Economy", "", "", ""])
-    # For professions, PPP adjustment is same as ICA (professions span exchanges)
-    total_profession_ppp = gdp['total_market_value']
+    all_rows.append(["Profession/Sector", "GDP (ICA)", "% of Economy", "", "", "", "", ""])
     for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
-        pct = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        pct_economy = pct  # Same as % of Universe for professions
-        all_rows.append([profession, f"{value:,.2f}", f"{pct:.2f}%", f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", ""])
+        pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", "", "", ""])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
@@ -1582,12 +1554,11 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["└─────────────────────────────────────────┘"])
     all_rows.append([])
     
-    all_rows.append(["Rank", "Ticker", "GDP (ICA)", "% of Universe GDP", "GDP PPP", "% of Economy", "", "", ""])
+    all_rows.append(["Rank", "Ticker", "GDP (ICA)", "% of Economy", "", "", "", "", ""])
     sorted_products = sorted(gdp['by_product'].items(), key=lambda x: x[1], reverse=True)[:50]
     for rank, (ticker, value) in enumerate(sorted_products, 1):
-        pct = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        pct_economy = pct  # Same as % of Universe for products
-        all_rows.append([f"{rank}", ticker, f"{value:,.2f}", f"{pct:.2f}%", f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", ""])
+        pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        all_rows.append([f"{rank}", ticker, f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", "", "", ""])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
@@ -1631,23 +1602,19 @@ def build_financial_overview(financial_data, all_df):
             all_rows.append(["└─────────────────────────────────────────┘"])
             all_rows.append([])
             
-            all_rows.append(["Rank", "Ticker", "GDP (ICA)", "% of Faction GDP", "% of Universe GDP", "GDP PPP", "% of Economy", "", ""])
+            all_rows.append(["Rank", "Ticker", "GDP (ICA)", "% of Faction GDP", "% of Economy", "", "", "", ""])
             sorted_faction_products = sorted(faction_products[faction].items(), key=lambda x: x[1], reverse=True)[:50]
             
-            faction_ppp_total = faction_ppp_gdp.get(faction, faction_gdp)
             for rank, (ticker, value) in enumerate(sorted_faction_products, 1):
                 pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
-                pct_universe = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-                pct_economy = pct_universe  # Use same as universe for products
+                pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
                 all_rows.append([
                     f"{rank}",
                     ticker,
                     f"{value:,.2f}",
                     f"{pct_faction:.2f}%",
-                    f"{pct_universe:.2f}%",
-                    f"{value:,.2f}",
                     f"{pct_economy:.2f}%",
-                    "", ""
+                    "", "", "", ""
                 ])
             
             all_rows.append([])
