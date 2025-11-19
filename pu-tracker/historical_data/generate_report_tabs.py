@@ -1462,21 +1462,19 @@ def build_financial_overview(financial_data, all_df):
     all_rows = []
     
     # Add title
-    all_rows.append(["FINANCIAL OVERVIEW - ECONOMIC & MONETARY DATA"])
+    all_rows.append(["FINANCIAL OVERVIEW"])
+    all_rows.append(["Economic & Monetary Data"])
     all_rows.append([])
     
-    # ═══════════════════════════════════════════════════════
     # SECTION I: CALCULATED ECONOMIC INDICATORS
-    # ═══════════════════════════════════════════════════════
-    all_rows.append(["═══════════════════════════════════════════════════════"])
-    all_rows.append(["═══ I. ECONOMIC INDICATORS (CALCULATED) ═══"])
-    all_rows.append(["═══════════════════════════════════════════════════════"])
+    all_rows.append(["═" * 50])
+    all_rows.append(["SECTION I: ECONOMIC INDICATORS"])
+    all_rows.append(["═" * 50])
     all_rows.append([])
     
     # 1A. GDP-LIKE METRICS - OVERVIEW
-    all_rows.append(["┌─────────────────────────────────────────┐"])
-    all_rows.append(["│  GDP PROXY METRICS (Production Value)  │"])
-    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append(["GDP METRICS (Production Value)"])
+    all_rows.append(["-" * 40])
     all_rows.append([])
     
     gdp = calculate_gdp_metrics(all_df, PROFESSION_ORDER)
@@ -1489,28 +1487,23 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append([])
     
     # 1B. GDP BY FACTION
-    all_rows.append(["┌─────────────────────────────────────────┐"])
-    all_rows.append(["│  GDP BY FACTION                         │"])
-    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append(["GDP BY FACTION"])
+    all_rows.append(["-" * 40])
     all_rows.append([])
     
-    all_rows.append(["Faction", "GDP (ICA)", "% of Economy", "", "", "", "", ""])
+    all_rows.append(["Faction", "GDP (ICA)", "% of Economy"])
     for faction, value in sorted(gdp['by_faction'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        all_rows.append([faction, f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", "", "", ""])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
+        all_rows.append([faction, f"{value:,.2f}", f"{pct_economy:.2f}%"])
     all_rows.append([])
     all_rows.append([])
     
     # 1C. GDP BY EXCHANGE
-    all_rows.append(["┌─────────────────────────────────────────┐"])
-    all_rows.append(["│  GDP BY EXCHANGE                        │"])
-    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append(["GDP BY EXCHANGE"])
+    all_rows.append(["-" * 40])
     all_rows.append([])
     
-    all_rows.append(["Exchange", "GDP (ICA)", "% of Economy", "% of Faction", "", "", "", "", ""])
+    all_rows.append(["Exchange", "GDP (ICA)", "% of Total Economy", "% of Faction"])
     faction_map = {
         'AI1': 'AIC (Antares)',
         'CI1': 'CIS (Castillo)',
@@ -1525,17 +1518,13 @@ def build_financial_overview(financial_data, all_df):
         faction = faction_map.get(exch, 'UNKNOWN')
         faction_gdp = gdp['by_faction'].get(faction, 1)
         pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
-        all_rows.append([exch, f"{value:,.2f}", f"{pct_economy:.2f}%", f"{pct_faction:.2f}%", "", "", "", "", ""])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
+        all_rows.append([exch, f"{value:,.2f}", f"{pct_economy:.2f}%", f"{pct_faction:.2f}%"])
     all_rows.append([])
     all_rows.append([])
     
     # 1D. GDP BY PROFESSION/SECTOR WITH FACTION BREAKDOWN
-    all_rows.append(["┌─────────────────────────────────────────┐"])
-    all_rows.append(["│  GDP BY PROFESSION/SECTOR               │"])
-    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append(["GDP BY PROFESSION/SECTOR"])
+    all_rows.append(["-" * 40])
     all_rows.append([])
     
     # Calculate profession GDP by faction
@@ -1561,24 +1550,41 @@ def build_financial_overview(financial_data, all_df):
                     else:
                         profession_by_faction[faction][profession] = profession_value
     
-    all_rows.append(["Profession/Sector", "GDP (ICA)", "% of Economy", "AIC", "CIS", "ICA", "NCC", ""])
+    all_rows.append(["Profession/Sector", "Total GDP", "% Economy", 
+                     "AIC GDP", "% AIC", "CIS GDP", "% CIS", 
+                     "ICA GDP", "% ICA", "NCC GDP", "% NCC"])
+    
     for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        
         aic_val = profession_by_faction.get('AIC (Antares)', {}).get(profession, 0)
+        aic_faction_gdp = gdp['by_faction'].get('AIC (Antares)', 1)
+        aic_pct = (aic_val / aic_faction_gdp * 100) if aic_faction_gdp > 0 else 0
+        
         cis_val = profession_by_faction.get('CIS (Castillo)', {}).get(profession, 0)
+        cis_faction_gdp = gdp['by_faction'].get('CIS (Castillo)', 1)
+        cis_pct = (cis_val / cis_faction_gdp * 100) if cis_faction_gdp > 0 else 0
+        
         ica_val = profession_by_faction.get('ICA (Insitor)', {}).get(profession, 0)
+        ica_faction_gdp = gdp['by_faction'].get('ICA (Insitor)', 1)
+        ica_pct = (ica_val / ica_faction_gdp * 100) if ica_faction_gdp > 0 else 0
+        
         ncc_val = profession_by_faction.get('NCC (Neo Brasilia)', {}).get(profession, 0)
-        all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%", f"{aic_val:,.2f}", f"{cis_val:,.2f}", f"{ica_val:,.2f}", f"{ncc_val:,.2f}", ""])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
+        ncc_faction_gdp = gdp['by_faction'].get('NCC (Neo Brasilia)', 1)
+        ncc_pct = (ncc_val / ncc_faction_gdp * 100) if ncc_faction_gdp > 0 else 0
+        
+        all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%",
+                        f"{aic_val:,.2f}", f"{aic_pct:.2f}%",
+                        f"{cis_val:,.2f}", f"{cis_pct:.2f}%",
+                        f"{ica_val:,.2f}", f"{ica_pct:.2f}%",
+                        f"{ncc_val:,.2f}", f"{ncc_pct:.2f}%"])
     all_rows.append([])
     all_rows.append([])
     
     # 1E. TOP 50 PRODUCTS BY GDP - HORIZONTAL LAYOUT (UNIVERSE + ALL FACTIONS)
-    all_rows.append(["┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐"])
-    all_rows.append(["│  TOP 50 PRODUCTS BY GDP - UNIVERSE & FACTION BREAKDOWN                                                                                │"])
-    all_rows.append(["└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘"])
+    all_rows.append(["TOP 50 PRODUCTS BY GDP"])
+    all_rows.append(["Universe & Faction Breakdown"])
+    all_rows.append(["-" * 80])
     all_rows.append([])
     
     # Calculate products by faction
@@ -1611,11 +1617,11 @@ def build_financial_overview(financial_data, all_df):
             faction_top_products[faction] = []
     
     # Create header row
-    header = ["Rank", "Universe", "% Econ", "",
-              "AIC", "% Econ", "",
-              "CIS", "% Econ", "",
-              "ICA", "% Econ", "",
-              "NCC", "% Econ", ""]
+    header = ["Rank", "Universe", "GDP", "% Econ",
+              "AIC", "GDP", "% AIC",
+              "CIS", "GDP", "% CIS",
+              "ICA", "GDP", "% ICA",
+              "NCC", "GDP", "% NCC"]
     all_rows.append(header)
     
     # Create data rows (50 rows for top 50)
@@ -1626,7 +1632,7 @@ def build_financial_overview(financial_data, all_df):
         if rank - 1 < len(sorted_products):
             ticker, value = sorted_products[rank - 1]
             pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-            row.extend([ticker, f"{pct_economy:.2f}%", ""])
+            row.extend([ticker, f"{value:,.0f}", f"{pct_economy:.2f}%"])
         else:
             row.extend(["", "", ""])
         
@@ -1637,8 +1643,8 @@ def build_financial_overview(financial_data, all_df):
             
             if rank - 1 < len(faction_list):
                 ticker, value = faction_list[rank - 1]
-                pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-                row.extend([ticker, f"{pct_economy:.2f}%", ""])
+                pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
+                row.extend([ticker, f"{value:,.0f}", f"{pct_faction:.2f}%"])
             else:
                 row.extend(["", "", ""])
         
@@ -1646,15 +1652,11 @@ def build_financial_overview(financial_data, all_df):
     
     all_rows.append([])
     all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
     
     # 2. PURCHASING POWER PARITY (PPP)
-    all_rows.append(["┌──────────────────────────────────────────────────┐"])
-    all_rows.append(["│  PURCHASING POWER PARITY (PPP) BY EXCHANGE     │"])
-    all_rows.append(["│  Base: AI1 = 1.00                                │"])
-    all_rows.append(["└──────────────────────────────────────────────────┘"])
+    all_rows.append(["PURCHASING POWER PARITY BY EXCHANGE"])
+    all_rows.append(["Base: AI1 = 1.00"])
+    all_rows.append(["-" * 50])
     all_rows.append([])
     
     ppp = calculate_ppp_metrics(all_df)
@@ -1678,9 +1680,8 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append([])
     
     # 3. EXCHANGE COMPETITIVENESS INDEX
-    all_rows.append(["┌────────────────────────────────────────────────────┐"])
-    all_rows.append(["│  EXCHANGE COMPETITIVENESS ANALYSIS                │"])
-    all_rows.append(["└────────────────────────────────────────────────────┘"])
+    all_rows.append(["EXCHANGE COMPETITIVENESS ANALYSIS"])
+    all_rows.append(["-" * 50])
     all_rows.append([])
     
     comp = calculate_exchange_competitiveness(all_df)
@@ -1701,9 +1702,8 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append([])
     
     # 4. INFLATION PROXY (Price Volatility by Category)
-    all_rows.append(["┌─────────────────────────────────────────────────────┐"])
-    all_rows.append(["│  INFLATION PROXY (Price Volatility by Category)    │"])
-    all_rows.append(["└─────────────────────────────────────────────────────┘"])
+    all_rows.append(["INFLATION PROXY - Price Volatility by Category"])
+    all_rows.append(["-" * 50])
     all_rows.append([])
     
     inflation = calculate_inflation_metrics(all_df)
