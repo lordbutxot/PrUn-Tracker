@@ -1480,9 +1480,9 @@ def build_financial_overview(financial_data, all_df):
     gdp = calculate_gdp_metrics(all_df, PROFESSION_ORDER)
     
     all_rows.append(["Metric", "Value (ICA)"])
-    all_rows.append(["Total Universe GDP", f"{gdp['total_market_value']:,.2f}"])
+    all_rows.append(["Total Universe GDP", gdp['total_market_value']])
     if 'total_profit_potential' in gdp:
-        all_rows.append(["Total Profit Potential", f"{gdp['total_profit_potential']:,.2f}"])
+        all_rows.append(["Total Profit Potential", gdp['total_profit_potential']])
     all_rows.append([])
     all_rows.append([])
     
@@ -1494,7 +1494,7 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["Faction", "GDP", "% of Total GDP"])
     for faction, value in sorted(gdp['by_faction'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        all_rows.append([faction, f"{value:,.2f}", f"{pct_economy:.2f}%"])
+        all_rows.append([faction, value, pct_economy / 100])
     all_rows.append([])
     all_rows.append([])
     
@@ -1515,7 +1515,7 @@ def build_financial_overview(financial_data, all_df):
     
     for exch, value in sorted(gdp['by_exchange'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        all_rows.append([exch, f"{value:,.2f}", f"{pct_economy:.2f}%"])
+        all_rows.append([exch, value, pct_economy / 100])
     all_rows.append([])
     all_rows.append([])
     
@@ -1564,11 +1564,11 @@ def build_financial_overview(financial_data, all_df):
         ncc_val = profession_by_faction.get('NCC (Neo Brasilia)', {}).get(profession, 0)
         ncc_pct_of_total = (ncc_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
         
-        all_rows.append([profession, f"{value:,.2f}",
-                        f"{aic_val:,.2f}", f"{aic_pct_of_total:.2f}%",
-                        f"{cis_val:,.2f}", f"{cis_pct_of_total:.2f}%",
-                        f"{ica_val:,.2f}", f"{ica_pct_of_total:.2f}%",
-                        f"{ncc_val:,.2f}", f"{ncc_pct_of_total:.2f}%"])
+        all_rows.append([profession, value,
+                        aic_val, aic_pct_of_total / 100,
+                        cis_val, cis_pct_of_total / 100,
+                        ica_val, ica_pct_of_total / 100,
+                        ncc_val, ncc_pct_of_total / 100])
     all_rows.append([])
     all_rows.append([])
     
@@ -1749,7 +1749,7 @@ def build_financial_overview(financial_data, all_df):
 
 def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
     """
-    Apply formatting to the Financial Overview tab.
+    Apply comprehensive formatting to the Financial Overview tab with colors, borders, and number formatting.
     """
     from googleapiclient.errors import HttpError
     
@@ -1764,9 +1764,21 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
         }
     })
     
-    # 0.5. Hide GDP_RAW columns - REMOVED
-    # The Financial Overview tab now properly shows all columns including percentages
-    # No columns should be hidden by default
+    # 0.5. Unhide all columns (in case any were previously hidden)
+    requests.append({
+        "updateDimensionProperties": {
+            "range": {
+                "sheetId": sheet_id,
+                "dimension": "COLUMNS",
+                "startIndex": 0,
+                "endIndex": len(df.columns)
+            },
+            "properties": {
+                "hiddenByUser": False
+            },
+            "fields": "hiddenByUser"
+        }
+    })
     
     # 1. Center all text
     requests.append({
@@ -1787,10 +1799,15 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
         }
     })
     
-    # 2. Format section headers (rows starting with "===")
+    # 2. Format section headers (rows starting with "===" or main sections)
+    header_color = {"red": 0.2, "green": 0.4, "blue": 0.8}
+    subheader_color = {"red": 0.85, "green": 0.85, "blue": 0.85}
+    
     for row_idx in range(len(df)):
         first_cell = str(df.iloc[row_idx, 0]).strip()
-        if first_cell.startswith("===") or first_cell == "FINANCIAL OVERVIEW - ECONOMIC & MONETARY DATA":
+        
+        # Main section headers (===)
+        if first_cell.startswith("===") or "FINANCIAL OVERVIEW" in first_cell or "SECTION" in first_cell:
             requests.append({
                 "repeatCell": {
                     "range": {
@@ -1802,7 +1819,7 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
                     },
                     "cell": {
                         "userEnteredFormat": {
-                            "backgroundColor": {"red": 0.2, "green": 0.4, "blue": 0.8},
+                            "backgroundColor": header_color,
                             "textFormat": {"bold": True, "fontSize": 14, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
                             "horizontalAlignment": "CENTER"
                         }
@@ -1810,8 +1827,215 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
                     "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
                 }
             })
+        
+        # Subsection headers (GDP BY, Faction, Exchange, etc.)
+        elif any(keyword in first_cell for keyword in ["GDP BY", "TOP 50", "Metric", "Faction", "Exchange", "Profession/Sector"]):
+            # Check if this is a header row (contains column names)
+            is_header = first_cell in ["Metric", "Faction", "Exchange", "Profession/Sector"]
+            
+            if is_header or first_cell.startswith("GDP BY") or first_cell.startswith("TOP 50"):
+                requests.append({
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": row_idx + 1,
+                            "endRowIndex": row_idx + 2,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": len(df.columns)
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "backgroundColor": subheader_color,
+                                "textFormat": {"bold": True, "fontSize": 11},
+                                "horizontalAlignment": "CENTER",
+                                "borders": {
+                                    "top": {"style": "SOLID", "width": 2},
+                                    "bottom": {"style": "SOLID", "width": 2}
+                                }
+                            }
+                        },
+                        "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,borders)"
+                    }
+                })
     
-    # 3. Auto-resize all columns
+    # 3. Apply number formatting - scan for data sections and apply formatting by column
+    gdp_sections = []
+    
+    # Find all data sections (GDP BY FACTION, GDP BY EXCHANGE, GDP BY PROFESSION)
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip()
+        
+        # GDP BY FACTION section
+        if first_cell == "Faction":
+            # Find end of this section
+            end_row = row_idx + 1
+            for i in range(row_idx + 1, len(df)):
+                if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                    end_row = i
+                    break
+            gdp_sections.append({
+                'name': 'GDP BY FACTION',
+                'header_row': row_idx,
+                'start_row': row_idx + 1,
+                'end_row': end_row,
+                'columns': {
+                    1: 'currency',  # GDP column
+                    2: 'percent'    # % of Total GDP column
+                }
+            })
+        
+        # GDP BY EXCHANGE section
+        elif first_cell == "Exchange":
+            end_row = row_idx + 1
+            for i in range(row_idx + 1, len(df)):
+                if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                    end_row = i
+                    break
+            gdp_sections.append({
+                'name': 'GDP BY EXCHANGE',
+                'header_row': row_idx,
+                'start_row': row_idx + 1,
+                'end_row': end_row,
+                'columns': {
+                    1: 'currency',  # GDP column
+                    2: 'percent'    # % of Total GDP column
+                }
+            })
+        
+        # GDP BY PROFESSION/SECTOR section
+        elif first_cell == "Profession/Sector":
+            end_row = row_idx + 1
+            for i in range(row_idx + 1, len(df)):
+                if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                    end_row = i
+                    break
+            gdp_sections.append({
+                'name': 'GDP BY PROFESSION/SECTOR',
+                'header_row': row_idx,
+                'start_row': row_idx + 1,
+                'end_row': end_row,
+                'columns': {
+                    1: 'currency',  # Total GDP
+                    2: 'currency',  # AIC GDP
+                    3: 'percent',   # AIC % of GDP
+                    4: 'currency',  # CIS GDP
+                    5: 'percent',   # CIS % of GDP
+                    6: 'currency',  # ICA GDP
+                    7: 'percent',   # ICA % of GDP
+                    8: 'currency',  # NCC GDP
+                    9: 'percent'    # NCC % of GDP
+                }
+            })
+        
+        # GDP METRICS section
+        elif first_cell == "Metric":
+            end_row = row_idx + 1
+            for i in range(row_idx + 1, len(df)):
+                if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                    end_row = i
+                    break
+            gdp_sections.append({
+                'name': 'GDP METRICS',
+                'header_row': row_idx,
+                'start_row': row_idx + 1,
+                'end_row': end_row,
+                'columns': {
+                    1: 'currency'  # Value column
+                }
+            })
+    
+    # Apply formatting to each section
+    for section in gdp_sections:
+        for col_idx, format_type in section['columns'].items():
+            if format_type == 'currency':
+                # Apply currency format with thousands separator
+                requests.append({
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": section['start_row'] + 1,
+                            "endRowIndex": section['end_row'] + 1,
+                            "startColumnIndex": col_idx,
+                            "endColumnIndex": col_idx + 1
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "numberFormat": {
+                                    "type": "CURRENCY",
+                                    "pattern": "#,##0.00 [$ICA]"
+                                }
+                            }
+                        },
+                        "fields": "userEnteredFormat(numberFormat)"
+                    }
+                })
+            elif format_type == 'percent':
+                # Apply percentage format
+                requests.append({
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": section['start_row'] + 1,
+                            "endRowIndex": section['end_row'] + 1,
+                            "startColumnIndex": col_idx,
+                            "endColumnIndex": col_idx + 1
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "numberFormat": {
+                                    "type": "PERCENT",
+                                    "pattern": "0.00%"
+                                }
+                            }
+                        },
+                        "fields": "userEnteredFormat(numberFormat)"
+                    }
+                })
+    
+    # 4. Add alternating row colors for data sections
+    data_row_color_1 = {"red": 0.95, "green": 0.95, "blue": 0.95}
+    data_row_color_2 = {"red": 1, "green": 1, "blue": 1}
+    
+    in_data_section = False
+    data_row_counter = 0
+    
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip()
+        
+        # Start of data section (after header row)
+        if first_cell in ["Faction", "Exchange", "Profession/Sector"]:
+            in_data_section = True
+            data_row_counter = 0
+            continue
+        
+        # End of data section (empty row)
+        if in_data_section and (not first_cell or first_cell == ""):
+            in_data_section = False
+            continue
+        
+        # Apply alternating colors to data rows
+        if in_data_section:
+            color = data_row_color_1 if data_row_counter % 2 == 0 else data_row_color_2
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx + 1,
+                        "endRowIndex": row_idx + 2,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": len(df.columns)
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": color
+                        }
+                    },
+                    "fields": "userEnteredFormat(backgroundColor)"
+                }
+            })
+            data_row_counter += 1
+    
+    # 5. Auto-resize all columns
     requests.append({
         "autoResizeDimensions": {
             "dimensions": {
@@ -1823,6 +2047,19 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
         }
     })
     
+    # 6. Freeze first row
+    requests.append({
+        "updateSheetProperties": {
+            "properties": {
+                "sheetId": sheet_id,
+                "gridProperties": {
+                    "frozenRowCount": 1
+                }
+            },
+            "fields": "gridProperties.frozenRowCount"
+        }
+    })
+    
     # Send batchUpdate request
     if requests:
         try:
@@ -1830,7 +2067,7 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
                 spreadsheetId=sheets_manager.spreadsheet_id,
                 body={"requests": requests}
             ).execute()
-            print(f"✓ Formatting applied to {sheet_name}")
+            print(f"✓ Enhanced formatting applied to {sheet_name}")
         except HttpError as e:
             print(f"✗ Formatting failed for {sheet_name}: {e}")
 
