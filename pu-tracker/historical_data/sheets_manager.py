@@ -127,23 +127,33 @@ class SheetsManager:
         self.credentials_file = CREDENTIALS_FILE
         
     def connect(self):
-        """Connect to Google Sheets API"""
+        """Connect to Google Sheets API using credentials from file or environment"""
         try:
-            if not self.credentials_file.exists():
-                print(f"[ERROR] Credentials file not found: {self.credentials_file}")
-                return False
-                
             # Define scopes
             scopes = [
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'
             ]
             
-            # Load credentials
-            credentials = Credentials.from_service_account_file(
-                str(self.credentials_file), 
-                scopes=scopes
-            )
+            # Try to use GOOGLE_APPLICATION_CREDENTIALS environment variable first
+            import os
+            creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+            
+            if creds_path and Path(creds_path).exists():
+                print(f"[INFO] Using credentials from environment: {creds_path}")
+                credentials = Credentials.from_service_account_file(
+                    creds_path, 
+                    scopes=scopes
+                )
+            elif self.credentials_file.exists():
+                print(f"[INFO] Using credentials file: {self.credentials_file}")
+                credentials = Credentials.from_service_account_file(
+                    str(self.credentials_file), 
+                    scopes=scopes
+                )
+            else:
+                print(f"[ERROR] No credentials found. Set GOOGLE_APPLICATION_CREDENTIALS or provide {self.credentials_file}")
+                return False
             
             # Create client
             self.client = gspread.authorize(credentials)
@@ -152,6 +162,8 @@ class SheetsManager:
             
         except Exception as e:
             print(f"[ERROR] Failed to connect to Google Sheets: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def upload_to_sheet(self, spreadsheet_id, worksheet_name, dataframe, clear_first=True):
@@ -369,6 +381,135 @@ class UnifiedSheetsManager:
             if sheet['properties']['title'] == sheet_name:
                 return sheet['properties']['sheetId']
         raise ValueError(f"Sheet {sheet_name} not found")
+    
+    def add_pie_chart(self, sheet_name: str, title: str, data_range: Dict[str, Any], 
+                      position: Dict[str, int], chart_id: Optional[int] = None) -> bool:
+        """
+        Add a pie chart to a specific sheet.
+        
+        Args:
+            sheet_name: Name of the sheet to add chart to
+            title: Chart title
+            data_range: Dictionary with 'startRowIndex', 'endRowIndex', 'startColumnIndex', 'endColumnIndex'
+            position: Dictionary with 'overlayPosition' containing 'anchorCell' with 'rowIndex' and 'columnIndex'
+            chart_id: Optional chart ID (for updating existing chart)
+        
+        Returns:
+            bool: True if successful
+        """
+        try:
+            sheet_id = self._get_sheet_id(sheet_name)
+            
+            # For pie charts, we need both label column and data column
+            # The data_range should span from label column to data column
+            chart_spec = {
+                "title": title,
+                "pieChart": {
+                    "legendPosition": "RIGHT_LEGEND",
+                    "pieHole": 0.0,  # Set to 0.4 for donut chart
+                    "domain": {
+                        "sourceRange": {
+                            "sources": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": data_range['startRowIndex'],
+                                "endRowIndex": data_range['endRowIndex'],
+                                "startColumnIndex": data_range['startColumnIndex'],
+                                "endColumnIndex": data_range['startColumnIndex'] + 1  # Just the label column
+                            }]
+                        }
+                    },
+                    "series": {
+                        "sourceRange": {
+                            "sources": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": data_range['startRowIndex'],
+                                "endRowIndex": data_range['endRowIndex'],
+                                "startColumnIndex": data_range['endColumnIndex'] - 1,  # The numeric data column
+                                "endColumnIndex": data_range['endColumnIndex']
+                            }]
+                        }
+                    }
+                }
+            }
+            
+            request = {
+                "addChart": {
+                    "chart": {
+                        "spec": chart_spec,
+                        "position": {
+                            "overlayPosition": {
+                                "anchorCell": {
+                                    "sheetId": sheet_id,
+                                    "rowIndex": position.get('rowIndex', 0),
+                                    "columnIndex": position.get('columnIndex', 0)
+                                },
+                                "offsetXPixels": position.get('offsetXPixels', 0),
+                                "offsetYPixels": position.get('offsetYPixels', 0),
+                                "widthPixels": position.get('widthPixels', 400),
+                                "heightPixels": position.get('heightPixels', 300)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if chart_id is not None:
+                request = {
+                    "updateChartSpec": {
+                        "chartId": chart_id,
+                        "spec": chart_spec
+                    }
+                }
+            
+            self._rate_limit()
+            self.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=self.spreadsheet_id,
+                body={"requests": [request]}
+            ).execute()
+            
+            self.logger.info(f"Added/updated pie chart '{title}' on {sheet_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to add pie chart: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def delete_all_charts(self, sheet_name: str) -> bool:
+        """Delete all charts from a specific sheet."""
+        try:
+            sheet_id = self._get_sheet_id(sheet_name)
+            
+            # Get all charts on the sheet
+            spreadsheet = self.sheets_service.spreadsheets().get(
+                spreadsheetId=self.spreadsheet_id,
+                fields="sheets(charts,properties)"
+            ).execute()
+            
+            requests = []
+            for sheet in spreadsheet.get('sheets', []):
+                if sheet['properties']['sheetId'] == sheet_id:
+                    for chart in sheet.get('charts', []):
+                        requests.append({
+                            "deleteEmbeddedObject": {
+                                "objectId": chart['chartId']
+                            }
+                        })
+            
+            if requests:
+                self._rate_limit()
+                self.sheets_service.spreadsheets().batchUpdate(
+                    spreadsheetId=self.spreadsheet_id,
+                    body={"requests": requests}
+                ).execute()
+                self.logger.info(f"Deleted {len(requests)} charts from {sheet_name}")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to delete charts: {e}")
+            return False
 
     def apply_data_tab_formatting(self, sheet_name: str, df):
         """

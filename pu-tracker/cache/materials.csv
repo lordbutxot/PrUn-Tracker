@@ -12,7 +12,7 @@ AFR,advancedFuelRod,ship engines,0.4,0.1,2.0
 AGS,advancedHighgSeats,ship parts,30.0,5.0,4.0
 AHP,advancedHullPlate,ship parts,10.0,10.0,3.0
 AIR,airScrubber,construction parts,1.7,3.0,4.0
-AL,aluminium,metals,2.7,1.0,4.0
+AL,aluminium,metals,2.7,1.0,1.0
 ALE,technicianLuxuryDrink,consumables (luxury),0.1,0.1,2.0
 ALG,proteinAlgae,agricultural products,0.7,1.0,2.0
 ALO,aluminiumOre,ores,1.35,1.0,0.0
@@ -31,7 +31,7 @@ AUO,goldOre,ores,3.86,1.0,0.0
 AWF,waterFilter,electronic devices,0.8,1.2,3.0
 AWH,advancedWhippleShielding,ship shields,0.12,1.0,3.0
 BAC,bacteria,chemicals,0.15,0.15,3.0
-BAI,basicAiFramework,software components,0.001,0.01,3.0
+BAI,basicAiFramework,software components,0.001,0.01,0.0
 BBH,basicBulkhead,construction prefabs,0.5,0.8,1.0
 BCO,copperConnectors,electronic pieces,0.005,0.002,2.0
 BDE,basicDeckElements,construction prefabs,0.1,1.5,1.0
@@ -65,7 +65,7 @@ BTA,basicWindow,construction prefabs,0.3,0.4,1.0
 BTS,tungstenResource,liquids,1.05,1.0,0.0
 BWH,basicWhippleShielding,ship shields,0.1,1.0,3.0
 BWS,workstationBlank,electronic devices,0.05,0.1,3.0
-C,carbon,elements,2.25,1.0,1.0
+C,carbon,elements,2.25,1.0,0.0
 CA,calcium,elements,1.54,1.0,2.0
 CAF,caffeinatedBeans,agricultural products,0.86,1.0,2.0
 CAP,capacitor,electronic pieces,0.001,0.001,3.0
@@ -104,11 +104,11 @@ DDT,pesticides,chemicals,0.11,0.1,3.0
 DEC,decorativeElements,construction parts,0.5,2.0,2.0
 DIS,twoDimensionalDisplay,electronic parts,0.02,0.02,3.0
 DOU,droneOperationsUnit,unit prefabs,5.0,4.0,2.0
-DRF,droneFrame,drones,0.1,0.02,4.0
-DV,dataVisualizer,software tools,0.001,0.01,4.0
+DRF,droneFrame,drones,0.1,0.02,1.0
+DV,dataVisualizer,software tools,0.001,0.01,0.0
 DW,drinkingWater,consumables (basic),0.1,0.1,1.0
 EBU,engineerBundle,consumable bundles,51.0,46.0,2.0
-EDC,entertainmentDataCore,software tools,0.001,0.01,4.0
+EDC,entertainmentDataCore,software tools,0.001,0.01,0.0
 EES,enrichedEinsteinium,chemicals,9.2,1.0,5.0
 ENG,standardEngine,ship engines,8.0,4.0,5.0
 EPO,epoxy,construction materials,0.04,0.02,2.0
@@ -119,7 +119,7 @@ F,fluorine,gases,1.696,1.0,0.0
 FAL,aluminiumIronAlloy,alloys,3.22,1.0,4.0
 FAN,coolingFan,electronic parts,0.1,0.1,3.0
 FC,flowControl,construction parts,0.5,0.25,1.0
-FE,iron,metals,7.874,1.0,4.0
+FE,iron,metals,7.874,1.0,1.0
 FEO,ironOre,ores,5.9,1.0,0.0
 FET,ironTitaniumAlloy,alloys,6.85,1.0,4.0
 FF,ftlFuel,fuels,0.05,0.01,2.0
@@ -168,7 +168,7 @@ HSS,engineerClothing,consumables (basic),0.05,0.05,2.0
 HTE,hyperthrustEngine,ship engines,16.0,10.0,5.0
 HYR,hyperPowerReactor,ship engines,25.0,25.0,5.0
 I,iodine,elements,4.93,1.0,1.0
-IDC,informationDataCore,software systems,0.001,0.01,5.0
+IDC,informationDataCore,software systems,0.001,0.01,0.0
 IMM,informationManagementSystem,software systems,0.001,0.01,5.0
 IND,indigo,chemicals,0.21,0.2,2.0
 INS,insuFoam,construction materials,0.06,0.1,3.0
@@ -181,7 +181,7 @@ LBH,lightweightBulkhead,construction prefabs,0.2,0.6,2.0
 LC,scientistClothing,consumables (basic),0.05,0.05,2.0
 LCB,largeCargoBay,ship kits,200.0,200.0,3.0
 LCR,liquidCrystals,chemicals,0.15,0.1,2.0
-LD,localDatabase,software components,0.001,0.01,3.0
+LD,localDatabase,software components,0.001,0.01,0.0
 LDE,lightweightDeckElements,construction prefabs,0.1,1.2,2.0
 LDI,laserDiode,electronic pieces,0.001,0.001,3.0
 LES,liquidEinsteinium,liquids,8.84,1.0,0.0
@@ -214,7 +214,7 @@ MGC,magneticFloor,construction parts,0.6,0.9,3.0
 MGS,magnesite,minerals,1.73,1.0,0.0
 MHL,metalHalideLamp,construction parts,0.1,0.05,1.0
 MHP,microHeadphones,electronic devices,0.001,0.001,2.0
-MLI,machineLearningInterface,software components,0.001,0.01,3.0
+MLI,machineLearningInterface,software components,0.001,0.01,0.0
 MPC,microProcessor,electronic parts,0.001,0.001,3.0
 MSL,mediumStlTank,ship kits,50.0,50.0,3.0
 MTC,megaTubeCoating,construction materials,0.032,0.01,3.0
@@ -222,11 +222,11 @@ MTP,meat,agricultural products,0.7,1.0,3.0
 MUS,mushrooms,agricultural products,0.8,1.0,2.0
 MWF,waferMedium,electronic pieces,0.008,0.008,3.0
 N,nitrogen,gases,0.807,1.0,0.0
-,sodium,elements,0.97,1.0,
+,sodium,elements,0.97,1.0,0.0
 NAB,sodiumBorohydride,chemicals,0.1,0.05,2.0
 NCS,nanoCarbonSheeting,construction materials,0.028,0.01,3.0
 NE,neon,gases,0.9,1.0,0.0
-NF,networkingFramework,software components,0.001,0.01,3.0
+NF,networkingFramework,software components,0.001,0.01,0.0
 NFI,nanoFiber,construction materials,0.032,0.01,3.0
 NG,nanoGlass,construction materials,0.022,0.01,2.0
 NL,nylon,textiles,1.13,1.0,2.0
@@ -238,7 +238,7 @@ NST,scientistLuxuryHealth,consumables (luxury),0.05,0.05,3.0
 NUT,fattyNuts,agricultural products,0.9,1.0,1.0
 NV1,navigation1,ship parts,4.2,2.0,4.0
 NV2,navigation2,ship parts,6.7,3.0,5.0
-O,oxygen,gases,1.141,1.0,3.0
+O,oxygen,gases,1.141,1.0,0.0
 OFF,officeSupplies,utility,0.02,0.2,1.0
 OLF,olfactorySubstances,chemicals,0.01,0.001,2.0
 OS,operatingSystem,software tools,0.001,0.01,4.0
@@ -285,9 +285,9 @@ RSE,reinforcedStructuralElements,construction prefabs,1.9,0.7,3.0
 RSH,radiationShielding,construction parts,3.7,0.8,4.0
 RSI,silkRaw,agricultural products,1.1,1.0,3.0
 RTA,reinforcedWindow,construction prefabs,1.5,0.5,3.0
-S,sulfur,elements,0.52,0.25,1.0
-SA,searchAlgorithm,software components,0.001,0.01,3.0
-SAL,sortingAlgorithm,software components,0.001,0.01,3.0
+S,sulfur,elements,0.52,0.25,0.0
+SA,searchAlgorithm,software components,0.001,0.01,0.0
+SAL,sortingAlgorithm,software components,0.001,0.01,0.0
 SAR,sensorArray,electronic devices,1.7,2.0,3.0
 SBU,settlerBundle,consumable bundles,20.0,13.0,2.0
 SC,technicianLuxuryHealth,consumables (luxury),0.04,0.01,2.0
@@ -305,7 +305,7 @@ SFK,fastenerKitSmall,electronic pieces,0.04,0.02,2.0
 SFL,smallFtlTank,ship kits,9.0,1.5,3.0
 SI,silicon,metals,2.329,1.0,1.0
 SIL,silkProcessed,textiles,1.21,1.0,2.0
-SIO,siliconOre,ores,1.79,1.0,4.0
+SIO,siliconOre,ores,1.79,1.0,0.0
 SNM,universeMap,software systems,0.001,0.01,5.0
 SOI,artificialSoil,chemicals,0.9,1.0,2.0
 SOL,solarCell,energy systems,0.015,0.01,3.0
@@ -362,7 +362,7 @@ WAI,weakArtificalIntelligence,software systems,0.001,0.01,5.0
 WAL,tungstenAluminiumAlloy,alloys,6.25,1.0,4.0
 WCB,highLoadCargoBay,ship kits,200.0,200.0,3.0
 WIN,scientistLuxuryDrink,consumables (luxury),0.1,0.1,2.0
-WM,windowManager,software components,0.001,0.01,3.0
+WM,windowManager,software components,0.001,0.01,0.0
 WOR,handcraftWorkshopUnit,unit prefabs,5.0,5.0,2.0
 WR,waterRecycler,electronic systems,6.4,5.0,4.0
 WRH,wolfrhenium,alloys,6.92,1.0,4.0

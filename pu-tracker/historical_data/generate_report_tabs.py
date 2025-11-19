@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import time
 import concurrent.futures
+import json
 
 try:
     from sheets_manager import UnifiedSheetsManager as SheetsManager
@@ -10,6 +11,11 @@ except ImportError:
     from sheets_manager import SheetsManager
 
 EXCHANGES = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2']
+PROFESSION_ORDER = [
+    'METALLURGY', 'MANUFACTURING', 'CONSTRUCTION', 'CHEMISTRY',
+    'FOOD_INDUSTRIES', 'AGRICULTURE', 'FUEL_REFINING', 'ELECTRONICS',
+    'RESOURCE_EXTRACTION'
+]
 REPORT_TABS = [f"Report {exch}" for exch in EXCHANGES]
 SPREADSHEET_ID = "1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI"
 
@@ -33,8 +39,8 @@ def summary_section(df):
     rows = [
         ["SUMMARY", "", "", ""],
         ["Total Products", len(df), "", ""],
-        ["Average Profit", f"{df[profit_col].mean():,.2f}" if profit_col in df else "", "", ""],
-        ["Average ROI", f"{df[roi_col].mean():.2f}%" if roi_col in df else "", "", ""],
+        ["Median Profit", f"{df[profit_col].median():,.2f}" if profit_col in df else "", "", ""],
+        ["Median ROI", f"{df[roi_col].median():.2f}%" if roi_col in df else "", "", ""],
         ["", "", "", ""]
     ]
     return rows
@@ -1095,23 +1101,38 @@ def fetch_financial_data(sheets_manager, external_spreadsheet_id):
         # Fetch data from each sheet
         for sheet in sheets_list:
             sheet_name = sheet['properties']['title']
+            
+            # Skip chart sheets and other non-data sheets
+            sheet_type = sheet['properties'].get('sheetType', 'GRID')
+            if sheet_type != 'GRID':
+                print(f"[INFO] Skipping non-data sheet: {sheet_name} (type: {sheet_type})", flush=True)
+                continue
+            
             print(f"[INFO] Fetching data from sheet: {sheet_name}", flush=True)
             
-            # Read data from the sheet
-            result = sheets_manager.sheets_service.spreadsheets().values().get(
-                spreadsheetId=external_spreadsheet_id,
-                range=f"'{sheet_name}'!A:Z"  # Read all columns
-            ).execute()
-            
-            values = result.get('values', [])
-            
-            if values:
-                # Convert to DataFrame
-                df = pd.DataFrame(values[1:], columns=values[0]) if len(values) > 1 else pd.DataFrame()
-                financial_data[sheet_name] = df
-                print(f"[INFO] Loaded {len(df)} rows from {sheet_name}", flush=True)
-            else:
-                print(f"[WARN] No data found in {sheet_name}", flush=True)
+            try:
+                # Read data from the sheet
+                result = sheets_manager.sheets_service.spreadsheets().values().get(
+                    spreadsheetId=external_spreadsheet_id,
+                    range=f"'{sheet_name}'!A:Z"  # Read all columns
+                ).execute()
+                
+                values = result.get('values', [])
+                
+                if values:
+                    # Convert to DataFrame
+                    df = pd.DataFrame(values[1:], columns=values[0]) if len(values) > 1 else pd.DataFrame()
+                    financial_data[sheet_name] = df
+                    print(f"[INFO] Loaded {len(df)} rows from {sheet_name}", flush=True)
+                else:
+                    print(f"[WARN] No data found in {sheet_name}", flush=True)
+            except Exception as e:
+                # Handle individual sheet errors gracefully
+                if "Unable to parse range" in str(e):
+                    print(f"[INFO] Skipping unparseable sheet: {sheet_name}", flush=True)
+                else:
+                    print(f"[WARN] Could not fetch sheet {sheet_name}: {e}", flush=True)
+                continue
         
         # Save financial data to cache for offline access
         cache_financial_data(financial_data)
@@ -1153,9 +1174,281 @@ def load_cached_financial_data():
     
     return financial_data
 
+def calculate_inflation_metrics(all_df, historical_data_path=None):
+    """
+    Calculate inflation-like metrics based on price changes over time.
+    
+    Args:
+        all_df: current market data
+        historical_data_path: path to historical price data (optional)
+    
+    Returns:
+        dict: inflation metrics by category and overall
+    """
+    inflation_metrics = {}
+    
+    # If we have historical data, calculate period-over-period changes
+    if historical_data_path and Path(historical_data_path).exists():
+        try:
+            historical_df = pd.read_csv(historical_data_path)
+            # Calculate price index changes for major commodity categories
+            # This would need timestamp data in the historical file
+            pass
+        except Exception as e:
+            print(f"[WARN] Could not load historical data for inflation calc: {e}")
+    
+    # Calculate current price volatility as inflation proxy
+    if 'Category' in all_df.columns and 'Ask_Price' in all_df.columns:
+        for category in all_df['Category'].unique():
+            cat_data = all_df[all_df['Category'] == category]
+            if len(cat_data) > 0:
+                avg_price = cat_data['Ask_Price'].mean()
+                std_price = cat_data['Ask_Price'].std()
+                volatility = (std_price / avg_price * 100) if avg_price > 0 else 0
+                inflation_metrics[category] = {
+                    'avg_price': avg_price,
+                    'volatility': volatility,
+                    'sample_size': len(cat_data)
+                }
+    
+    return inflation_metrics
+
+def get_material_to_profession_map():
+    """
+    Build a map of material ticker to profession(s) based on building expertise.
+    
+    For materials that can be produced by multiple professions (e.g., tier 0 resources
+    like oxygen that can be extracted OR produced by TNP), this returns a dict where
+    each material maps to a list of professions.
+    """
+    material_to_professions = {}
+    
+    try:
+        buildings_path = CACHE_DIR / "buildings.csv"
+        recipe_outputs_path = CACHE_DIR / "recipe_outputs.csv"
+        buildingrecipes_path = CACHE_DIR / "buildingrecipes.csv"
+        
+        if not all([buildings_path.exists(), recipe_outputs_path.exists(), buildingrecipes_path.exists()]):
+            return material_to_professions
+        
+        buildings = pd.read_csv(buildings_path)
+        recipe_outputs = pd.read_csv(recipe_outputs_path)
+        buildingrecipes = pd.read_csv(buildingrecipes_path)
+        
+        # Map building to expertise
+        building_expertise = buildings.set_index('Ticker')['Expertise'].to_dict()
+        
+        # Map recipe key to building
+        recipe_to_building = buildingrecipes.set_index('Key')['Building'].to_dict()
+        
+        # Map materials to professions based on what building produces them
+        # A material can have multiple professions (e.g., O can be extracted or produced by TNP)
+        for recipe_key, material in recipe_outputs[['Key', 'Material']].values:
+            building = recipe_to_building.get(recipe_key)
+            if building:
+                expertise = building_expertise.get(building, '')
+                if expertise:
+                    if material not in material_to_professions:
+                        material_to_professions[material] = []
+                    if expertise not in material_to_professions[material]:
+                        material_to_professions[material].append(expertise)
+        
+    except Exception as e:
+        print(f"[WARN] Error building material-profession map: {e}")
+    
+    return material_to_professions
+
+def calculate_gdp_metrics(all_df, professions):
+    """
+    Calculate GDP-like metrics (Gross Domestic Product proxy) based on production value.
+    
+    In PrUn context:
+    - GDP = Sum of (Production Volume × Market Price) across all materials
+    - Per-profession GDP shows sector contributions
+    
+    Args:
+        all_df: market data with profit/production info
+        professions: list of profession names
+    
+    Returns:
+        dict: GDP metrics overall, per exchange, per profession, per product, per faction
+    """
+    gdp_metrics = {
+        'total_market_value': 0,
+        'by_profession': {},
+        'by_exchange': {},
+        'by_product': {},
+        'by_faction': {}
+    }
+    
+    # Build material to profession mapping (materials can have multiple professions)
+    material_to_professions = get_material_to_profession_map()
+    
+    # Add tier 0 resources to RESOURCE_EXTRACTION if they don't have other production methods
+    # If they do have production methods (like O via TNP), they'll appear in both professions
+    if 'Tier' in all_df.columns:
+        tier_0_materials = all_df[all_df['Tier'] == 0.0]['Ticker'].unique()
+        for material in tier_0_materials:
+            if material not in material_to_professions:
+                material_to_professions[material] = ['RESOURCE_EXTRACTION']
+            elif 'RESOURCE_EXTRACTION' not in material_to_professions[material]:
+                # Add RESOURCE_EXTRACTION as an additional way to obtain this material
+                material_to_professions[material].append('RESOURCE_EXTRACTION')
+    
+    # Calculate total market value (proxy for GDP)
+    if 'Ask_Price' in all_df.columns:
+        # Total market capitalization of all tracked materials
+        gdp_metrics['total_market_value'] = all_df['Ask_Price'].sum()
+        
+        # Per exchange
+        if 'Exchange' in all_df.columns:
+            for exch in all_df['Exchange'].unique():
+                exch_data = all_df[all_df['Exchange'] == exch]
+                gdp_metrics['by_exchange'][exch] = exch_data['Ask_Price'].sum()
+        
+        # Per product (ticker)
+        if 'Ticker' in all_df.columns:
+            product_gdp = all_df.groupby('Ticker')['Ask_Price'].sum().to_dict()
+            gdp_metrics['by_product'] = product_gdp
+        
+        # Per faction (based on exchange)
+        faction_map = {
+            'AI1': 'AIC (Antares)',
+            'CI1': 'CIS (Castillo)',
+            'CI2': 'CIS (Castillo)',
+            'IC1': 'ICA (Insitor)',
+            'NC1': 'NCC (Neo Brasilia)',
+            'NC2': 'NCC (Neo Brasilia)'
+        }
+        
+        if 'Exchange' in all_df.columns:
+            for exch, faction in faction_map.items():
+                exch_data = all_df[all_df['Exchange'] == exch]
+                if not exch_data.empty:
+                    faction_value = exch_data['Ask_Price'].sum()
+                    if faction in gdp_metrics['by_faction']:
+                        gdp_metrics['by_faction'][faction] += faction_value
+                    else:
+                        gdp_metrics['by_faction'][faction] = faction_value
+        
+        # Per profession - materials can belong to multiple professions
+        # For GDP calculation, we split the value proportionally
+        if 'Ticker' in all_df.columns:
+            for profession in professions:
+                profession_gdp = 0
+                for ticker in all_df['Ticker'].unique():
+                    mat_professions = material_to_professions.get(ticker, [])
+                    # If this material can be produced by this profession
+                    if profession in mat_professions:
+                        ticker_data = all_df[all_df['Ticker'] == ticker]
+                        ticker_value = ticker_data['Ask_Price'].sum()
+                        # Split value equally among all professions that can produce it
+                        profession_gdp += ticker_value / len(mat_professions)
+                
+                if profession_gdp > 0:
+                    gdp_metrics['by_profession'][profession] = profession_gdp
+    
+    # Calculate profit generation (economic activity indicator)
+    profit_col = 'Profit per Unit' if 'Profit per Unit' in all_df.columns else 'Profit_Ask'
+    if profit_col in all_df.columns:
+        gdp_metrics['total_profit_potential'] = all_df[profit_col].sum()
+    
+    return gdp_metrics
+
+def calculate_ppp_metrics(all_df):
+    """
+    Calculate Purchasing Power Parity (PPP) metrics between exchanges.
+    
+    PPP measures relative cost of same goods across different markets.
+    Lower PPP = higher purchasing power (goods are cheaper there)
+    
+    Args:
+        all_df: market data with prices per exchange
+    
+    Returns:
+        dict: PPP indices with base exchange normalized to 1.0
+    """
+    ppp_metrics = {}
+    
+    if 'Exchange' not in all_df.columns or 'Ticker' not in all_df.columns:
+        return ppp_metrics
+    
+    # Use AI1 as base exchange (index = 1.0)
+    base_exchange = 'AI1'
+    
+    # Calculate average price per ticker across all exchanges
+    avg_prices = all_df.groupby('Ticker')['Ask_Price'].mean().to_dict()
+    
+    # For each exchange, calculate average price relative to base
+    for exch in EXCHANGES:
+        exch_data = all_df[all_df['Exchange'] == exch]
+        if exch_data.empty:
+            continue
+        
+        # Calculate exchange's average price for common goods
+        exch_avg = exch_data['Ask_Price'].mean()
+        
+        # Get base exchange average for same tickers
+        common_tickers = exch_data['Ticker'].unique()
+        base_data = all_df[(all_df['Exchange'] == base_exchange) & (all_df['Ticker'].isin(common_tickers))]
+        base_avg = base_data['Ask_Price'].mean() if not base_data.empty else exch_avg
+        
+        # PPP Index: ratio of exchange price to base price
+        # >1.0 = more expensive (weaker purchasing power)
+        # <1.0 = cheaper (stronger purchasing power)
+        ppp_index = (exch_avg / base_avg) if base_avg > 0 else 1.0
+        
+        ppp_metrics[exch] = {
+            'ppp_index': ppp_index,
+            'avg_price': exch_avg,
+            'relative_to_base': f"{((ppp_index - 1) * 100):+.2f}%"
+        }
+    
+    return ppp_metrics
+
+def calculate_exchange_competitiveness(all_df):
+    """
+    Calculate exchange competitiveness index based on:
+    - Price competitiveness (lower prices = more competitive)
+    - Profit opportunities (higher profits = more attractive)
+    - Market depth (more materials = more liquid)
+    
+    Args:
+        all_df: market data
+    
+    Returns:
+        dict: competitiveness scores per exchange
+    """
+    competitiveness = {}
+    
+    profit_col = 'Profit per Unit' if 'Profit per Unit' in all_df.columns else 'Profit_Ask'
+    
+    for exch in EXCHANGES:
+        exch_data = all_df[all_df['Exchange'] == exch]
+        if exch_data.empty:
+            continue
+        
+        # Metrics
+        avg_profit = exch_data[profit_col].mean() if profit_col in exch_data.columns else 0
+        median_profit = exch_data[profit_col].median() if profit_col in exch_data.columns else 0
+        material_count = len(exch_data['Ticker'].unique()) if 'Ticker' in exch_data.columns else 0
+        avg_price = exch_data['Ask_Price'].mean() if 'Ask_Price' in exch_data.columns else 0
+        
+        # Competitiveness score (normalized)
+        # Higher profit + more materials + lower prices = more competitive
+        competitiveness[exch] = {
+            'avg_profit': avg_profit,
+            'median_profit': median_profit,
+            'material_diversity': material_count,
+            'avg_price': avg_price,
+            'profit_per_material': avg_profit / material_count if material_count > 0 else 0
+        }
+    
+    return competitiveness
+
 def build_financial_overview(financial_data, all_df):
     """
-    Create Financial Overview tab combining external financial data with our calculated data.
+    Create Financial Overview tab combining external financial data with calculated economic indicators.
     
     Args:
         financial_data: dict of DataFrames from external spreadsheet
@@ -1172,29 +1465,242 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append(["FINANCIAL OVERVIEW - ECONOMIC & MONETARY DATA"])
     all_rows.append([])
     
-    # Process each financial data sheet
-    for sheet_name, df in financial_data.items():
-        if df.empty:
-            continue
-        
-        # Add section header
-        all_rows.append([f"=== {sheet_name.upper()} ==="])
-        all_rows.append([])
-        
-        # Add the data
-        # Header row
-        all_rows.append(df.columns.tolist())
-        
-        # Data rows
-        for _, row in df.iterrows():
-            all_rows.append(row.tolist())
-        
-        # Add blank separator
-        all_rows.append([])
-        all_rows.append([])
+    # ═══════════════════════════════════════════════════════
+    # SECTION I: CALCULATED ECONOMIC INDICATORS
+    # ═══════════════════════════════════════════════════════
+    all_rows.append(["═══════════════════════════════════════════════════════"])
+    all_rows.append(["═══ I. ECONOMIC INDICATORS (CALCULATED) ═══"])
+    all_rows.append(["═══════════════════════════════════════════════════════"])
+    all_rows.append([])
     
-    # Add our calculated market statistics
-    all_rows.append(["=== CALCULATED MARKET STATISTICS ==="])
+    # 1A. GDP-LIKE METRICS - OVERVIEW
+    all_rows.append(["┌─────────────────────────────────────────┐"])
+    all_rows.append(["│  GDP PROXY METRICS (Production Value)  │"])
+    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    gdp = calculate_gdp_metrics(all_df, PROFESSION_ORDER)
+    
+    all_rows.append(["Metric", "Value (ICA)"])
+    all_rows.append(["Total Universe GDP", f"{gdp['total_market_value']:,.2f}"])
+    if 'total_profit_potential' in gdp:
+        all_rows.append(["Total Profit Potential", f"{gdp['total_profit_potential']:,.2f}"])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 1B. GDP BY FACTION
+    all_rows.append(["┌─────────────────────────────────────────┐"])
+    all_rows.append(["│  GDP BY FACTION                         │"])
+    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    all_rows.append(["Faction", "GDP (ICA)", "GDP_RAW", "% of Universe GDP", "", "", "", ""])
+    for faction, value in sorted(gdp['by_faction'].items(), key=lambda x: x[1], reverse=True):
+        pct = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        all_rows.append([faction, f"{value:,.2f}", value, f"{pct:.2f}%", "", "", "", ""])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 1C. GDP BY EXCHANGE
+    all_rows.append(["┌─────────────────────────────────────────┐"])
+    all_rows.append(["│  GDP BY EXCHANGE                        │"])
+    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    all_rows.append(["Exchange", "GDP (ICA)", "GDP_RAW", "% of Universe", "% of Faction", "", "", "", ""])
+    faction_map = {
+        'AI1': 'AIC (Antares)',
+        'CI1': 'CIS (Castillo)',
+        'CI2': 'CIS (Castillo)',
+        'IC1': 'ICA (Insitor)',
+        'NC1': 'NCC (Neo Brasilia)',
+        'NC2': 'NCC (Neo Brasilia)'
+    }
+    
+    for exch, value in sorted(gdp['by_exchange'].items(), key=lambda x: x[1], reverse=True):
+        pct_universe = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        faction = faction_map.get(exch, 'UNKNOWN')
+        faction_gdp = gdp['by_faction'].get(faction, 1)
+        pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
+        all_rows.append([exch, f"{value:,.2f}", value, f"{pct_universe:.2f}%", f"{pct_faction:.2f}%", "", "", "", ""])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 1D. GDP BY PROFESSION/SECTOR
+    all_rows.append(["┌─────────────────────────────────────────┐"])
+    all_rows.append(["│  GDP BY PROFESSION/SECTOR               │"])
+    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    all_rows.append(["Profession/Sector", "GDP (ICA)", "GDP_RAW", "% of Universe GDP", "", "", "", ""])
+    for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
+        pct = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        all_rows.append([profession, f"{value:,.2f}", value, f"{pct:.2f}%", "", "", "", ""])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 1E. TOP PRODUCTS BY GDP CONTRIBUTION (UNIVERSE)
+    all_rows.append(["┌─────────────────────────────────────────┐"])
+    all_rows.append(["│  TOP 50 PRODUCTS BY GDP (UNIVERSE)     │"])
+    all_rows.append(["└─────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    all_rows.append(["Rank", "Ticker", "GDP (ICA)", "GDP_RAW", "% of Universe GDP", "", "", "", ""])
+    sorted_products = sorted(gdp['by_product'].items(), key=lambda x: x[1], reverse=True)[:50]
+    for rank, (ticker, value) in enumerate(sorted_products, 1):
+        pct = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        all_rows.append([f"{rank}", ticker, f"{value:,.2f}", value, f"{pct:.2f}%", "", "", "", ""])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 1F. TOP PRODUCTS BY GDP PER FACTION
+    faction_map = {
+        'AI1': 'AIC (Antares)',
+        'CI1': 'CIS (Castillo)',
+        'CI2': 'CIS (Castillo)',
+        'IC1': 'ICA (Insitor)',
+        'NC1': 'NCC (Neo Brasilia)',
+        'NC2': 'NCC (Neo Brasilia)'
+    }
+    
+    # Calculate products by faction
+    if 'Exchange' in all_df.columns and 'Ticker' in all_df.columns and 'Ask_Price' in all_df.columns:
+        faction_products = {}
+        
+        for exch, faction in faction_map.items():
+            exch_data = all_df[all_df['Exchange'] == exch]
+            if not exch_data.empty:
+                product_values = exch_data.groupby('Ticker')['Ask_Price'].sum().to_dict()
+                
+                if faction not in faction_products:
+                    faction_products[faction] = {}
+                
+                for ticker, value in product_values.items():
+                    if ticker in faction_products[faction]:
+                        faction_products[faction][ticker] += value
+                    else:
+                        faction_products[faction][ticker] = value
+        
+        # Display top 50 for each faction
+        for faction in sorted(faction_products.keys()):
+            faction_gdp = gdp['by_faction'].get(faction, 1)
+            
+            all_rows.append(["┌─────────────────────────────────────────┐"])
+            all_rows.append([f"│  TOP 50 PRODUCTS - {faction:^23s} │"])
+            all_rows.append(["└─────────────────────────────────────────┘"])
+            all_rows.append([])
+            
+            all_rows.append(["Rank", "Ticker", "GDP (ICA)", "GDP_RAW", "% of Faction GDP", "% of Universe GDP", "", "", ""])
+            sorted_faction_products = sorted(faction_products[faction].items(), key=lambda x: x[1], reverse=True)[:50]
+            
+            for rank, (ticker, value) in enumerate(sorted_faction_products, 1):
+                pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
+                pct_universe = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+                all_rows.append([
+                    f"{rank}",
+                    ticker,
+                    f"{value:,.2f}",
+                    value,
+                    f"{pct_faction:.2f}%",
+                    f"{pct_universe:.2f}%",
+                    "", "", ""
+                ])
+            
+            all_rows.append([])
+            all_rows.append([])
+            all_rows.append([])
+            all_rows.append([])
+            all_rows.append([])
+    
+    # 2. PURCHASING POWER PARITY (PPP)
+    all_rows.append(["┌──────────────────────────────────────────────────┐"])
+    all_rows.append(["│  PURCHASING POWER PARITY (PPP) BY EXCHANGE     │"])
+    all_rows.append(["│  Base: AI1 = 1.00                                │"])
+    all_rows.append(["└──────────────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    ppp = calculate_ppp_metrics(all_df)
+    
+    all_rows.append(["Exchange", "PPP Index", "Avg Price (ICA)", "vs AI1", "Interpretation"])
+    for exch in EXCHANGES:
+        if exch in ppp:
+            idx = ppp[exch]['ppp_index']
+            interpretation = "EXPENSIVE (weak)" if idx > 1.05 else "CHEAP (strong)" if idx < 0.95 else "NEUTRAL"
+            all_rows.append([
+                exch,
+                f"{idx:.4f}",
+                f"{ppp[exch]['avg_price']:,.2f}",
+                ppp[exch]['relative_to_base'],
+                interpretation
+            ])
+    all_rows.append([])
+    all_rows.append(["Note: PPP > 1.0 means goods cost more than AI1 (weaker purchasing power)"])
+    all_rows.append(["      PPP < 1.0 means goods cost less than AI1 (stronger purchasing power)"])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 3. EXCHANGE COMPETITIVENESS INDEX
+    all_rows.append(["┌────────────────────────────────────────────────────┐"])
+    all_rows.append(["│  EXCHANGE COMPETITIVENESS ANALYSIS                │"])
+    all_rows.append(["└────────────────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    comp = calculate_exchange_competitiveness(all_df)
+    
+    all_rows.append(["Exchange", "Avg Profit", "Median Profit", "Materials", "Avg Price", "Profit/Material"])
+    for exch in EXCHANGES:
+        if exch in comp:
+            c = comp[exch]
+            all_rows.append([
+                exch,
+                f"{c['avg_profit']:,.2f}",
+                f"{c['median_profit']:,.2f}",
+                f"{c['material_diversity']}",
+                f"{c['avg_price']:,.2f}",
+                f"{c['profit_per_material']:,.2f}"
+            ])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # 4. INFLATION PROXY (Price Volatility by Category)
+    all_rows.append(["┌─────────────────────────────────────────────────────┐"])
+    all_rows.append(["│  INFLATION PROXY (Price Volatility by Category)    │"])
+    all_rows.append(["└─────────────────────────────────────────────────────┘"])
+    all_rows.append([])
+    
+    inflation = calculate_inflation_metrics(all_df)
+    
+    all_rows.append(["Category", "Avg Price (ICA)", "Volatility %", "Sample Size"])
+    for cat, metrics in sorted(inflation.items(), key=lambda x: x[1]['volatility'], reverse=True):
+        all_rows.append([
+            cat,
+            f"{metrics['avg_price']:,.2f}",
+            f"{metrics['volatility']:.2f}%",
+            f"{metrics['sample_size']}"
+        ])
+    all_rows.append([])
+    all_rows.append(["Note: Higher volatility suggests more price instability (inflation-like pressure)"])
+    all_rows.append([])
+    all_rows.append([])
+    
+    # ═══════════════════════════════════════════════════════
+    # SECTION II: CALCULATED MARKET STATISTICS
+    # ═══════════════════════════════════════════════════════
+    all_rows.append(["═══════════════════════════════════════════════════════"])
+    all_rows.append(["═══ II. CALCULATED MARKET STATISTICS ═══"])
+    all_rows.append(["═══════════════════════════════════════════════════════"])
     all_rows.append([])
     
     # Calculate overall market metrics
@@ -1238,6 +1744,23 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
         "updateCells": {
             "range": {"sheetId": sheet_id},
             "fields": "userEnteredFormat"
+        }
+    })
+    
+    # 0.5. Hide GDP_RAW columns (column C in most sections, column D in product sections)
+    # We'll hide columns C and D to be safe
+    requests.append({
+        "updateDimensionProperties": {
+            "range": {
+                "sheetId": sheet_id,
+                "dimension": "COLUMNS",
+                "startIndex": 2,  # Column C (0-indexed)
+                "endIndex": 4     # Up to but not including column E
+            },
+            "properties": {
+                "hiddenByUser": True
+            },
+            "fields": "hiddenByUser"
         }
     })
     
@@ -1306,6 +1829,209 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
             print(f"✓ Formatting applied to {sheet_name}")
         except HttpError as e:
             print(f"✗ Formatting failed for {sheet_name}: {e}")
+
+def add_financial_overview_charts(sheets_manager, sheet_name, df):
+    """
+    Add pie charts to Financial Overview for GDP breakdowns.
+    Charts are positioned to the right of their respective data tables.
+    Creates 9 charts: 5 main analysis + 4 faction-specific product charts.
+    """
+    print(f"[STEP] Adding pie charts to {sheet_name}...", flush=True)
+    
+    try:
+        # First, delete all existing charts to avoid duplicates
+        sheets_manager.delete_all_charts(sheet_name)
+        
+        # Find data sections by scanning the dataframe
+        chart_configs = []
+        
+        # 1. GDP by Faction
+        for row_idx in range(len(df)):
+            if "GDP BY FACTION" in str(df.iloc[row_idx, 0]).upper():
+                header_row = None
+                for i in range(row_idx, min(row_idx + 10, len(df))):
+                    if str(df.iloc[i, 0]).strip() == "Faction":
+                        header_row = i
+                        break
+                
+                if header_row is not None:
+                    data_start = header_row + 1  # Skip header
+                    data_end = data_start
+                    for i in range(data_start, len(df)):
+                        if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                            data_end = i
+                            break
+                        data_end = i + 1
+                    
+                    if data_end > data_start:
+                        chart_configs.append({
+                            'title': 'GDP by Faction',
+                            'data_range': {
+                                'startRowIndex': data_start + 1,
+                                'endRowIndex': data_end + 1,
+                                'startColumnIndex': 0,  # Faction names (column A)
+                                'endColumnIndex': 3     # Through GDP_RAW (column C)
+                            },
+                            'position': {
+                                'rowIndex': header_row + 1,  # Position at header row
+                                'columnIndex': 6,  # Column G
+                                'offsetYPixels': -20  # Slight offset up
+                            }
+                        })
+                break
+        
+        # 2. GDP by Exchange
+        for row_idx in range(len(df)):
+            if "GDP BY EXCHANGE" in str(df.iloc[row_idx, 0]).upper():
+                header_row = None
+                for i in range(row_idx, min(row_idx + 10, len(df))):
+                    if str(df.iloc[i, 0]).strip() == "Exchange":
+                        header_row = i
+                        break
+                
+                if header_row is not None:
+                    data_start = header_row + 1  # Skip header
+                    data_end = data_start
+                    for i in range(data_start, len(df)):
+                        if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                            data_end = i
+                            break
+                        data_end = i + 1
+                    
+                    if data_end > data_start:
+                        chart_configs.append({
+                            'title': 'GDP by Exchange',
+                            'data_range': {
+                                'startRowIndex': data_start + 1,
+                                'endRowIndex': data_end + 1,
+                                'startColumnIndex': 0,  # Exchange names
+                                'endColumnIndex': 3     # Through GDP_RAW (column C)
+                            },
+                            'position': {
+                                'rowIndex': header_row + 1,  # Position at header row
+                                'columnIndex': 6,  # Column G
+                                'offsetYPixels': -20  # Slight offset up
+                            }
+                        })
+                break
+        
+        # 3. GDP by Profession/Sector
+        for row_idx in range(len(df)):
+            if "GDP BY PROFESSION" in str(df.iloc[row_idx, 0]).upper():
+                header_row = None
+                for i in range(row_idx, min(row_idx + 10, len(df))):
+                    if str(df.iloc[i, 0]).strip() == "Profession/Sector":
+                        header_row = i
+                        break
+                
+                if header_row is not None:
+                    data_start = header_row + 1  # Skip header
+                    data_end = data_start
+                    for i in range(data_start, len(df)):
+                        if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                            data_end = i
+                            break
+                        data_end = i + 1
+                    
+                    if data_end > data_start:
+                        chart_configs.append({
+                            'title': 'GDP by Profession/Sector',
+                            'data_range': {
+                                'startRowIndex': data_start + 1,
+                                'endRowIndex': data_end + 1,
+                                'startColumnIndex': 0,  # Profession names
+                                'endColumnIndex': 3     # Through GDP_RAW (column C)
+                            },
+                            'position': {
+                                'rowIndex': header_row + 1,  # Position at header row
+                                'columnIndex': 6,  # Column G
+                                'offsetYPixels': -20  # Slight offset up
+                            }
+                        })
+                break
+        
+        # 4. Top Products Universe (show only top 10 in chart for clarity)
+        for row_idx in range(len(df)):
+            if "TOP 50 PRODUCTS BY GDP" in str(df.iloc[row_idx, 0]).upper() and "UNIVERSE" in str(df.iloc[row_idx, 0]).upper():
+                header_row = None
+                for i in range(row_idx, min(row_idx + 10, len(df))):
+                    if str(df.iloc[i, 0]).strip() == "Rank":
+                        header_row = i
+                        break
+                
+                if header_row is not None:
+                    data_start = header_row + 1  # Skip header
+                    # Only use top 10 for the chart
+                    data_end = min(data_start + 10, len(df))
+                    
+                    chart_configs.append({
+                        'title': 'Top 10 Products Universe',
+                        'data_range': {
+                            'startRowIndex': data_start + 1,
+                            'endRowIndex': data_end + 1,
+                            'startColumnIndex': 1,  # Ticker names (skip Rank column)
+                            'endColumnIndex': 4     # Through GDP_RAW (column D)
+                        },
+                        'position': {
+                            'rowIndex': header_row + 1,  # Position at header row
+                            'columnIndex': 6,  # Column G
+                            'offsetYPixels': -20  # Slight offset up
+                        }
+                    })
+                break
+        
+        # 5-8. Top Products by Faction (one chart per faction)
+        factions = ['AIC (Antares)', 'CIS (Castillo)', 'ICA (Insitor)', 'NCC (Neo Brasilia)']
+        for faction in factions:
+            for row_idx in range(len(df)):
+                row_str = str(df.iloc[row_idx, 0]).upper()
+                if f"TOP 50 PRODUCTS - {faction.upper()}" in row_str:
+                    header_row = None
+                    for i in range(row_idx, min(row_idx + 10, len(df))):
+                        if str(df.iloc[i, 0]).strip() == "Rank":
+                            header_row = i
+                            break
+                    
+                    if header_row is not None:
+                        data_start = header_row + 1  # Skip header
+                        # Only use top 10 for the chart
+                        data_end = min(data_start + 10, len(df))
+                        
+                        chart_configs.append({
+                            'title': f'Top 10 Products - {faction}',
+                            'data_range': {
+                                'startRowIndex': data_start + 1,
+                                'endRowIndex': data_end + 1,
+                                'startColumnIndex': 1,  # Ticker names (skip Rank column)
+                                'endColumnIndex': 4     # Through GDP_RAW (column D)
+                            },
+                            'position': {
+                                'rowIndex': header_row + 1,  # Position at header row
+                                'columnIndex': 6,  # Column G
+                                'offsetYPixels': -20  # Slight offset up
+                            }
+                        })
+                    break
+        
+        # Create all charts
+        for config in chart_configs:
+            success = sheets_manager.add_pie_chart(
+                sheet_name=sheet_name,
+                title=config['title'],
+                data_range=config['data_range'],
+                position=config['position']
+            )
+            if success:
+                print(f"  ✓ Added chart: {config['title']}")
+            else:
+                print(f"  ✗ Failed to add chart: {config['title']}")
+        
+        print(f"[SUCCESS] Added {len(chart_configs)} charts to {sheet_name}")
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to add charts: {e}")
+        import traceback
+        traceback.print_exc()
 
 def main():
     print("[STEP] Starting report tab generation...", flush=True)
@@ -1388,6 +2114,9 @@ def main():
     
     # Apply formatting to Financial Overview
     apply_financial_overview_formatting(sheets, "Financial Overview", financial_overview_df)
+    
+    # Charts commented out for now - will add later
+    # add_financial_overview_charts(sheets, "Financial Overview", financial_overview_df)
     
     print("[SUCCESS] All reports generated successfully!")
     print(f"[DEBUG] Arbitrage DataFrame rows: {len(arbitrage_df)}")
@@ -1700,6 +2429,105 @@ def apply_overall_report_formatting(sheets_manager, sheet_name, df):
                     }
                 })
     
+    # 8. Highlight most frequent exchanges in "MOST PROFITABLE EXCHANGE COUNT" section
+    # Find the frequency section header and data rows
+    frequency_section_start = None
+    frequency_header_row = None
+    
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip().upper()
+        if "MOST PROFITABLE EXCHANGE COUNT" in first_cell:
+            frequency_section_start = row_idx
+            frequency_header_row = row_idx + 1
+            break
+    
+    if frequency_section_start is not None and frequency_header_row is not None:
+        # Get header to find exchange column indices
+        header_row = df.iloc[frequency_header_row].tolist()
+        exchange_col_indices = {}
+        for i, col_name in enumerate(header_row):
+            col_str = str(col_name).strip().upper()
+            if col_str in EXCHANGES:
+                exchange_col_indices[col_str] = i
+        
+        # Process each profession row (data starts at frequency_header_row + 1)
+        data_start_row = frequency_header_row + 1
+        for row_idx in range(data_start_row, len(df)):
+            # Check if we've left the frequency section
+            first_cell = str(df.iloc[row_idx, 0]).strip()
+            if not first_cell or first_cell.upper() in ["BEST & WORST EXCHANGES PER TICKER", ""]:
+                break
+            
+            # Get counts for each exchange in this row
+            counts = {}
+            for exch, col_idx in exchange_col_indices.items():
+                try:
+                    count_str = str(df.iloc[row_idx, col_idx]).strip()
+                    counts[exch] = int(count_str) if count_str.isdigit() else 0
+                except (ValueError, IndexError):
+                    counts[exch] = 0
+            
+            if not counts or max(counts.values()) == 0:
+                continue
+            
+            # Find max count and close runners-up (within 20% of max)
+            max_count = max(counts.values())
+            threshold = max_count * 0.8  # 80% of max = "close"
+            
+            for exch, count in counts.items():
+                col_idx = exchange_col_indices[exch]
+                if count == max_count:
+                    # Highest count - full color (darker)
+                    bg_color = {"red": 0.2, "green": 0.8, "blue": 0.2}  # Bright green
+                    requests.append({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": row_idx + 1,
+                                "endRowIndex": row_idx + 2,
+                                "startColumnIndex": col_idx,
+                                "endColumnIndex": col_idx + 1
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "backgroundColor": bg_color,
+                                    "textFormat": {
+                                        "bold": True,
+                                        "fontSize": 11,
+                                        "foregroundColor": {"red": 0, "green": 0, "blue": 0}
+                                    },
+                                    "horizontalAlignment": "CENTER"
+                                }
+                            },
+                            "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                        }
+                    })
+                elif count >= threshold and count > 0:
+                    # Close runner-up - lighter color
+                    bg_color = {"red": 0.6, "green": 0.95, "blue": 0.6}  # Light green
+                    requests.append({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": row_idx + 1,
+                                "endRowIndex": row_idx + 2,
+                                "startColumnIndex": col_idx,
+                                "endColumnIndex": col_idx + 1
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "backgroundColor": bg_color,
+                                    "textFormat": {
+                                        "fontSize": 11,
+                                        "foregroundColor": {"red": 0, "green": 0, "blue": 0}
+                                    },
+                                    "horizontalAlignment": "CENTER"
+                                }
+                            },
+                            "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                        }
+                    })
+    
     # Send batchUpdate request
     if requests:
         try:
@@ -1942,22 +2770,23 @@ def profession_section(df, exch, profession_name, top_n=None):
     # Map recipe key to building
     recipe_to_building = buildingrecipes.set_index('Key')['Building'].to_dict()
     
-    # PRIMARY METHOD: Get materials produced in buildings of this profession
-    # This is the most accurate method based on actual building expertise
-    relevant_tickers = set()
-    for recipe_key, material in recipe_outputs[['Key', 'Material']].values:
-        building = recipe_to_building.get(recipe_key)
-        if building:
-            expertise = building_expertise.get(building, '')
-            if expertise == profession_name:
-                relevant_tickers.add(material)
+    # Use the comprehensive material-to-profession mapping that handles multi-profession materials
+    material_to_professions = get_material_to_profession_map()
     
-    # SECONDARY METHOD: Category-based fallback ONLY for specific cases
-    # Only add materials that truly belong but don't have production buildings (like tier 0 resources)
-    if profession_name == "RESOURCE_EXTRACTION":
-        # Include all tier 0 materials (raw resources extracted from planets)
-        tier_0_materials = df[df.get('Tier', 999) == 0.0]['Ticker'].unique()
-        relevant_tickers.update(tier_0_materials)
+    # Add tier 0 resources to RESOURCE_EXTRACTION (they can be extracted)
+    if 'Tier' in df.columns:
+        tier_0_materials = df[df['Tier'] == 0.0]['Ticker'].unique()
+        for material in tier_0_materials:
+            if material not in material_to_professions:
+                material_to_professions[material] = ['RESOURCE_EXTRACTION']
+            elif 'RESOURCE_EXTRACTION' not in material_to_professions[material]:
+                material_to_professions[material].append('RESOURCE_EXTRACTION')
+    
+    # Get materials for this profession (materials can belong to multiple professions)
+    relevant_tickers = {
+        material for material, professions in material_to_professions.items()
+        if profession_name in professions
+    }
     
     # Filter dataframe to only these materials
     prof_df = df[df['Ticker'].isin(relevant_tickers)].copy()

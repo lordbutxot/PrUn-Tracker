@@ -9,6 +9,22 @@ CACHE_DIR = Path(__file__).parent.parent / "cache"
 def load_recipe_inputs():
     return pd.read_csv(CACHE_DIR / "recipe_inputs.csv")
 
+def load_byproduct_recipes():
+    """Load recipes with multiple outputs (byproducts)"""
+    byproduct_path = CACHE_DIR / "byproduct_recipes.json"
+    if byproduct_path.exists():
+        with open(byproduct_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def load_chains():
+    """Load chains.json for material production information"""
+    chains_path = CACHE_DIR / "chains.json"
+    if chains_path.exists():
+        with open(chains_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
 def load_market_prices():
     # Always use the standardised long format
     path = CACHE_DIR / "market_data_long.csv"
@@ -69,8 +85,84 @@ def calculate_workforce_consumable_cost(wf_type, hours, market_prices, wf_consum
         total += qty * price
     return total
 
+# --- Byproduct Cost Allocation ---
+def allocate_byproduct_costs(recipe_id, total_input_cost, market_prices, exchange="AI1"):
+    """
+    Allocate costs for recipes with multiple outputs based on market value.
+    Returns a dict of {ticker: allocated_cost_per_unit}
+    """
+    byproduct_recipes = load_byproduct_recipes()
+    
+    if recipe_id not in byproduct_recipes:
+        return {}
+    
+    recipe_info = byproduct_recipes[recipe_id]
+    outputs = recipe_info.get("outputs", [])
+    
+    if len(outputs) <= 1:
+        return {}
+    
+    # Calculate total market value of all outputs
+    output_values = {}
+    total_value = 0.0
+    
+    for ticker in outputs:
+        price = get_market_price(ticker, market_prices, exchange)
+        output_values[ticker] = price
+        total_value += price
+    
+    # Allocate costs proportionally based on market value
+    allocated_costs = {}
+    if total_value > 0:
+        for ticker, value in output_values.items():
+            proportion = value / total_value
+            allocated_costs[ticker] = total_input_cost * proportion
+    else:
+        # If no market value available, split evenly
+        equal_share = total_input_cost / len(outputs)
+        for ticker in outputs:
+            allocated_costs[ticker] = equal_share
+    
+    return allocated_costs
+
+def get_cheapest_acquisition_cost(ticker, market_prices, wf_consumables, chains=None, exchange="AI1"):
+    """
+    Determine the cheapest way to acquire a material:
+    - Direct extraction (if extractable)
+    - Crafting from recipe
+    - Buying from market
+    Returns the minimum cost per unit.
+    """
+    if chains is None:
+        chains = load_chains()
+    
+    ticker_lower = ticker.lower()
+    chain_info = chains.get(ticker_lower, {})
+    
+    # Option 1: Market price
+    market_price = get_market_price(ticker, market_prices, exchange)
+    
+    # Option 2: Extractable (tier 0)
+    if chain_info.get("is_extractable", False):
+        # Extractable materials have minimal cost (just workforce)
+        # For now, assume extraction cost is negligible or use a base extraction cost
+        extraction_cost = 0.1  # Nominal extraction cost
+        return min(market_price, extraction_cost) if market_price > 0 else extraction_cost
+    
+    # Option 3: Crafting cost (if multiple recipes, use cheapest)
+    min_craft_cost = float('inf')
+    all_recipes = chain_info.get("all_recipes", [])
+    
+    for recipe in all_recipes:
+        # Calculate crafting cost for this recipe
+        # This would require recursive calculation of input costs
+        # For now, return market price as fallback
+        pass
+    
+    return market_price if market_price > 0 else 0.0
+
 # --- Main Input Cost Calculation ---
-def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, exchange="AI1", stack_size=100):
+def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, exchange="AI1", stack_size=100, enable_byproduct_allocation=True):
     """
     recipe_row: a row from your recipes DataFrame, must have:
         - 'Recipe'
@@ -78,6 +170,7 @@ def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, 
         - 'HoursPerRecipe'
         - 'UnitsPerRecipe'
         - 'InputMaterials': dict of {ticker: qty}
+        - 'OutputMaterials': dict of {ticker: qty} (optional, for byproduct handling)
     """
     # 1. Direct input cost
     direct_input_cost = 0.0
@@ -93,12 +186,32 @@ def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, 
     # 3. Total input cost for the recipe
     total_input_cost = direct_input_cost + wf_cost
 
-    # 4. Per unit and per stack
+    # 4. Handle byproduct cost allocation if enabled
+    recipe_id = recipe_row.get('Recipe', '')
+    allocated_costs = {}
+    if enable_byproduct_allocation and recipe_id:
+        allocated_costs = allocate_byproduct_costs(recipe_id, total_input_cost, market_prices, exchange)
+
+    # 5. Per unit and per stack
     units_per_recipe = recipe_row['UnitsPerRecipe']
-    input_cost_per_unit = total_input_cost / units_per_recipe if units_per_recipe else 0
+    
+    # If this recipe has byproducts, the cost per unit should be the allocated cost
+    # Otherwise, use the total input cost
+    if allocated_costs and 'OutputMaterials' in recipe_row:
+        # Get the primary output ticker
+        output_materials = recipe_row.get('OutputMaterials', {})
+        if output_materials and len(output_materials) > 0:
+            primary_ticker = list(output_materials.keys())[0]
+            allocated_cost = allocated_costs.get(primary_ticker, total_input_cost)
+            input_cost_per_unit = allocated_cost / units_per_recipe if units_per_recipe else 0
+        else:
+            input_cost_per_unit = total_input_cost / units_per_recipe if units_per_recipe else 0
+    else:
+        input_cost_per_unit = total_input_cost / units_per_recipe if units_per_recipe else 0
+    
     input_cost_per_stack = input_cost_per_unit * stack_size
 
-    # 5. Per hour
+    # 6. Per hour
     input_cost_per_hour = total_input_cost / hours if hours else 0
 
     return {
@@ -107,7 +220,9 @@ def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, 
         "Input Cost per Stack": input_cost_per_stack,
         "Input Cost per Hour": input_cost_per_hour,
         "Direct Input Cost": direct_input_cost,
-        "Workforce Consumable Cost": wf_cost
+        "Workforce Consumable Cost": wf_cost,
+        "Allocated Costs": allocated_costs if allocated_costs else None,
+        "Has Byproducts": bool(allocated_costs)
     }
 
 # --- Example Usage ---

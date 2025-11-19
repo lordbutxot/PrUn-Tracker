@@ -261,6 +261,37 @@ class UnifiedDataProcessor:
             building_to_workforce[row['Building']].append(row['Level'])
 
         buildingrecipes_dict = buildingrecipes.set_index('Key').to_dict('index')
+        
+        # Load chains.json to check for extractable materials
+        # A material is extractable if:
+        # 1. It's flagged as extractable
+        # 2. Its tier is 0
+        # 3. It has no inputs in ANY recipe (checking recipe_inputs directly)
+        chains_path = self.cache_dir / "chains.json"
+        extractable_materials = set()
+        
+        # Method 1: Check chains.json
+        if chains_path.exists():
+            with open(chains_path, 'r', encoding='utf-8') as f:
+                chains = json.load(f)
+                for ticker, data in chains.items():
+                    if data.get('is_extractable', False) or data.get('tier', 999) == 0:
+                        extractable_materials.add(ticker.upper())
+        
+        # Method 2: Check all recipes - if a material has ANY recipe with no inputs, it's tier 0
+        materials_with_recipes = recipe_outputs['Material'].unique()
+        for material in materials_with_recipes:
+            material_recipes = recipe_outputs[recipe_outputs['Material'] == material]['Key'].values
+            has_no_input_recipe = False
+            for recipe_key in material_recipes:
+                recipe_has_inputs = len(recipe_inputs[recipe_inputs['Key'] == recipe_key]) > 0
+                if not recipe_has_inputs:
+                    has_no_input_recipe = True
+                    break
+            if has_no_input_recipe:
+                extractable_materials.add(material)
+        
+        print(f"[INFO] Found {len(extractable_materials)} extractable/tier-0 materials")
 
         # NEW APPROACH: Create separate rows for each recipe with unique input costs
         expanded_rows = []
@@ -268,6 +299,8 @@ class UnifiedDataProcessor:
             ticker = row['Ticker']
             exchange = row['Exchange']
             recipes = recipe_outputs[recipe_outputs['Material'] == ticker]
+            # Check both Tier column and chains.json for extractability
+            is_tier_0 = row.get('Tier', 999) == 0.0 or ticker in extractable_materials
             
             if recipes.empty:
                 # No recipes, keep original row with zero cost
@@ -279,6 +312,16 @@ class UnifiedDataProcessor:
                 row_copy['Building'] = 'N/A'
                 expanded_rows.append(row_copy)
                 continue
+            
+            # For tier 0 materials: Add extraction option (no recipe) in addition to production recipes
+            if is_tier_0:
+                extraction_row = row.copy()
+                extraction_row['Input Cost per Unit'] = 0
+                extraction_row['Input Cost per Stack'] = 0
+                extraction_row['Input Cost per Hour'] = 0
+                extraction_row['Recipe'] = 'EXTRACTION'
+                extraction_row['Building'] = 'RIG/EXT'
+                expanded_rows.append(extraction_row)
                 
             for _, recipe_row in recipes.iterrows():
                 recipe_id = recipe_row['Key']

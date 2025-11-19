@@ -86,7 +86,12 @@ class UnifiedConfig:
         self.ONN_HISTORICAL_DATA_SPREADSHEET_ID = '1JhIzAhi435loaUxBog2qeJzYAKWPdmlL1GVDBm0lWiQ'
         
         # Credentials file
-        self.CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
+        # Support environment variable for credentials (for GitHub Actions)
+        env_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        if env_creds and Path(env_creds).exists():
+            self.CREDENTIALS_FILE = Path(env_creds)
+        else:
+            self.CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
         self.GOOGLE_SERVICE_ACCOUNT_FILE = self.CREDENTIALS_FILE  # Compatibility alias
         
         # Sheet names configuration
@@ -239,7 +244,12 @@ REPORT_COLUMNS = [
 ]
 
 # File paths
-CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
+# Support environment variable for credentials (for GitHub Actions)
+_env_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+if _env_creds and Path(_env_creds).exists():
+    CREDENTIALS_FILE = Path(_env_creds)
+else:
+    CREDENTIALS_FILE = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
 CACHE_DIR = Path(__file__).parent.parent / 'cache'
 
 # API settings

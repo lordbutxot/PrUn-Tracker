@@ -52,7 +52,13 @@ class UnifiedAnalysisUploader:
             print(f" Enhanced analysis file missing: {enhanced_file}")
             print("    Run: python historical_data/data_analyzer.py")
             return False
-        creds_file = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
+        # Support environment variable for credentials (for GitHub Actions)
+        import os
+        env_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        if env_creds and Path(env_creds).exists():
+            creds_file = Path(env_creds)
+        else:
+            creds_file = Path(__file__).parent / 'prun-profit-42c5889f620d.json'
         if not creds_file.exists():
             print(f" Credentials file missing: {creds_file}")
             return False
