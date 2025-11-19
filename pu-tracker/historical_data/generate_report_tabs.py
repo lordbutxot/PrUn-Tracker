@@ -1551,24 +1551,30 @@ def build_financial_overview(financial_data, all_df):
                      "AIC GDP", "AIC % of GDP", "CIS GDP", "CIS % of GDP", 
                      "ICA GDP", "ICA % of GDP", "NCC GDP", "NCC % of GDP"])
     
+    # Calculate total GDP for each faction
+    aic_total_gdp = gdp['by_faction'].get('AIC (Antares)', 0)
+    cis_total_gdp = gdp['by_faction'].get('CIS (Castillo)', 0)
+    ica_total_gdp = gdp['by_faction'].get('ICA (Insitor)', 0)
+    ncc_total_gdp = gdp['by_faction'].get('NCC (Neo Brasilia)', 0)
+    
     for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
         aic_val = profession_by_faction.get('AIC (Antares)', {}).get(profession, 0)
-        aic_pct_of_total = (aic_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        aic_pct_of_faction = (aic_val / aic_total_gdp * 100) if aic_total_gdp > 0 else 0
         
         cis_val = profession_by_faction.get('CIS (Castillo)', {}).get(profession, 0)
-        cis_pct_of_total = (cis_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        cis_pct_of_faction = (cis_val / cis_total_gdp * 100) if cis_total_gdp > 0 else 0
         
         ica_val = profession_by_faction.get('ICA (Insitor)', {}).get(profession, 0)
-        ica_pct_of_total = (ica_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        ica_pct_of_faction = (ica_val / ica_total_gdp * 100) if ica_total_gdp > 0 else 0
         
         ncc_val = profession_by_faction.get('NCC (Neo Brasilia)', {}).get(profession, 0)
-        ncc_pct_of_total = (ncc_val / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+        ncc_pct_of_faction = (ncc_val / ncc_total_gdp * 100) if ncc_total_gdp > 0 else 0
         
         all_rows.append([profession, value,
-                        aic_val, aic_pct_of_total / 100,
-                        cis_val, cis_pct_of_total / 100,
-                        ica_val, ica_pct_of_total / 100,
-                        ncc_val, ncc_pct_of_total / 100])
+                        aic_val, aic_pct_of_faction / 100,
+                        cis_val, cis_pct_of_faction / 100,
+                        ica_val, ica_pct_of_faction / 100,
+                        ncc_val, ncc_pct_of_faction / 100])
     all_rows.append([])
     all_rows.append([])
     
