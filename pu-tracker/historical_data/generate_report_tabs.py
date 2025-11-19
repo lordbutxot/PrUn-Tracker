@@ -122,18 +122,22 @@ def buy_vs_produce_section(df, exch, top_n=None):
 
 def top_invest_section(df, exch, top_n=20):
     df = df.copy()
-    # Use Bid/Ask for profit if available
+    # Use Bid/Ask for buy/sell price display if available
     if "Buy Price" not in df.columns and "Ask_Price" in df.columns:
         df["Buy Price"] = df["Ask_Price"]
     if "Sell Price" not in df.columns and "Bid_Price" in df.columns:
         df["Sell Price"] = df["Bid_Price"]
-    # Use Bid/Ask profit if possible
-    if "Bid_Price" in df.columns and "Ask_Price" in df.columns:
-        df["Profit"] = df["Bid_Price"] - df["Ask_Price"]
-    elif "Sell Price" in df.columns and "Buy Price" in df.columns:
-        df["Profit"] = df["Sell Price"] - df["Buy Price"]
+    # Use stored 'Profit per Unit' from data instead of calculating
+    if "Profit per Unit" in df.columns:
+        df["Profit"] = df["Profit per Unit"]
+    elif "Profit_Ask" in df.columns:
+        df["Profit"] = df["Profit_Ask"]
     else:
-        df["Profit"] = 0
+        # Fallback: calculate from Bid - Input Cost
+        if "Bid_Price" in df.columns and "Input Cost per Unit" in df.columns:
+            df["Profit"] = df["Bid_Price"] - df["Input Cost per Unit"]
+        else:
+            df["Profit"] = 0
     # --- FILL 'Investment Score' IF MISSING ---
     if "Investment Score" not in df.columns and "Investment_Score" in df.columns:
         df["Investment Score"] = df["Investment_Score"]
