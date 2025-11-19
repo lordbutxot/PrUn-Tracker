@@ -1391,10 +1391,10 @@ def build_overall_report(all_df):
                 ])
         
         comparison_header = ["Profession", "Exchange", "Material Count", "Avg Profit", "Avg ROI"]
-        sections.append(section_header("EXCHANGE COMPARISON BY PROFESSION", len(comparison_header)))
-        sections.append([comparison_header])
-        sections.extend([[item] if not isinstance(item, list) else item for item in comparison_data])
-        sections.append([[""] * len(comparison_header)])
+        sections.extend(section_header("EXCHANGE COMPARISON BY PROFESSION", len(comparison_header)))
+        sections.append(comparison_header)
+        sections.extend(comparison_data)
+        sections.append([""] * len(comparison_header))
     
     # Section 2: Best & Worst Exchanges per Ticker
     ticker_comparison = []
@@ -1437,12 +1437,21 @@ def build_overall_report(all_df):
     ticker_comparison.sort(key=lambda x: float(x[6].replace(',', '')), reverse=True)
     
     ticker_header = ["Ticker", "Name", "Best Exchange", "Best Profit", "Worst Exchange", "Worst Profit", "Difference"]
-    sections.append(section_header("BEST & WORST EXCHANGES PER TICKER", len(ticker_header)))
-    sections.append([ticker_header])
+    sections.extend(section_header("BEST & WORST EXCHANGES PER TICKER", len(ticker_header)))
+    sections.append(ticker_header)
     sections.extend(ticker_comparison)
-    sections.append([[""] * len(ticker_header)])
+    sections.append([""] * len(ticker_header))
     
-    return sections
+    # Flatten any remaining nested lists
+    flattened_sections = []
+    for section in sections:
+        if isinstance(section, list) and len(section) > 0 and isinstance(section[0], list):
+            # This is a nested list from section_header, flatten it
+            flattened_sections.extend(section)
+        else:
+            flattened_sections.append(section)
+    
+    return flattened_sections
 
 def profession_section(df, exch, profession_name, top_n=15):
     """
