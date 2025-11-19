@@ -1532,53 +1532,59 @@ def build_financial_overview(financial_data, all_df):
     all_rows.append([])
     all_rows.append([])
     
-    # 1D. GDP BY PROFESSION/SECTOR
+    # 1D. GDP BY PROFESSION/SECTOR WITH FACTION BREAKDOWN
     all_rows.append(["┌─────────────────────────────────────────┐"])
     all_rows.append(["│  GDP BY PROFESSION/SECTOR               │"])
     all_rows.append(["└─────────────────────────────────────────┘"])
     all_rows.append([])
     
-    all_rows.append(["Profession/Sector", "GDP (ICA)", "% of Economy", "", "", "", "", ""])
+    # Calculate profession GDP by faction
+    profession_by_faction = {}
+    material_to_professions = get_material_to_profession_map()
+    
+    for faction in ['AIC (Antares)', 'CIS (Castillo)', 'ICA (Insitor)', 'NCC (Neo Brasilia)']:
+        profession_by_faction[faction] = {}
+        faction_exch = [exch for exch, f in faction_map.items() if f == faction]
+        
+        for exch in faction_exch:
+            exch_data = all_df[all_df['Exchange'] == exch] if 'Exchange' in all_df.columns else pd.DataFrame()
+            
+            for _, row in exch_data.iterrows():
+                ticker = row.get('Ticker', '')
+                value = row.get('Ask_Price', 0)
+                
+                mat_professions = material_to_professions.get(ticker, ['UNKNOWN'])
+                for profession in mat_professions:
+                    profession_value = value / len(mat_professions)
+                    if profession in profession_by_faction[faction]:
+                        profession_by_faction[faction][profession] += profession_value
+                    else:
+                        profession_by_faction[faction][profession] = profession_value
+    
+    all_rows.append(["Profession/Sector", "GDP (ICA)", "% of Economy", "AIC", "CIS", "ICA", "NCC", ""])
     for profession, value in sorted(gdp['by_profession'].items(), key=lambda x: x[1], reverse=True):
         pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", "", "", ""])
+        aic_val = profession_by_faction.get('AIC (Antares)', {}).get(profession, 0)
+        cis_val = profession_by_faction.get('CIS (Castillo)', {}).get(profession, 0)
+        ica_val = profession_by_faction.get('ICA (Insitor)', {}).get(profession, 0)
+        ncc_val = profession_by_faction.get('NCC (Neo Brasilia)', {}).get(profession, 0)
+        all_rows.append([profession, f"{value:,.2f}", f"{pct_economy:.2f}%", f"{aic_val:,.2f}", f"{cis_val:,.2f}", f"{ica_val:,.2f}", f"{ncc_val:,.2f}", ""])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
     all_rows.append([])
     
-    # 1E. TOP PRODUCTS BY GDP CONTRIBUTION (UNIVERSE)
-    all_rows.append(["┌─────────────────────────────────────────┐"])
-    all_rows.append(["│  TOP 50 PRODUCTS BY GDP (UNIVERSE)     │"])
-    all_rows.append(["└─────────────────────────────────────────┘"])
+    # 1E. TOP 50 PRODUCTS BY GDP - HORIZONTAL LAYOUT (UNIVERSE + ALL FACTIONS)
+    all_rows.append(["┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐"])
+    all_rows.append(["│  TOP 50 PRODUCTS BY GDP - UNIVERSE & FACTION BREAKDOWN                                                                                │"])
+    all_rows.append(["└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘"])
     all_rows.append([])
-    
-    all_rows.append(["Rank", "Ticker", "GDP (ICA)", "% of Economy", "", "", "", "", ""])
-    sorted_products = sorted(gdp['by_product'].items(), key=lambda x: x[1], reverse=True)[:50]
-    for rank, (ticker, value) in enumerate(sorted_products, 1):
-        pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-        all_rows.append([f"{rank}", ticker, f"{value:,.2f}", f"{pct_economy:.2f}%", "", "", "", "", ""])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
-    all_rows.append([])
-    
-    # 1F. TOP PRODUCTS BY GDP PER FACTION
-    faction_map = {
-        'AI1': 'AIC (Antares)',
-        'CI1': 'CIS (Castillo)',
-        'CI2': 'CIS (Castillo)',
-        'IC1': 'ICA (Insitor)',
-        'NC1': 'NCC (Neo Brasilia)',
-        'NC2': 'NCC (Neo Brasilia)'
-    }
     
     # Calculate products by faction
+    faction_products = {}
+    
     if 'Exchange' in all_df.columns and 'Ticker' in all_df.columns and 'Ask_Price' in all_df.columns:
-        faction_products = {}
-        
         for exch, faction in faction_map.items():
             exch_data = all_df[all_df['Exchange'] == exch]
             if not exch_data.empty:
@@ -1592,36 +1598,57 @@ def build_financial_overview(financial_data, all_df):
                         faction_products[faction][ticker] += value
                     else:
                         faction_products[faction][ticker] = value
+    
+    # Get top 50 for universe and each faction
+    sorted_products = sorted(gdp['by_product'].items(), key=lambda x: x[1], reverse=True)[:50]
+    
+    faction_order = ['AIC (Antares)', 'CIS (Castillo)', 'ICA (Insitor)', 'NCC (Neo Brasilia)']
+    faction_top_products = {}
+    for faction in faction_order:
+        if faction in faction_products:
+            faction_top_products[faction] = sorted(faction_products[faction].items(), key=lambda x: x[1], reverse=True)[:50]
+        else:
+            faction_top_products[faction] = []
+    
+    # Create header row
+    header = ["Rank", "Universe", "% Econ", "",
+              "AIC", "% Econ", "",
+              "CIS", "% Econ", "",
+              "ICA", "% Econ", "",
+              "NCC", "% Econ", ""]
+    all_rows.append(header)
+    
+    # Create data rows (50 rows for top 50)
+    for rank in range(1, 51):
+        row = [f"{rank}"]
         
-        # Display top 50 for each faction
-        for faction in sorted(faction_products.keys()):
+        # Universe product
+        if rank - 1 < len(sorted_products):
+            ticker, value = sorted_products[rank - 1]
+            pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
+            row.extend([ticker, f"{pct_economy:.2f}%", ""])
+        else:
+            row.extend(["", "", ""])
+        
+        # Each faction's product
+        for faction in faction_order:
             faction_gdp = gdp['by_faction'].get(faction, 1)
+            faction_list = faction_top_products.get(faction, [])
             
-            all_rows.append(["┌─────────────────────────────────────────┐"])
-            all_rows.append([f"│  TOP 50 PRODUCTS - {faction:^23s} │"])
-            all_rows.append(["└─────────────────────────────────────────┘"])
-            all_rows.append([])
-            
-            all_rows.append(["Rank", "Ticker", "GDP (ICA)", "% of Faction GDP", "% of Economy", "", "", "", ""])
-            sorted_faction_products = sorted(faction_products[faction].items(), key=lambda x: x[1], reverse=True)[:50]
-            
-            for rank, (ticker, value) in enumerate(sorted_faction_products, 1):
-                pct_faction = (value / faction_gdp * 100) if faction_gdp > 0 else 0
+            if rank - 1 < len(faction_list):
+                ticker, value = faction_list[rank - 1]
                 pct_economy = (value / gdp['total_market_value'] * 100) if gdp['total_market_value'] > 0 else 0
-                all_rows.append([
-                    f"{rank}",
-                    ticker,
-                    f"{value:,.2f}",
-                    f"{pct_faction:.2f}%",
-                    f"{pct_economy:.2f}%",
-                    "", "", "", ""
-                ])
-            
-            all_rows.append([])
-            all_rows.append([])
-            all_rows.append([])
-            all_rows.append([])
-            all_rows.append([])
+                row.extend([ticker, f"{pct_economy:.2f}%", ""])
+            else:
+                row.extend(["", "", ""])
+        
+        all_rows.append(row)
+    
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
+    all_rows.append([])
     
     # 2. PURCHASING POWER PARITY (PPP)
     all_rows.append(["┌──────────────────────────────────────────────────┐"])
