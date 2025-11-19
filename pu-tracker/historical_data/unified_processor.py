@@ -262,11 +262,24 @@ class UnifiedDataProcessor:
 
         buildingrecipes_dict = buildingrecipes.set_index('Key').to_dict('index')
 
+        # NEW APPROACH: Create separate rows for each recipe
+        expanded_rows = []
         for idx, row in merged.iterrows():
             ticker = row['Ticker']
             exchange = row['Exchange']
             recipes = recipe_outputs[recipe_outputs['Material'] == ticker]
-            min_cost = None
+            
+            if recipes.empty:
+                # No recipes, keep original row with zero cost
+                row_copy = row.copy()
+                row_copy['Input Cost per Unit'] = 0
+                row_copy['Input Cost per Stack'] = 0
+                row_copy['Input Cost per Hour'] = 0
+                row_copy['Recipe'] = 'N/A'
+                row_copy['Building'] = 'N/A'
+                expanded_rows.append(row_copy)
+                continue
+                
             for _, recipe_row in recipes.iterrows():
                 recipe_id = recipe_row['Key']
                 # Get input materials
@@ -281,38 +294,37 @@ class UnifiedDataProcessor:
                     units_per_recipe = float(recipe_row['Amount'])
                     # Get workforce type(s)
                     workforce_types = building_to_workforce.get(building, ['PIONEER'])
-                    for workforce_type in workforce_types:
-                        # Workforce needs per hour
-                        consumables = wf_consumables.get(workforce_type, {})
-                        wf_cost = 0
-                        for ticker_c, amt_per_day in consumables.items():
-                            amt_per_hour = amt_per_day  # Already divided by 24 in loader
-                            qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
-                            price = get_market_price(ticker_c, market_prices, exchange)
-                            wf_cost += qty * price
-                        # Material input cost
-                        direct_input_cost = sum(
-                            qty * get_market_price(t, market_prices, exchange)
-                            for t, qty in input_materials.items()
-                        )
-                        total_input_cost = direct_input_cost + wf_cost
-                        input_cost_per_unit = total_input_cost / units_per_recipe if units_per_recipe else 0
-                        input_cost_per_stack = input_cost_per_unit * units_per_recipe  # FIX: use units_per_recipe, not 100
-                        input_cost_per_hour = total_input_cost / hours_per_recipe if hours_per_recipe else 0
-                        if min_cost is None or input_cost_per_unit < min_cost['Input Cost per Unit']:
-                            min_cost = {
-                                'Input Cost per Unit': input_cost_per_unit,
-                                'Input Cost per Stack': input_cost_per_stack,
-                                'Input Cost per Hour': input_cost_per_hour
-                            }
-            if min_cost:
-                merged.at[idx, 'Input Cost per Unit'] = min_cost['Input Cost per Unit']
-                merged.at[idx, 'Input Cost per Stack'] = min_cost['Input Cost per Stack']
-                merged.at[idx, 'Input Cost per Hour'] = min_cost['Input Cost per Hour']
-            else:
-                merged.at[idx, 'Input Cost per Unit'] = 0
-                merged.at[idx, 'Input Cost per Stack'] = 0
-                merged.at[idx, 'Input Cost per Hour'] = 0
+                    # Calculate cost for first workforce type (most common)
+                    workforce_type = workforce_types[0] if workforce_types else 'PIONEER'
+                    # Workforce needs per hour
+                    consumables = wf_consumables.get(workforce_type, {})
+                    wf_cost = 0
+                    for ticker_c, amt_per_day in consumables.items():
+                        amt_per_hour = amt_per_day  # Already divided by 24 in loader
+                        qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
+                        price = get_market_price(ticker_c, market_prices, exchange)
+                        wf_cost += qty * price
+                    # Material input cost
+                    direct_input_cost = sum(
+                        qty * get_market_price(t, market_prices, exchange)
+                        for t, qty in input_materials.items()
+                    )
+                    total_input_cost = direct_input_cost + wf_cost
+                    input_cost_per_unit = total_input_cost / units_per_recipe if units_per_recipe else 0
+                    input_cost_per_stack = input_cost_per_unit * units_per_recipe
+                    input_cost_per_hour = total_input_cost / hours_per_recipe if hours_per_recipe else 0
+                    
+                    # Create a new row for this recipe
+                    row_copy = row.copy()
+                    row_copy['Input Cost per Unit'] = input_cost_per_unit
+                    row_copy['Input Cost per Stack'] = input_cost_per_stack
+                    row_copy['Input Cost per Hour'] = input_cost_per_hour
+                    row_copy['Recipe'] = recipe_id
+                    row_copy['Building'] = building
+                    expanded_rows.append(row_copy)
+        
+        # Replace merged with expanded dataset
+        merged = pd.DataFrame(expanded_rows)
         # --- END: Input cost calculation integration ---
 
         print(f"[SUCCESS] Created complete dataset: {len(merged)} total records")

@@ -287,8 +287,23 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     top_invest = top_invest_section(df, exch)
     bottleneck = bottleneck_section(df, exch, top_n=20)
     top_traded = top_20_traded_section(market_data_path, exch=exch) if market_data_path else []
+    
+    # NEW: Add profession sections
+    metallurgy = profession_section(df, exch, "METALLURGY")
+    manufacturing = profession_section(df, exch, "MANUFACTURING")
+    chemistry = profession_section(df, exch, "CHEMISTRY")
+    food = profession_section(df, exch, "FOOD_INDUSTRIES")
+    agriculture = profession_section(df, exch, "AGRICULTURE")
+    fuel = profession_section(df, exch, "FUEL_REFINING")
+    electronics = profession_section(df, exch, "ELECTRONICS")
+    extraction = profession_section(df, exch, "RESOURCE_EXTRACTION")
 
-    max_rows = max(len(summary), len(arbitrage), len(buy_vs_produce), len(top_invest), len(bottleneck), len(top_traded))
+    max_rows = max(
+        len(summary), len(arbitrage), len(buy_vs_produce), len(top_invest), 
+        len(bottleneck), len(top_traded), len(metallurgy), len(manufacturing),
+        len(chemistry), len(food), len(agriculture), len(fuel), len(electronics),
+        len(extraction)
+    )
 
     summary = pad_section(summary, max_rows, len(summary[0]))
     arbitrage = pad_section(arbitrage, max_rows, len(arbitrage[0]))
@@ -296,6 +311,14 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     top_invest = pad_section(top_invest, max_rows, len(top_invest[0]))
     bottleneck = pad_section(bottleneck, max_rows, len(bottleneck[0]))
     top_traded = pad_section(top_traded, max_rows, len(top_traded[0]))
+    metallurgy = pad_section(metallurgy, max_rows, len(metallurgy[0]))
+    manufacturing = pad_section(manufacturing, max_rows, len(manufacturing[0]))
+    chemistry = pad_section(chemistry, max_rows, len(chemistry[0]))
+    food = pad_section(food, max_rows, len(food[0]))
+    agriculture = pad_section(agriculture, max_rows, len(agriculture[0]))
+    fuel = pad_section(fuel, max_rows, len(fuel[0]))
+    electronics = pad_section(electronics, max_rows, len(electronics[0]))
+    extraction = pad_section(extraction, max_rows, len(extraction[0]))
 
     # Debug: print section shapes
     print("Section shapes:")
@@ -305,6 +328,14 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     print("  top_invest:", len(top_invest[0]), "cols")
     print("  bottleneck:", len(bottleneck[0]), "cols")
     print("  top_traded:", len(top_traded[0]), "cols")
+    print("  metallurgy:", len(metallurgy[0]), "cols")
+    print("  manufacturing:", len(manufacturing[0]), "cols")
+    print("  chemistry:", len(chemistry[0]), "cols")
+    print("  food:", len(food[0]), "cols")
+    print("  agriculture:", len(agriculture[0]), "cols")
+    print("  fuel:", len(fuel[0]), "cols")
+    print("  electronics:", len(electronics[0]), "cols")
+    print("  extraction:", len(extraction[0]), "cols")
 
     summary_df = pd.DataFrame(summary)
     arbitrage_df = pd.DataFrame(arbitrage)
@@ -312,9 +343,19 @@ def build_report_tab(df, exch, arbitrage_df, all_df, orders_df=None, market_data
     top_invest_df = pd.DataFrame(top_invest)
     bottleneck_df = pd.DataFrame(bottleneck)
     top_traded_df = pd.DataFrame(top_traded)
+    metallurgy_df = pd.DataFrame(metallurgy)
+    manufacturing_df = pd.DataFrame(manufacturing)
+    chemistry_df = pd.DataFrame(chemistry)
+    food_df = pd.DataFrame(food)
+    agriculture_df = pd.DataFrame(agriculture)
+    fuel_df = pd.DataFrame(fuel)
+    electronics_df = pd.DataFrame(electronics)
+    extraction_df = pd.DataFrame(extraction)
 
     report_df = pd.concat(
-        [summary_df, arbitrage_df, buy_vs_produce_df, top_invest_df, bottleneck_df, top_traded_df],
+        [summary_df, arbitrage_df, buy_vs_produce_df, top_invest_df, bottleneck_df, 
+         top_traded_df, metallurgy_df, manufacturing_df, chemistry_df, food_df, 
+         agriculture_df, fuel_df, electronics_df, extraction_df],
         axis=1
     )
     print("Final report_df shape:", report_df.shape)
@@ -347,8 +388,16 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
         ("ARBITRAGE OPPORTUNITIES", {"red": 0.2, "green": 0.7, "blue": 0.2}, len(REPORT_COLUMNS)),
         ("BUY VS PRODUCE", {"red": 1.0, "green": 0.8, "blue": 0.2}, 8),
         ("TOP MATERIALS TO INVEST IN", {"red": 0.85, "green": 0.6, "blue": 0.15}, 7),
-        ("CHOKEPOINTS/BOTTLENECKS", {"red": 0.8, "green": 0.2, "blue": 0.2}, 10),  # <-- was 9
+        ("CHOKEPOINTS/BOTTLENECKS", {"red": 0.8, "green": 0.2, "blue": 0.2}, 10),
         ("TOP TRADED PRODUCTS", {"red": 0.5, "green": 0.2, "blue": 0.7}, 2),
+        ("METALLURGY", {"red": 0.6, "green": 0.6, "blue": 0.6}, 8),
+        ("MANUFACTURING", {"red": 0.4, "green": 0.5, "blue": 0.7}, 8),
+        ("CHEMISTRY", {"red": 0.3, "green": 0.8, "blue": 0.5}, 8),
+        ("FOOD_INDUSTRIES", {"red": 0.9, "green": 0.7, "blue": 0.3}, 8),
+        ("AGRICULTURE", {"red": 0.5, "green": 0.8, "blue": 0.3}, 8),
+        ("FUEL_REFINING", {"red": 0.7, "green": 0.3, "blue": 0.2}, 8),
+        ("ELECTRONICS", {"red": 0.2, "green": 0.4, "blue": 0.9}, 8),
+        ("RESOURCE_EXTRACTION", {"red": 0.6, "green": 0.4, "blue": 0.2}, 8),
     ]
 
     # Find section start columns by scanning the first row for each header
@@ -708,6 +757,81 @@ def apply_report_tab_formatting(sheets_manager, sheet_name, df):
                 }
             })
 
+    # --- PROFESSION SECTIONS: Formatting for Profit and ROI ---
+    profession_sections = [
+        "METALLURGY", "MANUFACTURING", "CHEMISTRY", "FOOD_INDUSTRIES",
+        "AGRICULTURE", "FUEL_REFINING", "ELECTRONICS", "RESOURCE_EXTRACTION"
+    ]
+    
+    for prof_name in profession_sections:
+        # Profit column (gradient red to green)
+        profit_col = find_col_idx(section_starts, prof_name, "Profit")
+        if profit_col is not None:
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": profit_col,
+                            "endColumnIndex": profit_col+1
+                        }],
+                        "gradientRule": {
+                            "minpoint": {"color": {"red": 1, "green": 0.2, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                            "midpoint": {"color": {"red": 1, "green": 1, "blue": 0.4}, "type": "NUMBER", "value": "500"},
+                            "maxpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "1000"}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+        
+        # ROI % column (gradient yellow to green)
+        roi_col = find_col_idx(section_starts, prof_name, "ROI %")
+        if roi_col is not None:
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": roi_col,
+                            "endColumnIndex": roi_col+1
+                        }],
+                        "gradientRule": {
+                            "minpoint": {"color": {"red": 1, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                            "midpoint": {"color": {"red": 0.6, "green": 0.9, "blue": 0.3}, "type": "NUMBER", "value": "25"},
+                            "maxpoint": {"color": {"red": 0.2, "green": 1, "blue": 0.2}, "type": "NUMBER", "value": "50"}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+        
+        # Investment Score column (gradient)
+        inv_score_col = find_col_idx(section_starts, prof_name, "Investment Score")
+        if inv_score_col is not None:
+            requests.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [{
+                            "sheetId": sheet_id,
+                            "startRowIndex": 2,
+                            "endRowIndex": len(df)+1,
+                            "startColumnIndex": inv_score_col,
+                            "endColumnIndex": inv_score_col+1
+                        }],
+                        "gradientRule": {
+                            "minpoint": {"color": {"red": 1, "green": 1, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                            "maxpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "100"}
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
     # --- ARBITRAGE SECTION: Visual Borders Between Sell Exchanges ---
     arb_section = next(((col_idx, width) for col_idx, _, width, header in section_starts if header == "ARBITRAGE OPPORTUNITIES"), None)
     if arb_section:
@@ -893,6 +1017,8 @@ def main():
 
     market_data_path = CACHE_DIR / "market_data.csv"
     sheets = SheetsManager()
+    
+    # Generate exchange-specific reports
     for exch, tab in zip(EXCHANGES, REPORT_TABS):
         exch_df = all_df[all_df['Exchange'] == exch] if 'Exchange' in all_df.columns else all_df
         print(f"[DEBUG] {tab}: {len(exch_df)} rows")
@@ -912,12 +1038,29 @@ def main():
             print(" No valid upload method found in SheetsManager")
         apply_report_tab_formatting(sheets, tab, report_df)
         time.sleep(2)
-
+    
+    # Generate Overall Report
+    print("[STEP] Generating Overall Report...", flush=True)
+    overall_sections = build_overall_report(all_df)
+    # Convert sections list to DataFrame
+    overall_df = pd.DataFrame(overall_sections)
+    print(f"[DEBUG] Overall Report: {len(overall_df)} rows")
+    
+    # Upload Overall Report
+    if callable(upload_df_method):
+        upload_df_method("Overall Report", overall_df)
+    elif callable(upload_sheet_method):
+        upload_sheet_method(SPREADSHEET_ID, "Overall Report", overall_df)
+    else:
+        print(" No valid upload method found in SheetsManager")
+    
+    # Apply formatting to Overall Report
+    apply_overall_report_formatting(sheets, "Overall Report", overall_df)
+    
+    print("[SUCCESS] All reports generated successfully!")
     print(f"[DEBUG] Arbitrage DataFrame rows: {len(arbitrage_df)}")
     print(arbitrage_df.head())
     print(arbitrage_df[['Ticker', 'Buy Exchange', 'Sell Exchange', 'Opportunity Size']].sort_values('Opportunity Size', ascending=False).head(20))
-    print(arbitrage_df[['Ticker', 'Buy Exchange', 'Sell Exchange', 'Opportunity Size']].sort_values('Opportunity Size', ascending=False).head(20))
-    # After generating the main report and before finishing, add the new section:
 
 def input_bottleneck_section(df, recipe_inputs_path, top_n=20):
     # Load recipe inputs
@@ -969,6 +1112,207 @@ def find_arbitrage_bottom_border_rows(df, arb_start_col, arb_width):
         data_rows.append(last_row_idx)  # Always add the last row
     return data_rows
 
+def apply_overall_report_formatting(sheets_manager, sheet_name, df):
+    """
+    Apply formatting to the Overall Report tab.
+    """
+    from googleapiclient.errors import HttpError
+    
+    sheet_id = sheets_manager._get_sheet_id(sheet_name)
+    requests = []
+    
+    # 0. Clear all formatting
+    requests.append({
+        "updateCells": {
+            "range": {"sheetId": sheet_id},
+            "fields": "userEnteredFormat"
+        }
+    })
+    
+    # 1. Center all text
+    requests.append({
+        "repeatCell": {
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": 0,
+                "endRowIndex": len(df) + 1,
+                "startColumnIndex": 0,
+                "endColumnIndex": len(df.columns)
+            },
+            "cell": {
+                "userEnteredFormat": {
+                    "horizontalAlignment": "CENTER"
+                }
+            },
+            "fields": "userEnteredFormat(horizontalAlignment)"
+        }
+    })
+    
+    # 2. Find section headers and format them
+    section_colors = {
+        "EXCHANGE COMPARISON BY PROFESSION": {"red": 0.2, "green": 0.5, "blue": 0.8},
+        "BEST & WORST EXCHANGES PER TICKER": {"red": 0.8, "green": 0.4, "blue": 0.2}
+    }
+    
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip().upper()
+        if first_cell in section_colors:
+            color = section_colors[first_cell]
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx + 1,
+                        "endRowIndex": row_idx + 2,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": len(df.columns)
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": color,
+                            "textFormat": {"bold": True, "fontSize": 14, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
+                            "horizontalAlignment": "CENTER"
+                        }
+                    },
+                    "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                }
+            })
+    
+    # 3. Format column headers (find rows with "Profession", "Ticker", etc.)
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip()
+        if first_cell in ["Profession", "Ticker"]:
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx + 1,
+                        "endRowIndex": row_idx + 2,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": len(df.columns)
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": {"red": 0.9, "green": 0.9, "blue": 0.9},
+                            "textFormat": {"bold": True, "fontSize": 11},
+                            "horizontalAlignment": "CENTER"
+                        }
+                    },
+                    "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                }
+            })
+    
+    # 4. Auto-resize all columns
+    requests.append({
+        "autoResizeDimensions": {
+            "dimensions": {
+                "sheetId": sheet_id,
+                "dimension": "COLUMNS",
+                "startIndex": 0,
+                "endIndex": len(df.columns)
+            }
+        }
+    })
+    
+    # 5. Add gradient formatting for numeric columns
+    # Find "Avg Profit" column
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip()
+        if first_cell == "Profession":
+            # This is the header row for Exchange Comparison
+            header_row = df.iloc[row_idx].tolist()
+            try:
+                avg_profit_idx = header_row.index("Avg Profit")
+                # Add gradient to Avg Profit column
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": row_idx + 2,
+                                "endRowIndex": len(df) + 1,
+                                "startColumnIndex": avg_profit_idx,
+                                "endColumnIndex": avg_profit_idx + 1
+                            }],
+                            "gradientRule": {
+                                "minpoint": {"color": {"red": 1, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                                "maxpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "500"}
+                            }
+                        },
+                        "index": 0
+                    }
+                })
+            except ValueError:
+                pass
+            
+            try:
+                avg_roi_idx = header_row.index("Avg ROI")
+                # Add gradient to Avg ROI column (remove % sign for comparison)
+                requests.append({
+                    "addConditionalFormatRule": {
+                        "rule": {
+                            "ranges": [{
+                                "sheetId": sheet_id,
+                                "startRowIndex": row_idx + 2,
+                                "endRowIndex": len(df) + 1,
+                                "startColumnIndex": avg_roi_idx,
+                                "endColumnIndex": avg_roi_idx + 1
+                            }],
+                            "gradientRule": {
+                                "minpoint": {"color": {"red": 1, "green": 1, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                                "maxpoint": {"color": {"red": 0.2, "green": 1, "blue": 0.2}, "type": "NUMBER", "value": "50"}
+                            }
+                        },
+                        "index": 0
+                    }
+                })
+            except ValueError:
+                pass
+            break
+    
+    # 6. Find and format Best/Worst Exchanges section
+    for row_idx in range(len(df)):
+        first_cell = str(df.iloc[row_idx, 0]).strip()
+        if first_cell == "Ticker":
+            # Check if this is the Best/Worst section by looking at adjacent columns
+            if row_idx < len(df) - 1:
+                header_row = df.iloc[row_idx].tolist()
+                try:
+                    diff_idx = header_row.index("Difference")
+                    # Add gradient to Difference column
+                    requests.append({
+                        "addConditionalFormatRule": {
+                            "rule": {
+                                "ranges": [{
+                                    "sheetId": sheet_id,
+                                    "startRowIndex": row_idx + 2,
+                                    "endRowIndex": len(df) + 1,
+                                    "startColumnIndex": diff_idx,
+                                    "endColumnIndex": diff_idx + 1
+                                }],
+                                "gradientRule": {
+                                    "minpoint": {"color": {"red": 1, "green": 0.2, "blue": 0.2}, "type": "NUMBER", "value": "0"},
+                                    "midpoint": {"color": {"red": 1, "green": 1, "blue": 0.4}, "type": "NUMBER", "value": "250"},
+                                    "maxpoint": {"color": {"red": 0.2, "green": 0.8, "blue": 0.2}, "type": "NUMBER", "value": "500"}
+                                }
+                            },
+                            "index": 0
+                        }
+                    })
+                except ValueError:
+                    pass
+    
+    # Send batchUpdate request
+    if requests:
+        try:
+            sheets_manager.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=sheets_manager.spreadsheet_id,
+                body={"requests": requests}
+            ).execute()
+            print(f" Formatting applied to {sheet_name}")
+        except HttpError as e:
+            print(f" Formatting failed for {sheet_name}: {e}")
+
 def assign_opportunity_level(arbitrage_df):
     """
     Assigns an Opportunity Level based on ROI and Opportunity Size (amount you can sell for profit).
@@ -990,6 +1334,195 @@ def assign_opportunity_level(arbitrage_df):
             return "Very Low"
     arbitrage_df['Opportunity Level'] = arbitrage_df.apply(level, axis=1)
     return arbitrage_df
+
+def build_overall_report(all_df):
+    """
+    Creates an Overall Report tab with:
+    1. Exchange comparison by sector/profession
+    2. Best/worst exchanges for each ticker
+    """
+    sections = []
+    
+    # Section 1: Exchange Comparison by Profession
+    professions = ["METALLURGY", "MANUFACTURING", "CHEMISTRY", "FOOD_INDUSTRIES", "AGRICULTURE", "FUEL_REFINING", "ELECTRONICS", "RESOURCE_EXTRACTION"]
+    
+    # Load buildings and recipes for profession mapping
+    buildings_path = CACHE_DIR / "buildings.csv"
+    recipe_outputs_path = CACHE_DIR / "recipe_outputs.csv"
+    buildingrecipes_path = CACHE_DIR / "buildingrecipes.csv"
+    
+    if buildings_path.exists() and recipe_outputs_path.exists() and buildingrecipes_path.exists():
+        buildings = pd.read_csv(buildings_path)
+        recipe_outputs = pd.read_csv(recipe_outputs_path)
+        buildingrecipes = pd.read_csv(buildingrecipes_path)
+        
+        building_expertise = buildings.set_index('Ticker')['Expertise'].to_dict()
+        recipe_to_building = buildingrecipes.set_index('Key')['Building'].to_dict()
+        
+        # Build profession comparison
+        comparison_data = []
+        for profession in professions:
+            # Get materials for this profession
+            relevant_tickers = set()
+            for recipe_key, material in recipe_outputs[['Key', 'Material']].values:
+                building = recipe_to_building.get(recipe_key)
+                if building and building_expertise.get(building, '') == profession:
+                    relevant_tickers.add(material)
+            
+            if not relevant_tickers:
+                continue
+            
+            # Calculate avg profit and ROI per exchange
+            for exch in EXCHANGES:
+                exch_data = all_df[(all_df['Exchange'] == exch) & (all_df['Ticker'].isin(relevant_tickers))]
+                if exch_data.empty:
+                    continue
+                
+                avg_profit = exch_data.get('Profit per Unit', exch_data.get('Profit_Ask', pd.Series([0]))).mean()
+                avg_roi = exch_data.get('ROI Ask %', exch_data.get('ROI_Ask', pd.Series([0]))).mean()
+                material_count = len(exch_data)
+                
+                comparison_data.append([
+                    profession,
+                    exch,
+                    material_count,
+                    f"{avg_profit:,.2f}",
+                    f"{avg_roi:,.2f}%"
+                ])
+        
+        comparison_header = ["Profession", "Exchange", "Material Count", "Avg Profit", "Avg ROI"]
+        sections.append(section_header("EXCHANGE COMPARISON BY PROFESSION", len(comparison_header)))
+        sections.append([comparison_header])
+        sections.extend([[item] if not isinstance(item, list) else item for item in comparison_data])
+        sections.append([[""] * len(comparison_header)])
+    
+    # Section 2: Best & Worst Exchanges per Ticker
+    ticker_comparison = []
+    for ticker in all_df['Ticker'].unique():
+        ticker_data = all_df[all_df['Ticker'] == ticker]
+        if ticker_data.empty:
+            continue
+        
+        # Get material name
+        material_name = ticker_data.iloc[0].get('Material Name', ticker_data.iloc[0].get('Name', ticker))
+        
+        # Find best and worst exchanges by profit
+        profits = {}
+        for exch in EXCHANGES:
+            exch_data = ticker_data[ticker_data['Exchange'] == exch]
+            if not exch_data.empty:
+                profit = exch_data.get('Profit per Unit', exch_data.get('Profit_Ask', pd.Series([0]))).mean()
+                profits[exch] = profit
+        
+        if not profits:
+            continue
+        
+        best_exch = max(profits, key=profits.get)
+        worst_exch = min(profits, key=profits.get)
+        best_profit = profits[best_exch]
+        worst_profit = profits[worst_exch]
+        profit_diff = best_profit - worst_profit
+        
+        ticker_comparison.append([
+            ticker,
+            material_name,
+            best_exch,
+            f"{best_profit:,.2f}",
+            worst_exch,
+            f"{worst_profit:,.2f}",
+            f"{profit_diff:,.2f}"
+        ])
+    
+    # Sort by profit difference descending
+    ticker_comparison.sort(key=lambda x: float(x[6].replace(',', '')), reverse=True)
+    
+    ticker_header = ["Ticker", "Name", "Best Exchange", "Best Profit", "Worst Exchange", "Worst Profit", "Difference"]
+    sections.append(section_header("BEST & WORST EXCHANGES PER TICKER", len(ticker_header)))
+    sections.append([ticker_header])
+    sections.extend(ticker_comparison)
+    sections.append([[""] * len(ticker_header)])
+    
+    return sections
+
+def profession_section(df, exch, profession_name, top_n=15):
+    """
+    Creates a section for a specific profession showing top materials by profit and ROI.
+    profession_name: METALLURGY, MANUFACTURING, CHEMISTRY, FOOD_INDUSTRIES, AGRICULTURE, FUEL_REFINING
+    """
+    # Load buildings to map Ticker to Expertise
+    buildings_path = CACHE_DIR / "buildings.csv"
+    if not buildings_path.exists():
+        return section_header(f"{profession_name} - DATA NOT AVAILABLE", 8) + [[""]*8]
+    
+    buildings = pd.read_csv(buildings_path)
+    recipe_outputs_path = CACHE_DIR / "recipe_outputs.csv"
+    buildingrecipes_path = CACHE_DIR / "buildingrecipes.csv"
+    
+    if not recipe_outputs_path.exists() or not buildingrecipes_path.exists():
+        return section_header(f"{profession_name} - DATA NOT AVAILABLE", 8) + [[""]*8]
+    
+    recipe_outputs = pd.read_csv(recipe_outputs_path)
+    buildingrecipes = pd.read_csv(buildingrecipes_path)
+    
+    # Map building to expertise
+    building_expertise = buildings.set_index('Ticker')['Expertise'].to_dict()
+    
+    # Map recipe key to building
+    recipe_to_building = buildingrecipes.set_index('Key')['Building'].to_dict()
+    
+    # Get all materials produced in buildings of this profession
+    relevant_tickers = set()
+    for recipe_key, material in recipe_outputs[['Key', 'Material']].values:
+        building = recipe_to_building.get(recipe_key)
+        if building:
+            expertise = building_expertise.get(building, '')
+            if expertise == profession_name:
+                relevant_tickers.add(material)
+    
+    # Filter dataframe to only these materials
+    prof_df = df[df['Ticker'].isin(relevant_tickers)].copy()
+    
+    if prof_df.empty:
+        return section_header(f"{profession_name} - NO DATA", 8) + [[""]*8]
+    
+    # Sort by profit or ROI
+    if 'Profit per Unit' in prof_df.columns:
+        prof_df['SortProfit'] = pd.to_numeric(prof_df['Profit per Unit'], errors='coerce').fillna(0)
+    elif 'Profit_Ask' in prof_df.columns:
+        prof_df['SortProfit'] = pd.to_numeric(prof_df['Profit_Ask'], errors='coerce').fillna(0)
+    else:
+        prof_df['SortProfit'] = 0
+    
+    prof_df = prof_df.sort_values('SortProfit', ascending=False).head(top_n)
+    
+    subheader = ["Ticker", "Name", "Building", "Buy Price", "Input Cost", "Profit", "ROI %", "Investment Score"]
+    rows = []
+    for _, row in prof_df.iterrows():
+        ticker = row.get('Ticker', '')
+        # Find the building for this material
+        material_recipes = recipe_outputs[recipe_outputs['Material'] == ticker]
+        building_name = 'N/A'
+        for recipe_key in material_recipes['Key'].values:
+            building = recipe_to_building.get(recipe_key)
+            if building and building_expertise.get(building) == profession_name:
+                building_name = building
+                break
+        
+        profit = row.get('Profit per Unit', row.get('Profit_Ask', 0))
+        roi = row.get('ROI Ask %', row.get('ROI_Ask', 0))
+        
+        rows.append([
+            ticker,
+            row.get('Material Name', row.get('Name', ticker)),
+            building_name,
+            f"{row.get('Ask_Price', row.get('Ask Price', 0)):,.2f}",
+            f"{row.get('Input Cost per Unit', 0):,.2f}",
+            f"{profit:,.2f}",
+            f"{roi:,.2f}",
+            f"{row.get('Investment Score', row.get('Investment_Score', 0)):,.2f}"
+        ])
+    
+    return section_header(profession_name, len(subheader)) + [subheader] + rows + [[""] * len(subheader)]
 
 if __name__ == "__main__":
     main()
