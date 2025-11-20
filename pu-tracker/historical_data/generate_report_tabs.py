@@ -2839,6 +2839,36 @@ def apply_price_analyser_formatting(sheets_manager, sheet_name, materials, excha
             except:
                 pass  # Bids sheet might not exist
             
+            # Hide Planet Resources sheet if it exists
+            try:
+                planet_sheet_id = sheets_manager._get_sheet_id("Planet Resources")
+                hide_requests.append({
+                    "updateSheetProperties": {
+                        "properties": {
+                            "sheetId": planet_sheet_id,
+                            "hidden": True
+                        },
+                        "fields": "hidden"
+                    }
+                })
+            except:
+                pass  # Planet Resources sheet might not exist
+            
+            # Hide Report View sheet if it exists
+            try:
+                report_view_sheet_id = sheets_manager._get_sheet_id("Report View")
+                hide_requests.append({
+                    "updateSheetProperties": {
+                        "properties": {
+                            "sheetId": report_view_sheet_id,
+                            "hidden": True
+                        },
+                        "fields": "hidden"
+                    }
+                })
+            except:
+                pass  # Report View sheet might not exist
+            
             sheets_manager.sheets_service.spreadsheets().batchUpdate(
                 spreadsheetId=sheets_manager.spreadsheet_id,
                 body={"requests": hide_requests}
