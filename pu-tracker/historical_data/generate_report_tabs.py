@@ -2398,15 +2398,21 @@ def create_price_analyser_tab(sheets_manager, all_df):
         from data_analyzer import UnifiedAnalysisProcessor
         analyzer = UnifiedAnalysisProcessor()
         
-        # Build price dictionaries per exchange
+        # Build price dictionaries per exchange - reuse for efficiency
+        exchange_prices_cache = {}
+        
         def calculate_costs_for_row(row):
             ticker = row['Ticker']
             exchange = row['Exchange']
             
-            # Get ask and bid prices for this exchange
-            exchange_rows = all_df[(all_df['Ticker'].notna()) & (all_df['Exchange'] == exchange)]
-            ask_prices = dict(zip(exchange_rows['Ticker'], exchange_rows['Ask_Price'].fillna(0)))
-            bid_prices = dict(zip(exchange_rows['Ticker'], exchange_rows['Bid_Price'].fillna(0)))
+            # Cache prices per exchange to avoid recalculating
+            if exchange not in exchange_prices_cache:
+                exchange_rows = all_df[(all_df['Ticker'].notna()) & (all_df['Exchange'] == exchange)]
+                ask_prices = dict(zip(exchange_rows['Ticker'], exchange_rows['Ask_Price'].fillna(0)))
+                bid_prices = dict(zip(exchange_rows['Ticker'], exchange_rows['Bid_Price'].fillna(0)))
+                exchange_prices_cache[exchange] = (ask_prices, bid_prices)
+            else:
+                ask_prices, bid_prices = exchange_prices_cache[exchange]
             
             costs = analyzer.calculate_detailed_costs(ticker, ask_prices, bid_prices)
             return pd.Series(costs)
@@ -2417,7 +2423,15 @@ def create_price_analyser_tab(sheets_manager, all_df):
             clean_df['Input Cost Bid'] = cost_cols['input_cost_bid']
             clean_df['Workforce Cost Ask'] = cost_cols['workforce_cost_ask']
             clean_df['Workforce Cost Bid'] = cost_cols['workforce_cost_bid']
-            print("[SUCCESS] Calculated Ask/Bid costs for all materials")
+            
+            # Debug: Show sample workforce costs
+            wf_ask_nonzero = clean_df[clean_df['Workforce Cost Ask'] > 0]
+            wf_bid_nonzero = clean_df[clean_df['Workforce Cost Bid'] > 0]
+            print(f"[SUCCESS] Calculated Ask/Bid costs for all materials")
+            print(f"[DEBUG] Materials with workforce costs: {len(wf_ask_nonzero)} (Ask), {len(wf_bid_nonzero)} (Bid)")
+            if len(wf_ask_nonzero) > 0:
+                sample = wf_ask_nonzero.head(3)[['Ticker', 'Exchange', 'Input Cost Ask', 'Workforce Cost Ask']]
+                print(f"[DEBUG] Sample workforce costs:\n{sample.to_string()}")
         except Exception as e:
             print(f"[WARN] Could not calculate detailed costs: {e}")
             import traceback
@@ -2434,8 +2448,22 @@ def create_price_analyser_tab(sheets_manager, all_df):
                            'Workforce Cost Ask', 'Workforce Cost Bid',
                            'Amount per Recipe', 'Supply', 'Demand']].copy()
     
+    # Fill NaN values with 0 for numeric columns
+    numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost Ask', 'Input Cost Bid', 
+                    'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand']
+    for col in numeric_cols:
+        reference_df[col] = reference_df[col].fillna(0)
+    
     # Add lookup key (Ticker+Exchange concatenation for VLOOKUP)
     reference_df.insert(0, 'LookupKey', reference_df['Ticker'].astype(str) + reference_df['Exchange'].astype(str))
+    
+    # Debug: Show column structure and sample data
+    print(f"[DEBUG] Reference DataFrame columns: {list(reference_df.columns)}")
+    print(f"[DEBUG] Sample row with workforce costs:")
+    wf_sample = reference_df[reference_df['Workforce Cost Ask'] > 0].head(1)
+    if not wf_sample.empty:
+        for col in reference_df.columns:
+            print(f"  {col}: {wf_sample[col].values[0]}")
     
     # Upload reference data to a hidden sheet
     try:

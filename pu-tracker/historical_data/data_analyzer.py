@@ -372,6 +372,7 @@ class UnifiedAnalysisProcessor:
         """
         recipes = self.recipe_outputs[self.recipe_outputs['Material'] == ticker]
         if recipes.empty:
+            # No recipe found - this might be a raw material or tier 0
             return {'input_cost_ask': 0, 'input_cost_bid': 0, 'workforce_cost_ask': 0, 'workforce_cost_bid': 0}
 
         min_total_cost = None
