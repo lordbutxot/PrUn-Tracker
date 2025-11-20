@@ -62,9 +62,9 @@ def load_workforce_needs():
     for entry in wf_needs_raw:
         wf_type = entry["WorkforceType"]
         needs = entry["Needs"]
-        # If your JSON is per day, convert to per hour here:
-        wf_consumables[wf_type] = {need["MaterialTicker"]: need["Amount"] / 24 for need in needs}
-        # If your JSON is per hour, just use need["Amount"]
+        # JSON stores consumption per 100 workers per day
+        # Convert to per single worker per hour: amount / 100 / 24
+        wf_consumables[wf_type] = {need["MaterialTicker"]: need["Amount"] / 100.0 / 24.0 for need in needs}
     return wf_consumables
 
 # --- Price Lookup ---
@@ -76,11 +76,25 @@ def get_market_price(ticker, market_prices, exchange="AI1"):
     return 0.0
 
 # --- Workforce Consumable Cost ---
-def calculate_workforce_consumable_cost(wf_type, hours, market_prices, wf_consumables, exchange="AI1"):
+def calculate_workforce_consumable_cost(wf_type, hours, workforce_amount, market_prices, wf_consumables, exchange="AI1"):
+    """
+    Calculate workforce consumable cost.
+    
+    Args:
+        wf_type: Workforce type (PIONEER, SETTLER, etc.)
+        hours: Recipe duration in hours
+        workforce_amount: Number of workers (e.g., 100 for BMP)
+        market_prices: DataFrame with market prices
+        wf_consumables: Dict with per-worker per-hour consumption rates
+        exchange: Exchange code (AI1, CI1, etc.)
+    
+    Returns:
+        Total cost of workforce consumables for the recipe
+    """
     total = 0.0
     consumables = wf_consumables.get(wf_type, {})
-    for ticker, amt_per_hour in consumables.items():
-        qty = amt_per_hour * hours
+    for ticker, amt_per_hour_per_worker in consumables.items():
+        qty = amt_per_hour_per_worker * workforce_amount * hours
         price = get_market_price(ticker, market_prices, exchange)
         total += qty * price
     return total
@@ -181,7 +195,8 @@ def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, 
     # 2. Workforce consumable cost
     wf_type = recipe_row['WorkforceType']
     hours = recipe_row['HoursPerRecipe']
-    wf_cost = calculate_workforce_consumable_cost(wf_type, hours, market_prices, wf_consumables, exchange)
+    workforce_amount = recipe_row.get('WorkforceAmount', 100)  # Default to 100 if not specified
+    wf_cost = calculate_workforce_consumable_cost(wf_type, hours, workforce_amount, market_prices, wf_consumables, exchange)
 
     # 3. Total input cost for the recipe
     total_input_cost = direct_input_cost + wf_cost
