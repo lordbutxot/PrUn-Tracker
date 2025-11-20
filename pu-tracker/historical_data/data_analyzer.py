@@ -2,6 +2,8 @@
 SINGLE UNIFIED ANALYSIS FILE
 Generates the exact 24-column structure for Google Sheets upload
 Uses existing cache data and outputs to daily_analysis_enhanced.csv
+
+REFACTORED: Now uses loaders.py, calculators.py, and config.py modules
 """
 
 import pandas as pd
@@ -17,36 +19,39 @@ from sklearn.preprocessing import MinMaxScaler
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
+# Import from refactored modules
+from config import CACHE_DIR, ENHANCED_ANALYSIS_COLUMNS
+from loaders import (
+    load_materials, load_market_data, load_recipe_inputs, load_recipe_outputs,
+    load_buildingrecipes, load_workforceneeds, load_categories, load_tiers,
+    load_recipes_json, load_processed_data, load_materials_json,
+    get_market_price
+)
+from calculators import (
+    calculate_detailed_costs, calculate_profit, calculate_roi,
+    calculate_investment_score, calculate_viability, calculate_risk_level
+)
+
 class UnifiedAnalysisProcessor:
     def __init__(self):
         print("\n\033[1;36m[STEP]\033[0m Initializing UnifiedAnalysisProcessor...")
-        # Ensure we're using the correct cache directory
-        self.cache_dir = Path(__file__).parent.parent / 'cache'
+        # Use centralized cache directory
+        self.cache_dir = CACHE_DIR
         print(f" Cache directory: {self.cache_dir}")
         
-        # Create cache directory if it doesn't exist
-        self.cache_dir.mkdir(exist_ok=True)
+        # Load material and recipe data using loaders
+        self.materials = load_materials()
+        self.recipe_outputs = load_recipe_outputs()
+        self.recipe_inputs = load_recipe_inputs()
         
-        # Load material and recipe data
-        self.materials = pd.read_csv(self.cache_dir / 'materials.csv')
-        self.recipe_outputs = pd.read_csv(self.cache_dir / 'recipe_outputs.csv')
-        self.recipe_inputs = pd.read_csv(self.cache_dir / 'recipe_inputs.csv')
+        # Use centralized column definitions
+        self.target_columns = ENHANCED_ANALYSIS_COLUMNS
         
-        self.target_columns = [
-            'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe', 
-            'Amount per Recipe', 'Weight', 'Volume', 
-            'Ask_Price', 'Bid_Price',
-            'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour',
-            'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
-            'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
-            'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Volatility',
-            'Exchange'
-        ]
-        
+        # Load building recipes and workforce needs
         self._materials_cache = None
         self._materials_mtime = None
-        self.buildingrecipes_df = self.load_buildingrecipes()
-        self.workforceneeds = self.load_workforceneeds()
+        self.buildingrecipes_df = load_buildingrecipes()
+        self.workforceneeds = load_workforceneeds()
         
     def load_cache_data(self):
         print("\n\033[1;36m[STEP]\033[0m Loading cache data...")
@@ -273,225 +278,12 @@ class UnifiedAnalysisProcessor:
                     continue
         return 1
 
-    def load_buildingrecipes(self):
-        path = self.cache_dir / "buildingrecipes.csv"
-        if not path.exists():
-            print("[WARN] buildingrecipes.csv not found, workforce costs will be skipped.")
-            return None
-        df = pd.read_csv(path)
-        # Use 'Key' as the recipe identifier
-        if "Key" not in df.columns:
-            print("[WARN] buildingrecipes.csv missing 'Key' column.")
-            return None
-        
-        # Load buildings.json to get workforce requirements
-        buildings_path = self.cache_dir / "buildings.json"
-        if buildings_path.exists():
-            with open(buildings_path, 'r', encoding='utf-8') as f:
-                buildings_data = json.load(f)
-            
-            # Add workforce columns from buildings.json
-            def get_workforce_info(building_ticker):
-                if building_ticker in buildings_data:
-                    building = buildings_data[building_ticker]
-                    # Determine which workforce type has non-zero amount
-                    for wf_type in ['PIONEER', 'SETTLER', 'TECHNICIAN', 'ENGINEER', 'SCIENTIST']:
-                        wf_key = wf_type.lower() + 's'  # pioneers, settlers, etc.
-                        amount = building.get(wf_key, 0)
-                        if amount > 0:
-                            # Amount is actual worker count from API
-                            return wf_type, amount
-                return None, 0
-            
-            df['Workforce'] = df['Building'].apply(lambda x: get_workforce_info(x)[0])
-            df['WorkforceAmount'] = df['Building'].apply(lambda x: get_workforce_info(x)[1])
-            
-            # Rename Duration to Time (in minutes)
-            if 'Duration' in df.columns:
-                # Duration is in seconds, convert to minutes
-                df['Time'] = df['Duration'].astype(float) / 60
-        else:
-            print("[WARN] buildings.json not found, workforce costs will be missing.")
-        
-        return df.set_index("Key")
+    # Removed: load_buildingrecipes() - now using loaders.load_buildingrecipes()
+    # Removed: load_workforceneeds() - now using loaders.load_workforceneeds()
 
-    def load_workforceneeds(self):
-        path = self.cache_dir / "workforceneeds.json"
-        if not path.exists():
-            print("[WARN] workforceneeds.json not found, using static mapping.")
-            return {}
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        # Convert to: { "PIONEER": {"RAT": per_hour_per_worker, ...}, ... }
-        needs = {}
-        for wf in data:
-            name = wf.get("name")
-            if not name:
-                # Try "WorkforceType" key instead
-                name = wf.get("WorkforceType")
-            if name:
-                needs[name] = {}
-                needs_list = wf.get("needs", wf.get("Needs", []))
-                for need in needs_list:
-                    ticker = need.get("ticker", need.get("MaterialTicker"))
-                    amount = need.get("amountPerWorkerPerHour", need.get("Amount", 0))
-                    if ticker and amount:
-                        # The JSON stores consumption per 100 workers per day
-                        # Convert to per single worker per hour: amount / 100 / 24
-                        per_hour_per_worker = float(amount) / 100.0 / 24.0
-                        needs[name][ticker] = per_hour_per_worker
-        print(f"[DEBUG] Loaded workforce needs for {len(needs)} workforce types: {list(needs.keys())}")
-        return needs
+    # Removed: calculate_input_cost() - now delegating to calculators module
 
-    def calculate_input_cost(self, ticker, market_prices):
-        """
-        For a given product ticker, find all recipes that produce it.
-        For each recipe, sum the cost of all inputs (from recipe_inputs.csv) using market prices,
-        plus workforce consumables for the recipe time (from workforceneeds.json).
-        Return the minimum input cost found (best recipe).
-        """
-        recipes = self.recipe_outputs[self.recipe_outputs['Material'] == ticker]
-        if recipes.empty:
-            return 0  # No recipe found
-
-        min_cost = None
-        for _, recipe_row in recipes.iterrows():
-            recipe_key = recipe_row['Key']
-            # 1. Material input cost
-            inputs = self.recipe_inputs[self.recipe_inputs['Key'] == recipe_key]
-            material_input_cost = 0
-            for _, inp in inputs.iterrows():
-                input_ticker = inp['Material']
-                try:
-                    amount = float(inp['Amount'])
-                except Exception:
-                    amount = 0
-                price = float(market_prices.get(input_ticker, 0))
-                material_input_cost += amount * price
-
-            # 2. Workforce consumable cost
-            workforce_cost = 0
-            if self.buildingrecipes_df is not None and recipe_key in self.buildingrecipes_df.index:
-                recipe_info = self.buildingrecipes_df.loc[recipe_key]
-                try:
-                    time_minutes = float(recipe_info.get("Time", 0))
-                    time_hours = time_minutes / 60
-                    workforce_type = recipe_info.get("Workforce", None)
-                    workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
-                    if workforce_type and workforce_type in self.workforceneeds:
-                        consumables = self.workforceneeds[workforce_type]
-                        for item, per_hour in consumables.items():
-                            try:
-                                total_needed = float(per_hour) * workforce_amount * time_hours
-                            except Exception:
-                                total_needed = 0
-                            price = float(market_prices.get(item, 0))
-                            workforce_cost += total_needed * price
-                    else:
-                        if workforce_type:
-                            print(f"[WARN] Workforce type '{workforce_type}' not found in workforceneeds.json")
-                except Exception as e:
-                    print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
-
-            total_cost = material_input_cost + workforce_cost
-            if min_cost is None or total_cost < min_cost:
-                min_cost = total_cost
-        return min_cost if min_cost is not None else 0
-
-    def calculate_detailed_costs(self, ticker, ask_prices, bid_prices):
-        """
-        Calculate separate costs for Ask and Bid price scenarios.
-        Returns: dict with input_cost_ask, input_cost_bid, workforce_cost_ask, workforce_cost_bid
-        """
-        recipes = self.recipe_outputs[self.recipe_outputs['Material'] == ticker]
-        if recipes.empty:
-            # No recipe found - this might be a raw material or tier 0
-            return {'input_cost_ask': 0, 'input_cost_bid': 0, 'workforce_cost_ask': 0, 'workforce_cost_bid': 0}
-
-        min_total_cost = None
-        best_costs = None
-        
-        for _, recipe_row in recipes.iterrows():
-            recipe_key = recipe_row['Key']
-            
-            # 1. Material input costs (Ask and Bid)
-            inputs = self.recipe_inputs[self.recipe_inputs['Key'] == recipe_key]
-            material_input_cost_ask = 0
-            material_input_cost_bid = 0
-            
-            for _, inp in inputs.iterrows():
-                input_ticker = inp['Material']
-                try:
-                    amount = float(inp['Amount'])
-                except Exception:
-                    amount = 0
-                ask_price = float(ask_prices.get(input_ticker, 0))
-                bid_price = float(bid_prices.get(input_ticker, 0))
-                material_input_cost_ask += amount * ask_price
-                material_input_cost_bid += amount * bid_price
-
-            # 2. Workforce consumable costs (Ask and Bid)
-            workforce_cost_ask = 0
-            workforce_cost_bid = 0
-            
-            if self.buildingrecipes_df is not None and recipe_key in self.buildingrecipes_df.index:
-                recipe_info = self.buildingrecipes_df.loc[recipe_key]
-                try:
-                    time_minutes = float(recipe_info.get("Time", 0))
-                    time_hours = time_minutes / 60
-                    workforce_type = recipe_info.get("Workforce", None)
-                    workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
-                    
-                    if workforce_type and workforce_type in self.workforceneeds:
-                        consumables = self.workforceneeds[workforce_type]
-                        for item, per_hour in consumables.items():
-                            try:
-                                total_needed = float(per_hour) * workforce_amount * time_hours
-                            except Exception:
-                                total_needed = 0
-                            ask_price = float(ask_prices.get(item, 0))
-                            bid_price = float(bid_prices.get(item, 0))
-                            
-                            if ask_price == 0 and bid_price == 0:
-                                # Workforce consumable has no market price
-                                pass
-                            workforce_cost_ask += total_needed * ask_price
-                            workforce_cost_bid += total_needed * bid_price
-                    elif workforce_type:
-                        # Workforce type not found in workforceneeds
-                        pass
-                except Exception as e:
-                    print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
-
-            # Get units produced per recipe to calculate per-unit costs
-            units_per_recipe = 1
-            try:
-                # Get the amount produced from recipe_outputs
-                output_row = self.recipe_outputs[self.recipe_outputs['Key'] == recipe_key]
-                if not output_row.empty:
-                    units_per_recipe = float(output_row.iloc[0].get('Amount', 1))
-            except Exception:
-                units_per_recipe = 1
-            
-            # Calculate per-unit costs
-            input_cost_ask_per_unit = material_input_cost_ask / units_per_recipe if units_per_recipe > 0 else 0
-            input_cost_bid_per_unit = material_input_cost_bid / units_per_recipe if units_per_recipe > 0 else 0
-            workforce_cost_ask_per_unit = workforce_cost_ask / units_per_recipe if units_per_recipe > 0 else 0
-            workforce_cost_bid_per_unit = workforce_cost_bid / units_per_recipe if units_per_recipe > 0 else 0
-            
-            # Use average of ask and bid for comparison to find best recipe
-            total_cost_avg = (input_cost_ask_per_unit + input_cost_bid_per_unit) / 2 + (workforce_cost_ask_per_unit + workforce_cost_bid_per_unit) / 2
-            
-            if min_total_cost is None or total_cost_avg < min_total_cost:
-                min_total_cost = total_cost_avg
-                best_costs = {
-                    'input_cost_ask': input_cost_ask_per_unit,
-                    'input_cost_bid': input_cost_bid_per_unit,
-                    'workforce_cost_ask': workforce_cost_ask_per_unit,
-                    'workforce_cost_bid': workforce_cost_bid_per_unit
-                }
-        
-        return best_costs if best_costs is not None else {'input_cost_ask': 0, 'input_cost_bid': 0, 'workforce_cost_ask': 0, 'workforce_cost_bid': 0}
+    # Removed: calculate_detailed_costs() - now using calculators.calculate_detailed_costs()
 
     def load_materials(self):
         path = self.cache_dir / 'materials.csv'

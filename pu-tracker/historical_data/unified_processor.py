@@ -1,116 +1,68 @@
 """
 Unified Data Processor
 Fixed materials loading and processing issues
+
+REFACTORED: Now uses loaders.py, calculators.py, and config.py modules
 """
 
 import pandas as pd
 import json
 import os
-import sys  # FIXED: Added missing import
+import sys
 from pathlib import Path
 from datetime import datetime
 import logging
 from collections import defaultdict
 
-# Import config
-from unified_config import REQUIRED_DATA_COLUMNS, VALID_EXCHANGES
+# Import from refactored modules
+from config import CACHE_DIR, REQUIRED_DATA_COLUMNS, VALID_EXCHANGES
+from loaders import (
+    load_materials, load_market_data, load_processed_data,
+    load_workforceneeds, get_market_price
+)
 from workforce_costs import (
-    load_market_prices,
-    load_workforce_needs,
-    calculate_input_costs_for_recipe,
-    get_market_price,  # <-- Add this line
+    load_market_prices,  # Alias for load_market_data
+    load_workforce_needs,  # Alias for load_workforceneeds
+    calculate_input_costs_for_recipe  # Keep for backward compatibility
 )
 
 class UnifiedDataProcessor:
     def __init__(self):
-        self.cache_dir = Path(__file__).parent.parent / 'cache'
-        self.cache_dir.mkdir(exist_ok=True)
+        # Use centralized cache directory
+        self.cache_dir = CACHE_DIR
         
     def load_basic_data(self):
         print("\n\033[1;36m[STEP]\033[0m Loading basic materials/buildings data...")
-        """Load basic materials/buildings data"""
+        """Load basic materials/buildings data using loaders module"""
         try:
             print("[INFO] Loading basic data from cache...")
-            
-            # First try to load from existing CSV files
-            basic_data = []
-            
-            # Try materials.csv first
-            materials_csv = self.cache_dir / 'materials.csv'
-            if materials_csv.exists():
-                print(f"[INFO] Loading from {materials_csv}")
-                df = pd.read_csv(materials_csv)
-                return df
-            
-            # Try materials.json
-            materials_file = self.cache_dir / 'materials.json'
-            if materials_file.exists():
-                print(f"[INFO] Loading from {materials_file}")
-                with open(materials_file, 'r') as f:
-                    materials = json.load(f)
-                    
-                for ticker, data in materials.items():
-                    basic_data.append({
-                        'Ticker': ticker,
-                        'Product': data.get('Name', ticker),
-                        'Category': data.get('CategoryName', 'Unknown'),
-                        'Tier': data.get('Tier', 0)
-                    })
-            
-            # Try buildings.json as fallback
-            buildings_file = self.cache_dir / 'buildings.json'
-            if buildings_file.exists() and not basic_data:
-                print(f"[INFO] Loading buildings from {buildings_file}")
-                with open(buildings_file, 'r') as f:
-                    buildings = json.load(f)
-                    
-                for ticker, data in buildings.items():
-                    basic_data.append({
-                        'Ticker': ticker,
-                        'Product': data.get('Name', ticker),
-                        'Category': 'Building',
-                        'Tier': 0
-                    })
-            
-            if basic_data:
-                df = pd.DataFrame(basic_data)
-                print(f"[SUCCESS] Loaded {len(df)} items from basic data")
+            df = load_materials()
+            if not df.empty:
+                print(f"[SUCCESS] Loaded {len(df)} materials from cache")
                 return df
             else:
-                print("[WARNING] No basic data found, creating empty DataFrame")
+                print("[WARNING] No materials data found")
                 return pd.DataFrame(columns=['Ticker', 'Product', 'Category', 'Tier'])
-                
         except Exception as e:
             print(f"[ERROR] Loading basic data: {e}")
             return pd.DataFrame(columns=['Ticker', 'Product', 'Category', 'Tier'])
     
     def load_market_data(self):
         print("\n\033[1;36m[STEP]\033[0m Loading market data for all exchanges...")
-        """Load market data by exchange"""
+        """Load market data using loaders module"""
         market_data = {}
-
-        # Try to load general market data first
-        general_market = self.cache_dir / 'market_data.csv'
-        if general_market.exists():
-            try:
-                df = pd.read_csv(general_market)
-                print(f"[INFO] Loaded general market data: {len(df)} records")
-
-                # Always transform to long format if needed
-                if 'Exchange' not in df.columns and 'AI1-AskPrice' in df.columns:
-                    print("[INFO] Detected wide market data format, transforming...")
-                    df = self.transform_market_data_wide_to_long(df)
-                    # Optionally, save the transformed file for future use
-                    df.to_csv(self.cache_dir / 'market_data_long.csv', index=False)
-
-                # Now split by exchange
-                if 'Exchange' in df.columns:
-                    for exchange in VALID_EXCHANGES:
-                        market_data[exchange] = df[df['Exchange'] == exchange].copy()
-                else:
-                    print("[ERROR] Could not find 'Exchange' column after transformation.")
-            except Exception as e:
-                print(f"[ERROR] Loading general market data: {e}")
+        try:
+            df = load_market_data()
+            print(f"[INFO] Loaded market data: {len(df)} records")
+            
+            # Market data should already be in long format from loaders
+            if 'Exchange' in df.columns:
+                for exchange in VALID_EXCHANGES:
+                    market_data[exchange] = df[df['Exchange'] == exchange].copy()
+            else:
+                print("[ERROR] Market data missing 'Exchange' column")
+        except Exception as e:
+            print(f"[ERROR] Loading market data: {e}")
 
         # Try exchange-specific files
         for exchange in VALID_EXCHANGES:

@@ -46,8 +46,8 @@ for ticker in buildings.keys():
 with open(cache_dir / "buildings.json", "w") as f:
     json.dump(buildings, f, indent=2)
 
-print(f"\n✅ Updated {updated} buildings with workforce data")
-print(f"❌ {errors} errors")
+print(f"\n[SUCCESS] Updated {updated} buildings with workforce data")
+print(f"[ERROR] {errors} errors")
 
 # Show sample of updated data
 print("\nSample updated buildings:")

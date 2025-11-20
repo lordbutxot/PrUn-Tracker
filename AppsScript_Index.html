@@ -42,7 +42,7 @@
     
     .controls {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 20px;
       margin-bottom: 30px;
     }
@@ -164,6 +164,88 @@
       opacity: 0.7;
     }
     
+    .recipe-comparison {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 2px solid #16a34a;
+    }
+    
+    .recipe-comparison.alternative {
+      border: 1px solid #ddd;
+      opacity: 0.85;
+    }
+    
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .recipe-title {
+      font-weight: 600;
+      color: #333;
+      font-size: 1rem;
+    }
+    
+    .recipe-badge {
+      background: #16a34a;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .recipe-badge.alternative {
+      background: #6b7280;
+    }
+    
+    .recipe-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+    
+    .recipe-detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .recipe-detail-label {
+      color: #666;
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+    }
+    
+    .recipe-detail-value {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .recipe-detail-value.profit {
+      color: #16a34a;
+    }
+    
+    .recipe-detail-value.loss {
+      color: #dc2626;
+    }
+    
+    .recommendation-message {
+      padding: 15px;
+      background: #f0f9ff;
+      border-radius: 6px;
+      border-left: 4px solid #3b82f6;
+      color: #1e40af;
+      font-weight: 500;
+      margin-bottom: 15px;
+    }
+    
     @media (max-width: 768px) {
       .controls {
         grid-template-columns: 1fr;
@@ -193,6 +275,13 @@
       </div>
       
       <div class="control-group">
+        <label for="recipeSelect">Select Recipe:</label>
+        <select id="recipeSelect">
+          <option value="">-- Select Material First --</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
         <label for="exchangeSelect">Select Exchange:</label>
         <select id="exchangeSelect">
           <option value="">Loading exchanges...</option>
@@ -207,6 +296,20 @@
     <div id="error" class="error" style="display: none;"></div>
     
     <div id="results" class="results">
+      <div class="section">
+        <h3>🔬 Recipe Details</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Inputs Required</div>
+            <div class="data-value" id="recipeInputs" style="font-size: 1rem; color: #dc2626;">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Output Produced</div>
+            <div class="data-value" id="recipeOutputs" style="font-size: 1rem; color: #16a34a;">-</div>
+          </div>
+        </div>
+      </div>
+      
       <div class="section">
         <h3>💰 Pricing</h3>
         <div class="data-grid">
@@ -324,6 +427,11 @@
           </div>
         </div>
       </div>
+      
+      <div class="section" id="recommendationSection" style="display: none;">
+        <h3>🏆 Recommended Recipe</h3>
+        <div id="recommendationContent"></div>
+      </div>
     </div>
   </div>
 
@@ -372,13 +480,47 @@
         .getExchanges();
     }
     
+    // Load recipes for selected material
+    function loadRecipes() {
+      const material = document.getElementById('materialSelect').value;
+      const recipeSelect = document.getElementById('recipeSelect');
+      
+      if (!material) {
+        recipeSelect.innerHTML = '<option value="">-- Select Material First --</option>';
+        return;
+      }
+      
+      recipeSelect.innerHTML = '<option value="">Loading recipes...</option>';
+      
+      google.script.run
+        .withSuccessHandler(function(recipes) {
+          recipeSelect.innerHTML = '<option value="">-- All Recipes (Best Cost) --</option>';
+          recipes.forEach(function(recipe) {
+            const option = document.createElement('option');
+            option.value = recipe.key;
+            option.textContent = recipe.label + ' (' + recipe.building + ')';
+            recipeSelect.appendChild(option);
+          });
+        })
+        .withFailureHandler(function(error) {
+          recipeSelect.innerHTML = '<option value="">-- Error Loading --</option>';
+          showError('Failed to load recipes: ' + error.message);
+        })
+        .getRecipesForMaterial(material);
+    }
+    
     // Listen for selection changes
-    document.getElementById('materialSelect').addEventListener('change', calculate);
+    document.getElementById('materialSelect').addEventListener('change', function() {
+      loadRecipes();
+      calculate();
+    });
+    document.getElementById('recipeSelect').addEventListener('change', calculate);
     document.getElementById('exchangeSelect').addEventListener('change', calculate);
     
     // Calculate and display results
     function calculate() {
       const material = document.getElementById('materialSelect').value;
+      const recipe = document.getElementById('recipeSelect').value;
       const exchange = document.getElementById('exchangeSelect').value;
       
       if (!material || !exchange) {
@@ -390,26 +532,60 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('results').style.display = 'none';
       
-      google.script.run
-        .withSuccessHandler(function(data) {
+      // Load both calculation data and recommendation in parallel
+      let calculationData = null;
+      let recommendationData = null;
+      let loadCount = 0;
+      
+      function checkComplete() {
+        loadCount++;
+        if (loadCount === 2) {
           document.getElementById('loading').style.display = 'none';
           
-          if (data.error) {
-            showError(data.error);
+          if (calculationData && calculationData.error) {
+            showError(calculationData.error);
             return;
           }
           
-          displayResults(data);
+          if (calculationData) {
+            displayResults(calculationData);
+          }
+          
+          if (recommendationData) {
+            displayRecommendation(recommendationData);
+          }
+        }
+      }
+      
+      google.script.run
+        .withSuccessHandler(function(data) {
+          calculationData = data;
+          checkComplete();
         })
         .withFailureHandler(function(error) {
-          document.getElementById('loading').style.display = 'none';
-          showError('Calculation failed: ' + error.message);
+          calculationData = { error: 'Calculation failed: ' + error.message };
+          checkComplete();
         })
-        .getCalculationData(material, exchange);
+        .getCalculationData(material, exchange, recipe);
+      
+      google.script.run
+        .withSuccessHandler(function(data) {
+          recommendationData = data;
+          checkComplete();
+        })
+        .withFailureHandler(function(error) {
+          recommendationData = { error: 'Recommendation failed: ' + error.message };
+          checkComplete();
+        })
+        .getRecommendedRecipe(material, exchange);
     }
     
     // Display calculation results
     function displayResults(data) {
+      // Recipe details
+      setValueRaw('recipeInputs', data.recipeInputs || '-');
+      setValueRaw('recipeOutputs', data.recipeOutputs || '-');
+      
       // Pricing
       setValue('askPrice', data.askPrice);
       setValue('bidPrice', data.bidPrice);
@@ -443,6 +619,80 @@
       setValueRaw('demand', data.demand);
       
       document.getElementById('results').style.display = 'block';
+    }
+    
+    // Display recipe recommendation comparison
+    function displayRecommendation(data) {
+      const section = document.getElementById('recommendationSection');
+      const content = document.getElementById('recommendationContent');
+      
+      if (data.error || data.count === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      if (data.count === 1) {
+        content.innerHTML = '<div class="recommendation-message">Only one recipe available for this material.</div>';
+        section.style.display = 'block';
+        return;
+      }
+      
+      let html = '<div class="recommendation-message">📊 Comparing ' + data.count + ' recipes based on current market prices (Ask prices for inputs)</div>';
+      
+      // Display recommended recipe
+      html += buildRecipeCard(data.recommended, true);
+      
+      // Display alternative recipes
+      if (data.alternatives && data.alternatives.length > 0) {
+        html += '<div style="margin-top: 15px; font-weight: 600; color: #666; font-size: 0.9rem;">Alternative Recipes:</div>';
+        data.alternatives.forEach(function(recipe) {
+          html += buildRecipeCard(recipe, false);
+        });
+      }
+      
+      content.innerHTML = html;
+      section.style.display = 'block';
+    }
+    
+    function buildRecipeCard(recipe, isRecommended) {
+      const profitClass = recipe.profit >= 0 ? 'profit' : 'loss';
+      const badgeClass = isRecommended ? '' : 'alternative';
+      const cardClass = isRecommended ? 'recipe-comparison' : 'recipe-comparison alternative';
+      const badge = isRecommended ? '🏆 RECOMMENDED' : 'Alternative';
+      
+      return `
+        <div class="${cardClass}">
+          <div class="recipe-header">
+            <div class="recipe-title">${recipe.building} Recipe</div>
+            <div class="recipe-badge ${badgeClass}">${badge}</div>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 0.85rem; color: #666;">
+            <strong>Inputs:</strong> ${recipe.inputs} → <strong>Outputs:</strong> ${recipe.outputs}
+          </div>
+          <div class="recipe-details">
+            <div class="recipe-detail-item">
+              <div class="recipe-detail-label">Input Cost</div>
+              <div class="recipe-detail-value">₡ ${recipe.inputCost.toFixed(2)}</div>
+            </div>
+            <div class="recipe-detail-item">
+              <div class="recipe-detail-label">Workforce Cost</div>
+              <div class="recipe-detail-value">₡ ${recipe.workforceCost.toFixed(2)}</div>
+            </div>
+            <div class="recipe-detail-item">
+              <div class="recipe-detail-label">Total Cost</div>
+              <div class="recipe-detail-value">₡ ${recipe.totalCost.toFixed(2)}</div>
+            </div>
+            <div class="recipe-detail-item">
+              <div class="recipe-detail-label">Profit (Ask/Ask)</div>
+              <div class="recipe-detail-value ${profitClass}">₡ ${recipe.profit.toFixed(2)}</div>
+            </div>
+            <div class="recipe-detail-item">
+              <div class="recipe-detail-label">ROI</div>
+              <div class="recipe-detail-value ${profitClass}">${recipe.roi.toFixed(2)}%</div>
+            </div>
+          </div>
+        </div>
+      `;
     }
     
     // Helper to set formatted value with color coding

@@ -10,6 +10,10 @@ try:
 except ImportError:
     from sheets_manager import SheetsManager
 
+# Import refactored modules
+from loaders import load_recipe_inputs, load_recipe_outputs, load_buildingrecipes, load_workforceneeds
+from calculators import calculate_detailed_costs
+
 EXCHANGES = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2']
 PROFESSION_ORDER = [
     'METALLURGY', 'MANUFACTURING', 'CONSTRUCTION', 'CHEMISTRY',
@@ -2172,7 +2176,7 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
                 spreadsheetId=sheets_manager.spreadsheet_id,
                 body={"requests": requests}
             ).execute()
-            print(f"✓ Enhanced formatting applied to {sheet_name}")
+            print(f"[SUCCESS] Enhanced formatting applied to {sheet_name}")
         except HttpError as e:
             print(f"✗ Formatting failed for {sheet_name}: {e}")
 
@@ -2368,7 +2372,7 @@ def add_financial_overview_charts(sheets_manager, sheet_name, df):
                 position=config['position']
             )
             if success:
-                print(f"  ✓ Added chart: {config['title']}")
+                print(f"  [SUCCESS] Added chart: {config['title']}")
             else:
                 print(f"  ✗ Failed to add chart: {config['title']}")
         
@@ -2404,6 +2408,7 @@ def create_price_analyser_tab(sheets_manager, all_df):
         def calculate_costs_for_row(row):
             ticker = row['Ticker']
             exchange = row['Exchange']
+            recipe = row.get('Recipe', None)  # Get the specific recipe for this row
             
             # Cache prices per exchange to avoid recalculating
             if exchange not in exchange_prices_cache:
@@ -2414,7 +2419,17 @@ def create_price_analyser_tab(sheets_manager, all_df):
             else:
                 ask_prices, bid_prices = exchange_prices_cache[exchange]
             
-            costs = analyzer.calculate_detailed_costs(ticker, ask_prices, bid_prices)
+            # Use the standalone function from calculators module with specific recipe
+            costs = calculate_detailed_costs(
+                ticker, 
+                analyzer.recipe_inputs, 
+                analyzer.recipe_outputs, 
+                analyzer.buildingrecipes_df,
+                analyzer.workforceneeds, 
+                ask_prices, 
+                bid_prices,
+                specific_recipe=recipe  # Pass the specific recipe
+            )
             return pd.Series(costs)
         
         try:
@@ -2443,7 +2458,8 @@ def create_price_analyser_tab(sheets_manager, all_df):
             clean_df['Workforce Cost Bid'] = clean_df['Input Cost Bid'] * 0.10
     
     # Create the reference data tab first (hidden sheet with all data for lookups)
-    reference_df = clean_df[['Ticker', 'Material Name', 'Exchange', 'Ask_Price', 'Bid_Price', 
+    # Include Recipe column for multi-recipe selection capability
+    reference_df = clean_df[['Ticker', 'Recipe', 'Material Name', 'Exchange', 'Ask_Price', 'Bid_Price', 
                            'Input Cost Ask', 'Input Cost Bid', 
                            'Workforce Cost Ask', 'Workforce Cost Bid',
                            'Amount per Recipe', 'Supply', 'Demand']].copy()
@@ -2453,6 +2469,10 @@ def create_price_analyser_tab(sheets_manager, all_df):
                     'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand']
     for col in numeric_cols:
         reference_df[col] = reference_df[col].fillna(0)
+    
+    # Fill NaN in Recipe column with 'N/A'
+    if 'Recipe' in reference_df.columns:
+        reference_df['Recipe'] = reference_df['Recipe'].fillna('N/A')
     
     # Add lookup key (Ticker+Exchange concatenation for VLOOKUP)
     reference_df.insert(0, 'LookupKey', reference_df['Ticker'].astype(str) + reference_df['Exchange'].astype(str))

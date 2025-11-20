@@ -1,151 +1,29 @@
+"""
+Workforce Costs Module (Legacy Wrapper)
+This module now wraps functions from loaders.py and calculators.py
+Maintained for backward compatibility with unified_processor.py
+"""
+
 import pandas as pd
-import json
-import os
-from pathlib import Path
+from loaders import (
+    load_recipe_inputs,
+    load_byproduct_recipes,
+    load_chains,
+    load_market_data as load_market_prices,
+    load_workforceneeds as load_workforce_needs,
+    get_market_price
+)
+from calculators import (
+    calculate_workforce_consumable_cost,
+    allocate_byproduct_costs
+)
 
-CACHE_DIR = Path(__file__).parent.parent / "cache"
-
-# --- Load Data ---
-def load_recipe_inputs():
-    return pd.read_csv(CACHE_DIR / "recipe_inputs.csv")
-
-def load_byproduct_recipes():
-    """Load recipes with multiple outputs (byproducts)"""
-    byproduct_path = CACHE_DIR / "byproduct_recipes.json"
-    if byproduct_path.exists():
-        with open(byproduct_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def load_chains():
-    """Load chains.json for material production information"""
-    chains_path = CACHE_DIR / "chains.json"
-    if chains_path.exists():
-        with open(chains_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def load_market_prices():
-    # Always use the standardised long format
-    path = CACHE_DIR / "market_data_long.csv"
-    if path.exists():
-        return pd.read_csv(path)
-    # fallback: transform and save
-    path_wide = CACHE_DIR / "market_data.csv"
-    df = pd.read_csv(path_wide)
-    if 'Exchange' not in df.columns and 'AI1-AskPrice' in df.columns:
-        exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1']
-        records = []
-        for _, row in df.iterrows():
-            ticker = row['Ticker']
-            for exch in exchanges:
-                ask_col = f"{exch}-AskPrice"
-                bid_col = f"{exch}-BidPrice"
-                ask_price = row.get(ask_col, None)
-                bid_price = row.get(bid_col, None)
-                if pd.notnull(ask_price) or pd.notnull(bid_price):
-                    records.append({
-                        'Ticker': ticker,
-                        'Exchange': exch,
-                        'Ask_Price': pd.to_numeric(ask_price, errors='coerce') if pd.notnull(ask_price) else 0,
-                        'Bid_Price': pd.to_numeric(bid_price, errors='coerce') if pd.notnull(bid_price) else 0,
-                    })
-        df_long = pd.DataFrame(records)
-        df_long.to_csv(path, index=False)  # <-- FIXED: use 'path' not 'path_long'
-        return df_long
-    return df
-
-def load_workforce_needs():
-    with open(CACHE_DIR / "workforceneeds.json", "r", encoding="utf-8") as f:
-        wf_needs_raw = json.load(f)
-    wf_consumables = {}
-    for entry in wf_needs_raw:
-        wf_type = entry["WorkforceType"]
-        needs = entry["Needs"]
-        # JSON stores consumption per 100 workers per day
-        # Convert to per single worker per hour: amount / 100 / 24
-        wf_consumables[wf_type] = {need["MaterialTicker"]: need["Amount"] / 100.0 / 24.0 for need in needs}
-    return wf_consumables
-
-# --- Price Lookup ---
-def get_market_price(ticker, market_prices, exchange="AI1"):
-    row = market_prices[(market_prices['Ticker'] == ticker) & (market_prices['Exchange'] == exchange)]
-    if not row.empty:
-        # Use the correct column name with underscore
-        return float(row.iloc[0]['Ask_Price'])  # or 'Bid_Price' as appropriate
-    return 0.0
-
-# --- Workforce Consumable Cost ---
-def calculate_workforce_consumable_cost(wf_type, hours, workforce_amount, market_prices, wf_consumables, exchange="AI1"):
-    """
-    Calculate workforce consumable cost.
-    
-    Args:
-        wf_type: Workforce type (PIONEER, SETTLER, etc.)
-        hours: Recipe duration in hours
-        workforce_amount: Number of workers (e.g., 100 for BMP)
-        market_prices: DataFrame with market prices
-        wf_consumables: Dict with per-worker per-hour consumption rates
-        exchange: Exchange code (AI1, CI1, etc.)
-    
-    Returns:
-        Total cost of workforce consumables for the recipe
-    """
-    total = 0.0
-    consumables = wf_consumables.get(wf_type, {})
-    for ticker, amt_per_hour_per_worker in consumables.items():
-        qty = amt_per_hour_per_worker * workforce_amount * hours
-        price = get_market_price(ticker, market_prices, exchange)
-        total += qty * price
-    return total
-
-# --- Byproduct Cost Allocation ---
-def allocate_byproduct_costs(recipe_id, total_input_cost, market_prices, exchange="AI1"):
-    """
-    Allocate costs for recipes with multiple outputs based on market value.
-    Returns a dict of {ticker: allocated_cost_per_unit}
-    """
-    byproduct_recipes = load_byproduct_recipes()
-    
-    if recipe_id not in byproduct_recipes:
-        return {}
-    
-    recipe_info = byproduct_recipes[recipe_id]
-    outputs = recipe_info.get("outputs", [])
-    
-    if len(outputs) <= 1:
-        return {}
-    
-    # Calculate total market value of all outputs
-    output_values = {}
-    total_value = 0.0
-    
-    for ticker in outputs:
-        price = get_market_price(ticker, market_prices, exchange)
-        output_values[ticker] = price
-        total_value += price
-    
-    # Allocate costs proportionally based on market value
-    allocated_costs = {}
-    if total_value > 0:
-        for ticker, value in output_values.items():
-            proportion = value / total_value
-            allocated_costs[ticker] = total_input_cost * proportion
-    else:
-        # If no market value available, split evenly
-        equal_share = total_input_cost / len(outputs)
-        for ticker in outputs:
-            allocated_costs[ticker] = equal_share
-    
-    return allocated_costs
+# --- Helper Functions ---
 
 def get_cheapest_acquisition_cost(ticker, market_prices, wf_consumables, chains=None, exchange="AI1"):
     """
-    Determine the cheapest way to acquire a material:
-    - Direct extraction (if extractable)
-    - Crafting from recipe
-    - Buying from market
-    Returns the minimum cost per unit.
+    Determine the cheapest way to acquire a material.
+    Legacy function maintained for compatibility.
     """
     if chains is None:
         chains = load_chains()
@@ -158,22 +36,11 @@ def get_cheapest_acquisition_cost(ticker, market_prices, wf_consumables, chains=
     
     # Option 2: Extractable (tier 0)
     if chain_info.get("is_extractable", False):
-        # Extractable materials have minimal cost (just workforce)
-        # For now, assume extraction cost is negligible or use a base extraction cost
         extraction_cost = 0.1  # Nominal extraction cost
         return min(market_price, extraction_cost) if market_price > 0 else extraction_cost
     
-    # Option 3: Crafting cost (if multiple recipes, use cheapest)
-    min_craft_cost = float('inf')
-    all_recipes = chain_info.get("all_recipes", [])
-    
-    for recipe in all_recipes:
-        # Calculate crafting cost for this recipe
-        # This would require recursive calculation of input costs
-        # For now, return market price as fallback
-        pass
-    
     return market_price if market_price > 0 else 0.0
+
 
 # --- Main Input Cost Calculation ---
 def calculate_input_costs_for_recipe(recipe_row, market_prices, wf_consumables, exchange="AI1", stack_size=100, enable_byproduct_allocation=True):

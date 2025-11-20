@@ -79,8 +79,149 @@ function getExchanges() {
   return Array.from(exchangesSet).sort();
 }
 
-// Get calculation data for selected material and exchange
-function getCalculationData(material, exchange) {
+// Get recipes for a specific material
+function getRecipesForMaterial(material) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return [];
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const recipes = [];
+    const seen = new Set();
+    
+    // Find all unique recipes for this material (column B is Ticker, column C is Recipe)
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === material && data[i][2]) { // Check Ticker and Recipe column exists
+        const recipeKey = data[i][2];
+        
+        if (!seen.has(recipeKey)) {
+          seen.add(recipeKey);
+          
+          // Extract building prefix from recipe (e.g., "BMP:1xC-2xH=>200xPE" -> "BMP")
+          const building = recipeKey.split(':')[0];
+          
+          // Create a shortened display label
+          let label = recipeKey;
+          if (label.length > 50) {
+            label = label.substring(0, 47) + '...';
+          }
+          
+          recipes.push({
+            key: recipeKey,
+            label: label,
+            building: building
+          });
+        }
+      }
+    }
+    
+    // Sort by building name
+    recipes.sort((a, b) => a.building.localeCompare(b.building));
+    
+    return recipes;
+  } catch (error) {
+    Logger.log('Error getting recipes: ' + error.toString());
+    return [];
+  }
+}
+
+// Get recommended recipe based on profitability comparison
+function getRecommendedRecipe(material, exchange) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return { error: 'Price Analyser Data sheet not found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const recipeComparisons = [];
+    
+    // Find all recipes for this material+exchange combination
+    // Column structure: A=LookupKey, B=Ticker, C=Recipe, D=Material Name, E=Exchange,
+    // F=Ask_Price, G=Bid_Price, H=Input Cost Ask, I=Input Cost Bid,
+    // J=Workforce Cost Ask, K=Workforce Cost Bid, L=Amount per Recipe, M=Supply, N=Demand
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === material && data[i][4] === exchange && data[i][2]) {
+        const recipeString = data[i][2];
+        const askPrice = parseFloat(data[i][5]) || 0;        // Column F
+        const inputCostAsk = parseFloat(data[i][7]) || 0;    // Column H
+        const workforceCostAsk = parseFloat(data[i][9]) || 0; // Column J
+        const totalCostAsk = inputCostAsk + workforceCostAsk;
+        const profitAskAsk = askPrice - totalCostAsk;
+        const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
+        
+        // Parse recipe for display
+        let recipeInputs = '';
+        let recipeOutputs = '';
+        let building = '';
+        
+        if (recipeString.includes('=>')) {
+          building = recipeString.split(':')[0];
+          const parts = recipeString.split('=>');
+          const inputPart = parts[0].split(':')[1] || parts[0];
+          const outputPart = parts[1];
+          
+          recipeInputs = inputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+          
+          recipeOutputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+        }
+        
+        recipeComparisons.push({
+          recipe: recipeString,
+          building: building,
+          inputs: recipeInputs,
+          outputs: recipeOutputs,
+          inputCost: inputCostAsk,
+          workforceCost: workforceCostAsk,
+          totalCost: totalCostAsk,
+          profit: profitAskAsk,
+          roi: roiAskAsk
+        });
+      }
+    }
+    
+    if (recipeComparisons.length === 0) {
+      return { count: 0, message: 'No recipes found' };
+    }
+    
+    if (recipeComparisons.length === 1) {
+      return {
+        count: 1,
+        message: 'Only one recipe available',
+        recommended: recipeComparisons[0],
+        alternatives: []
+      };
+    }
+    
+    // Sort by profit (descending) - most profitable first
+    recipeComparisons.sort((a, b) => b.profit - a.profit);
+    
+    return {
+      count: recipeComparisons.length,
+      recommended: recipeComparisons[0],
+      alternatives: recipeComparisons.slice(1)
+    };
+    
+  } catch (error) {
+    Logger.log('Error getting recommended recipe: ' + error.toString());
+    return { error: 'Error analyzing recipes: ' + error.toString() };
+  }
+}
+
+// Get calculation data for selected material, exchange, and optionally specific recipe
+function getCalculationData(material, exchange, recipe) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Price Analyser Data');
   
@@ -91,27 +232,85 @@ function getCalculationData(material, exchange) {
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   
-  // Build the full material code from material + exchange
-  const fullMaterialCode = material + exchange; // e.g., "AAR" + "CI1" = "AARCI1"
+  let bestRow = null;
+  let lowestCost = Infinity;
   
-  // Find the row matching the full code in column A (LookupKey)
+  // Find matching rows (Ticker in column B, Exchange in column E, Recipe in column C)
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === fullMaterialCode) {
-      // Updated column structure with workforce costs:
-      // A: LookupKey (Ticker+Exchange), B: Ticker, C: Material Name, D: Exchange,
-      // E: Ask_Price, F: Bid_Price, G: Input Cost Ask, H: Input Cost Bid,
-      // I: Workforce Cost Ask, J: Workforce Cost Bid,
-      // K: Amount per Recipe, L: Supply, M: Demand
+    if (data[i][1] === material && data[i][4] === exchange) {
+      // If specific recipe requested, match it exactly
+      if (recipe && data[i][2] === recipe) {
+        bestRow = i;
+        break;
+      }
       
-      const askPrice = parseFloat(data[i][4]) || 0;           // Column E: Ask_Price
-      const bidPrice = parseFloat(data[i][5]) || 0;           // Column F: Bid_Price
-      const inputCostAsk = parseFloat(data[i][6]) || 0;       // Column G: Input Cost Ask
-      const inputCostBid = parseFloat(data[i][7]) || 0;       // Column H: Input Cost Bid
-      const workforceCostAsk = parseFloat(data[i][8]) || 0;   // Column I: Workforce Cost Ask
-      const workforceCostBid = parseFloat(data[i][9]) || 0;   // Column J: Workforce Cost Bid
-      const amountPerRecipe = parseFloat(data[i][10]) || 1;   // Column K: Amount per Recipe
-      const supply = data[i][11] || 0;                         // Column L: Supply
-      const demand = data[i][12] || 0;                         // Column M: Demand
+      // If no recipe specified, find the one with lowest total cost (Ask basis)
+      if (!recipe) {
+        const inputCostAsk = parseFloat(data[i][6]) || 0;
+        const workforceCostAsk = parseFloat(data[i][8]) || 0;
+        const totalCost = inputCostAsk + workforceCostAsk;
+        
+        if (totalCost < lowestCost) {
+          lowestCost = totalCost;
+          bestRow = i;
+        }
+      }
+    }
+  }
+  
+  if (bestRow === null) {
+    return { error: 'No data found for ' + material + ' on ' + exchange + (recipe ? ' with recipe ' + recipe : '') };
+  }
+  
+  // Use the best matching row
+  const i = bestRow;
+  
+  // Extract data from the found row
+  if (data[i][0] && data[i][1] === material) {
+      // Actual column structure:
+      // A: LookupKey, B: Ticker, C: Recipe, D: Material Name, E: Exchange,
+      // F: Ask_Price, G: Bid_Price, H: Input Cost Ask, I: Input Cost Bid,
+      // J: Workforce Cost Ask, K: Workforce Cost Bid,
+      // L: Amount per Recipe, M: Supply, N: Demand
+      
+      const askPrice = parseFloat(data[i][5]) || 0;           // Column F: Ask_Price
+      const bidPrice = parseFloat(data[i][6]) || 0;           // Column G: Bid_Price
+      const inputCostAsk = parseFloat(data[i][7]) || 0;       // Column H: Input Cost Ask
+      const inputCostBid = parseFloat(data[i][8]) || 0;       // Column I: Input Cost Bid
+      const workforceCostAsk = parseFloat(data[i][9]) || 0;   // Column J: Workforce Cost Ask
+      const workforceCostBid = parseFloat(data[i][10]) || 0;  // Column K: Workforce Cost Bid
+      const amountPerRecipe = parseFloat(data[i][11]) || 1;   // Column L: Amount per Recipe
+      const supply = data[i][12] || 0;                         // Column M: Supply
+      const demand = data[i][13] || 0;                         // Column N: Demand
+      
+      // Parse recipe to extract inputs and outputs
+      const recipeString = data[i][2] || 'N/A';
+      let recipeInputs = '';
+      let recipeOutputs = '';
+      
+      if (recipeString !== 'N/A' && recipeString.includes('=>')) {
+        try {
+          // Format: "FP:1xALG-1xGRN-1xNUT=>10xRAT"
+          const parts = recipeString.split('=>');
+          const inputPart = parts[0].split(':')[1] || parts[0]; // Remove building prefix
+          const outputPart = parts[1];
+          
+          // Parse inputs: "1xALG-1xGRN-1xNUT" -> "1 ALG, 1 GRN, 1 NUT"
+          recipeInputs = inputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+          
+          // Parse outputs: "10xRAT" -> "10 RAT"
+          recipeOutputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+        } catch (e) {
+          recipeInputs = 'Parse error';
+          recipeOutputs = 'Parse error';
+        }
+      }
       
       // Calculate total costs
       const totalCostAsk = inputCostAsk + workforceCostAsk;
@@ -138,9 +337,12 @@ function getCalculationData(material, exchange) {
       const roiBidBid = totalCostBid > 0 ? (profitBidBid / totalCostBid) * 100 : 0;
       const breakevenBidBid = bidPrice > 0 ? ((totalCostBid - bidPrice) / bidPrice) * 100 : 0;
       
-      // Return comprehensive data object
-      return {
+        // Return comprehensive data object
+        return {
         materialCode: data[i][0],
+        recipe: recipeString,
+        recipeInputs: recipeInputs,
+        recipeOutputs: recipeOutputs,
         material: material,
         exchange: exchange,
         askPrice: askPrice,
@@ -169,9 +371,6 @@ function getCalculationData(material, exchange) {
         // Market indicators
         supply: supply,
         demand: demand
-      };
+        };
     }
-  }
-  
-  return { error: 'No data found for ' + material + ' on ' + exchange };
 }
