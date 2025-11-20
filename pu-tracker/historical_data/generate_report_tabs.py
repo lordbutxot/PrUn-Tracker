@@ -1709,9 +1709,9 @@ def build_financial_overview(financial_data, all_df):
     for cat, metrics in sorted(inflation.items(), key=lambda x: x[1]['volatility'], reverse=True):
         all_rows.append([
             cat,
-            f"{metrics['avg_price']:,.2f}",
-            f"{metrics['volatility']:.2f}%",
-            f"{metrics['sample_size']}"
+            metrics['avg_price'],
+            metrics['volatility'] / 100,
+            metrics['sample_size']
         ])
     all_rows.append([])
     all_rows.append(["Note: Higher volatility suggests more price instability (inflation-like pressure)"])
@@ -1735,15 +1735,15 @@ def build_financial_overview(financial_data, all_df):
     
     profit_col = 'Profit per Unit' if 'Profit per Unit' in all_df.columns else 'Profit_Ask'
     if profit_col in all_df.columns:
-        market_stats.append(["Average Market Profit", f"{all_df[profit_col].mean():,.2f}"])
-        market_stats.append(["Median Market Profit", f"{all_df[profit_col].median():,.2f}"])
-        market_stats.append(["Max Market Profit", f"{all_df[profit_col].max():,.2f}"])
-        market_stats.append(["Min Market Profit", f"{all_df[profit_col].min():,.2f}"])
+        market_stats.append(["Average Market Profit", all_df[profit_col].mean()])
+        market_stats.append(["Median Market Profit", all_df[profit_col].median()])
+        market_stats.append(["Max Market Profit", all_df[profit_col].max()])
+        market_stats.append(["Min Market Profit", all_df[profit_col].min()])
     
     roi_col = 'ROI Ask %' if 'ROI Ask %' in all_df.columns else 'ROI_Ask'
     if roi_col in all_df.columns:
-        market_stats.append(["Average Market ROI", f"{all_df[roi_col].mean():.2f}%"])
-        market_stats.append(["Median Market ROI", f"{all_df[roi_col].median():.2f}%"])
+        market_stats.append(["Average Market ROI", all_df[roi_col].mean() / 100])
+        market_stats.append(["Median Market ROI", all_df[roi_col].median() / 100])
     
     all_rows.extend(market_stats)
     
@@ -1949,6 +1949,83 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
                     1: 'currency'  # Value column
                 }
             })
+        
+        # INFLATION PROXY section
+        elif first_cell == "Category":
+            # Check if this is the inflation section by looking at nearby rows
+            if row_idx > 0 and "INFLATION" in str(df.iloc[row_idx - 2, 0]).upper():
+                end_row = row_idx + 1
+                for i in range(row_idx + 1, len(df)):
+                    cell_val = str(df.iloc[i, 0]).strip()
+                    if pd.isna(df.iloc[i, 0]) or cell_val == "" or cell_val.startswith("Note:"):
+                        end_row = i
+                        break
+                gdp_sections.append({
+                    'name': 'INFLATION PROXY',
+                    'header_row': row_idx,
+                    'start_row': row_idx + 1,
+                    'end_row': end_row,
+                    'columns': {
+                        1: 'currency',  # Avg Price
+                        2: 'percent',   # Volatility %
+                        3: 'number'     # Sample Size
+                    }
+                })
+        
+        # MARKET STATISTICS section (look for second "Metric" header)
+        elif first_cell == "Metric" and any("MARKET STATISTICS" in str(df.iloc[i, 0]).upper() for i in range(max(0, row_idx - 5), row_idx)):
+            end_row = row_idx + 1
+            for i in range(row_idx + 1, len(df)):
+                if pd.isna(df.iloc[i, 0]) or str(df.iloc[i, 0]).strip() == "":
+                    end_row = i
+                    break
+            # Determine format based on row content
+            for i in range(row_idx + 1, end_row):
+                metric_name = str(df.iloc[i, 0]).strip()
+                if "ROI" in metric_name:
+                    # Format as percentage
+                    requests.append({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": i + 1,
+                                "endRowIndex": i + 2,
+                                "startColumnIndex": 1,
+                                "endColumnIndex": 2
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "numberFormat": {
+                                        "type": "PERCENT",
+                                        "pattern": "0.00%"
+                                    }
+                                }
+                            },
+                            "fields": "userEnteredFormat(numberFormat)"
+                        }
+                    })
+                elif "Profit" in metric_name:
+                    # Format as currency
+                    requests.append({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": i + 1,
+                                "endRowIndex": i + 2,
+                                "startColumnIndex": 1,
+                                "endColumnIndex": 2
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "numberFormat": {
+                                        "type": "CURRENCY",
+                                        "pattern": "#,##0.00 [$ICA]"
+                                    }
+                                }
+                            },
+                            "fields": "userEnteredFormat(numberFormat)"
+                        }
+                    })
     
     # Apply formatting to each section
     for section in gdp_sections:
@@ -1991,6 +2068,28 @@ def apply_financial_overview_formatting(sheets_manager, sheet_name, df):
                                 "numberFormat": {
                                     "type": "PERCENT",
                                     "pattern": "0.00%"
+                                }
+                            }
+                        },
+                        "fields": "userEnteredFormat(numberFormat)"
+                    }
+                })
+            elif format_type == 'number':
+                # Apply number format (no decimals for counts)
+                requests.append({
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": section['start_row'] + 1,
+                            "endRowIndex": section['end_row'] + 1,
+                            "startColumnIndex": col_idx,
+                            "endColumnIndex": col_idx + 1
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "numberFormat": {
+                                    "type": "NUMBER",
+                                    "pattern": "#,##0"
                                 }
                             }
                         },
@@ -2280,6 +2379,360 @@ def add_financial_overview_charts(sheets_manager, sheet_name, df):
         import traceback
         traceback.print_exc()
 
+def create_price_analyser_tab(sheets_manager, all_df):
+    """
+    Create an interactive Price Analyser tab with dropdowns for material and exchange selection.
+    Shows detailed cost breakdown, pricing, ROI, and breakeven analysis.
+    """
+    from googleapiclient.errors import HttpError
+    
+    print("[INFO] Building Price Analyser tab...")
+    
+    # Filter out rows with missing Ticker or Exchange (empty rows, section breaks, etc.)
+    clean_df = all_df.dropna(subset=['Ticker', 'Exchange']).copy()
+    print(f"[INFO] Filtered data: {len(all_df)} -> {len(clean_df)} rows (removed {len(all_df) - len(clean_df)} rows with missing Ticker/Exchange)")
+    
+    # Create the reference data tab first (hidden sheet with all data for lookups)
+    reference_df = clean_df[['Ticker', 'Material Name', 'Exchange', 'Ask_Price', 'Bid_Price', 
+                           'Input Cost per Unit', 'Input Cost per Stack', 'Amount per Recipe',
+                           'Supply', 'Demand']].copy()
+    
+    # Add lookup key (Ticker+Exchange concatenation for VLOOKUP)
+    reference_df.insert(0, 'LookupKey', reference_df['Ticker'].astype(str) + reference_df['Exchange'].astype(str))
+    
+    # Upload reference data to a hidden sheet
+    try:
+        sheets_manager.upload_dataframe_to_sheet("Price Analyser Data", reference_df)
+        print("[INFO] Uploaded reference data")
+    except:
+        print("[WARN] Could not upload reference data sheet")
+    
+    # Get unique materials and exchanges from clean data
+    materials = sorted(clean_df['Ticker'].unique().tolist())
+    exchanges = sorted(clean_df['Exchange'].unique().tolist())
+    print(f"[INFO] Found {len(materials)} materials and {len(exchanges)} exchanges")
+    
+    # Build the Price Analyser interface
+    sheet_name = "Price Analyser"
+    
+    # Create the sheet structure with formulas
+    rows = []
+    
+    # Title
+    rows.append(["PRICE ANALYSER - Material Cost & ROI Calculator"])
+    rows.append([])
+    
+    # Selection area with instructions
+    rows.append(["SELECT MATERIAL:", "← Click cell A4 and use dropdown", "", ""])
+    rows.append(["SELECT EXCHANGE:", "← Click cell A5 and use dropdown", "", ""])
+    rows.append([])
+    rows.append(["Note: Dropdowns work in Google Sheets. For GitHub Pages, use Google Sheets Embed or iframe.", "", ""])
+    rows.append([])
+    
+    # Material info section
+    rows.append(["═══ MATERIAL INFORMATION ═══"])
+    rows.append(["Material Name:", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:C,3,FALSE),\"\")"])
+    rows.append(["Exchange:", "=A5"])
+    rows.append(["Amount per Recipe:", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:I,9,FALSE),1)"])
+    rows.append([])
+    
+    # Cost breakdown section
+    rows.append(["═══ COST BREAKDOWN ═══"])
+    rows.append(["Input Cost per Unit:", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:G,7,FALSE),0)"])
+    rows.append(["Input Cost per Stack:", "=B15*B12"])
+    rows.append(["Stack Size:", "=B12"])
+    rows.append([])
+    
+    # Pricing section
+    rows.append(["═══ MARKET PRICING ═══"])
+    rows.append(["Ask Price (Sell to Buy Orders):", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:E,5,FALSE),0)"])
+    rows.append(["Bid Price (Sell to Market):", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:F,6,FALSE),0)"])
+    rows.append([])
+    
+    # Revenue section
+    rows.append(["═══ REVENUE ANALYSIS ═══"])
+    rows.append(["Revenue per Unit (Ask):", "=B20"])
+    rows.append(["Revenue per Unit (Bid):", "=B21"])
+    rows.append(["Revenue per Stack (Ask):", "=B20*B12"])
+    rows.append(["Revenue per Stack (Bid):", "=B21*B12"])
+    rows.append([])
+    
+    # Profit section
+    rows.append(["═══ PROFIT ANALYSIS ═══"])
+    rows.append(["Profit per Unit (Ask):", "=B20-B15"])
+    rows.append(["Profit per Unit (Bid):", "=B21-B15"])
+    rows.append(["Profit per Stack (Ask):", "=B30*B12"])
+    rows.append(["Profit per Stack (Bid):", "=B31*B12"])
+    rows.append([])
+    
+    # ROI section
+    rows.append(["═══ ROI (Return on Investment) ═══"])
+    rows.append(["ROI % (Ask):", "=IF(B15>0,(B30/B15),0)"])
+    rows.append(["ROI % (Bid):", "=IF(B15>0,(B31/B15),0)"])
+    rows.append([])
+    
+    # Breakeven section
+    rows.append(["═══ BREAKEVEN ANALYSIS ═══"])
+    rows.append(["Supply Available:", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:J,10,FALSE),0)"])
+    rows.append(["Demand Available:", "=IFERROR(VLOOKUP(A4&A5,'Price Analyser Data'!A:K,11,FALSE),0)"])
+    rows.append(["Units to Breakeven (if loss):", "=IF(B30<0,ABS(B15/B30),\"Profitable\")"])
+    rows.append(["Stacks to Breakeven (if loss):", "=IF(B30<0,B44/B12,\"Profitable\")"])
+    rows.append([])
+    
+    # Market capacity
+    rows.append(["═══ MARKET CAPACITY ═══"])
+    rows.append(["Can Sell (Supply):", "=B42"])
+    rows.append(["Market Wants (Demand):", "=B43"])
+    rows.append(["Max Profitable Units:", "=MIN(B42,B43)"])
+    rows.append(["Max Profitable Stacks:", "=B50/B12"])
+    rows.append([])
+    
+    # Notes
+    rows.append(["═══ NOTES ═══"])
+    rows.append(["- Ask Price: Selling to existing buy orders (immediate sale)"])
+    rows.append(["- Bid Price: Creating sell orders (wait for buyers)"])
+    rows.append(["- ROI: Percentage return on your input cost investment"])
+    rows.append(["- Breakeven: How many units needed to recover losses (if unprofitable)"])
+    
+    # Convert to DataFrame
+    analyser_df = pd.DataFrame(rows)
+    
+    # Upload to Google Sheets
+    try:
+        sheets_manager.upload_dataframe_to_sheet(sheet_name, analyser_df)
+        print(f"[SUCCESS] Created {sheet_name} tab")
+    except Exception as e:
+        print(f"[ERROR] Failed to create {sheet_name}: {e}")
+        return
+    
+    # Apply formatting and dropdowns
+    apply_price_analyser_formatting(sheets_manager, sheet_name, materials, exchanges, all_df)
+
+def apply_price_analyser_formatting(sheets_manager, sheet_name, materials, exchanges, all_df):
+    """
+    Apply formatting and data validation dropdowns to the Price Analyser tab.
+    """
+    from googleapiclient.errors import HttpError
+    
+    try:
+        sheet_id = sheets_manager._get_sheet_id(sheet_name)
+        requests = []
+        
+        # 1. Add data validation dropdown for Material (A4)
+        material_list = [[m] for m in materials]
+        requests.append({
+            "setDataValidation": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 3,
+                    "endRowIndex": 4,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": 1
+                },
+                "rule": {
+                    "condition": {
+                        "type": "ONE_OF_LIST",
+                        "values": [{"userEnteredValue": m} for m in materials]
+                    },
+                    "showCustomUi": True,
+                    "strict": True
+                }
+            }
+        })
+        
+        # 2. Add data validation dropdown for Exchange (A5)
+        requests.append({
+            "setDataValidation": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 4,
+                    "endRowIndex": 5,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": 1
+                },
+                "rule": {
+                    "condition": {
+                        "type": "ONE_OF_LIST",
+                        "values": [{"userEnteredValue": e} for e in exchanges]
+                    },
+                    "showCustomUi": True,
+                    "strict": True
+                }
+            }
+        })
+        
+        # 3. Format title (row 1)
+        requests.append({
+            "repeatCell": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 0,
+                    "endRowIndex": 1,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": 4
+                },
+                "cell": {
+                    "userEnteredFormat": {
+                        "backgroundColor": {"red": 0.2, "green": 0.4, "blue": 0.8},
+                        "textFormat": {"bold": True, "fontSize": 14, "foregroundColor": {"red": 1, "green": 1, "blue": 1}},
+                        "horizontalAlignment": "CENTER"
+                    }
+                },
+                "fields": "userEnteredFormat"
+            }
+        })
+        
+        # 4. Format section headers (rows with ═══)
+        section_rows = [8, 13, 18, 23, 29, 35, 40, 47, 52]
+        for row_idx in section_rows:
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx,
+                        "endRowIndex": row_idx + 1,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": 2
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": {"red": 0.85, "green": 0.85, "blue": 0.85},
+                            "textFormat": {"bold": True, "fontSize": 11},
+                            "horizontalAlignment": "LEFT"
+                        }
+                    },
+                    "fields": "userEnteredFormat"
+                }
+            })
+        
+        # 5. Format currency cells (column B for values)
+        currency_rows = [14, 15, 19, 20, 21, 24, 25, 26, 27, 30, 31, 32, 33]
+        for row_idx in currency_rows:
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx,
+                        "endRowIndex": row_idx + 1,
+                        "startColumnIndex": 1,
+                        "endColumnIndex": 2
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "numberFormat": {
+                                "type": "CURRENCY",
+                                "pattern": "#,##0.00 [$ICA]"
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat(numberFormat)"
+                }
+            })
+        
+        # 6. Format percentage cells (ROI rows)
+        percent_rows = [36, 37]
+        for row_idx in percent_rows:
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx,
+                        "endRowIndex": row_idx + 1,
+                        "startColumnIndex": 1,
+                        "endColumnIndex": 2
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "numberFormat": {
+                                "type": "PERCENT",
+                                "pattern": "0.00%"
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat(numberFormat)"
+                }
+            })
+        
+        # 7. Format number cells (supply, demand, units)
+        number_rows = [11, 16, 41, 42, 43, 44, 45, 48, 49, 50, 51]
+        for row_idx in number_rows:
+            requests.append({
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": row_idx,
+                        "endRowIndex": row_idx + 1,
+                        "startColumnIndex": 1,
+                        "endColumnIndex": 2
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "numberFormat": {
+                                "type": "NUMBER",
+                                "pattern": "#,##0"
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat(numberFormat)"
+                }
+            })
+        
+        # 8. Auto-resize columns
+        requests.append({
+            "autoResizeDimensions": {
+                "dimensions": {
+                    "sheetId": sheet_id,
+                    "dimension": "COLUMNS",
+                    "startIndex": 0,
+                    "endIndex": 4
+                }
+            }
+        })
+        
+        # 9. Freeze first row
+        requests.append({
+            "updateSheetProperties": {
+                "properties": {
+                    "sheetId": sheet_id,
+                    "gridProperties": {
+                        "frozenRowCount": 1
+                    }
+                },
+                "fields": "gridProperties.frozenRowCount"
+            }
+        })
+        
+        # Send all requests
+        if requests:
+            sheets_manager.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=sheets_manager.spreadsheet_id,
+                body={"requests": requests}
+            ).execute()
+            print(f"[SUCCESS] Applied formatting to {sheet_name}")
+        
+        # 10. Hide the "Price Analyser Data" reference sheet
+        try:
+            data_sheet_id = sheets_manager._get_sheet_id("Price Analyser Data")
+            hide_request = {
+                "updateSheetProperties": {
+                    "properties": {
+                        "sheetId": data_sheet_id,
+                        "hidden": True
+                    },
+                    "fields": "hidden"
+                }
+            }
+            sheets_manager.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=sheets_manager.spreadsheet_id,
+                body={"requests": [hide_request]}
+            ).execute()
+            print("[SUCCESS] Hidden 'Price Analyser Data' sheet")
+        except Exception as e:
+            print(f"[WARN] Could not hide reference sheet: {e}")
+        
+    except HttpError as e:
+        print(f"[ERROR] Failed to format {sheet_name}: {e}")
+
 def main():
     print("[STEP] Starting report tab generation...", flush=True)
     if not ENHANCED_FILE.exists():
@@ -2364,6 +2817,10 @@ def main():
     
     # Charts commented out for now - will add later
     # add_financial_overview_charts(sheets, "Financial Overview", financial_overview_df)
+    
+    # Generate Price Analyser
+    print("[STEP] Generating Price Analyser...", flush=True)
+    create_price_analyser_tab(sheets, all_df)
     
     print("[SUCCESS] All reports generated successfully!")
     print(f"[DEBUG] Arbitrage DataFrame rows: {len(arbitrage_df)}")
