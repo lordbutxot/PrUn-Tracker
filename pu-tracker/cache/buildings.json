@@ -15,7 +15,7 @@
     "expertise": "MANUFACTURING",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -46,7 +46,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 4,
     "scientists": 0
   },
   "APF": {
@@ -54,7 +54,7 @@
     "category": "Unknown",
     "expertise": "MANUFACTURING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -75,7 +75,7 @@
     "expertise": "METALLURGY",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -83,7 +83,7 @@
     "name": "basicMaterialsPlant",
     "category": "Unknown",
     "expertise": "MANUFACTURING",
-    "pioneers": 0,
+    "pioneers": 2,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -105,7 +105,7 @@
     "expertise": "CHEMISTRY",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 3,
     "engineers": 0,
     "scientists": 0
   },
@@ -124,7 +124,7 @@
     "category": "Unknown",
     "expertise": "MANUFACTURING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 2,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -135,7 +135,7 @@
     "expertise": "ELECTRONICS",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -163,7 +163,7 @@
     "name": "collector",
     "category": "Unknown",
     "expertise": "RESOURCE_EXTRACTION",
-    "pioneers": 0,
+    "pioneers": 2,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -206,7 +206,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 5,
     "scientists": 0
   },
   "ECA": {
@@ -217,7 +217,7 @@
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
-    "scientists": 0
+    "scientists": 5
   },
   "EDM": {
     "name": "electronicDeviceManufactory",
@@ -226,7 +226,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 4,
     "scientists": 0
   },
   "EEP": {
@@ -237,14 +237,14 @@
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
-    "scientists": 0
+    "scientists": 6
   },
   "ELP": {
     "name": "electronicsPlant",
     "category": "Unknown",
     "expertise": "ELECTRONICS",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -263,7 +263,7 @@
     "name": "extractor",
     "category": "Unknown",
     "expertise": "RESOURCE_EXTRACTION",
-    "pioneers": 0,
+    "pioneers": 3,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -276,14 +276,14 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 4,
     "scientists": 0
   },
   "FP": {
     "name": "foodProcessor",
     "category": "Unknown",
     "expertise": "FOOD_INDUSTRIES",
-    "pioneers": 0,
+    "pioneers": 2,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -293,7 +293,7 @@
     "name": "farm",
     "category": "Unknown",
     "expertise": "AGRICULTURE",
-    "pioneers": 0,
+    "pioneers": 2,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -304,7 +304,7 @@
     "category": "Unknown",
     "expertise": "METALLURGY",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -313,7 +313,7 @@
     "name": "glassFurnace",
     "category": "Unknown",
     "expertise": "METALLURGY",
-    "pioneers": 0,
+    "pioneers": 2,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -425,7 +425,7 @@
     "expertise": "METALLURGY",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -435,7 +435,7 @@
     "expertise": "AGRICULTURE",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 3,
     "engineers": 0,
     "scientists": 0
   },
@@ -443,7 +443,7 @@
     "name": "incinerator",
     "category": "Unknown",
     "expertise": "RESOURCE_EXTRACTION",
-    "pioneers": 0,
+    "pioneers": 4,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -465,7 +465,7 @@
     "expertise": "FOOD_INDUSTRIES",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 3,
     "engineers": 0,
     "scientists": 0
   },
@@ -474,7 +474,7 @@
     "category": "Unknown",
     "expertise": "CHEMISTRY",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -505,7 +505,7 @@
     "expertise": "MANUFACTURING",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 3,
     "engineers": 0,
     "scientists": 0
   },
@@ -514,7 +514,7 @@
     "category": "Unknown",
     "expertise": "AGRICULTURE",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -524,7 +524,7 @@
     "category": "Unknown",
     "expertise": "MANUFACTURING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 2,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -556,7 +556,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 4,
     "scientists": 0
   },
   "POL": {
@@ -565,7 +565,7 @@
     "expertise": "CHEMISTRY",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 3,
     "engineers": 0,
     "scientists": 0
   },
@@ -573,7 +573,7 @@
     "name": "prefabPlant1",
     "category": "Unknown",
     "expertise": "CONSTRUCTION",
-    "pioneers": 0,
+    "pioneers": 3,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -584,7 +584,7 @@
     "category": "Unknown",
     "expertise": "CONSTRUCTION",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 4,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -595,7 +595,7 @@
     "expertise": "CONSTRUCTION",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -606,7 +606,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 5,
     "scientists": 0
   },
   "PPF": {
@@ -614,7 +614,7 @@
     "category": "Unknown",
     "expertise": "MANUFACTURING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 2,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -644,7 +644,7 @@
     "category": "Unknown",
     "expertise": "FUEL_REFINING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -654,7 +654,7 @@
     "category": "Unknown",
     "expertise": "RESOURCE_EXTRACTION",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 4,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -664,7 +664,7 @@
     "category": "Unknown",
     "expertise": "MANUFACTURING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -675,7 +675,7 @@
     "expertise": "ELECTRONICS",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -696,7 +696,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 5,
     "scientists": 0
   },
   "SKF": {
@@ -706,7 +706,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 5,
     "scientists": 0
   },
   "SL": {
@@ -717,13 +717,13 @@
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
-    "scientists": 0
+    "scientists": 6
   },
   "SME": {
     "name": "smelter",
     "category": "Unknown",
     "expertise": "METALLURGY",
-    "pioneers": 0,
+    "pioneers": 3,
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
@@ -735,7 +735,7 @@
     "expertise": "MANUFACTURING",
     "pioneers": 0,
     "settlers": 0,
-    "technicians": 0,
+    "technicians": 4,
     "engineers": 0,
     "scientists": 0
   },
@@ -746,7 +746,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 4,
     "scientists": 0
   },
   "SST": {
@@ -777,7 +777,7 @@
     "settlers": 0,
     "technicians": 0,
     "engineers": 0,
-    "scientists": 0
+    "scientists": 5
   },
   "UNI": {
     "name": "planetaryProjectEducationBig",
@@ -796,7 +796,7 @@
     "pioneers": 0,
     "settlers": 0,
     "technicians": 0,
-    "engineers": 0,
+    "engineers": 5,
     "scientists": 0
   },
   "VRT": {
@@ -824,7 +824,7 @@
     "category": "Unknown",
     "expertise": "CONSTRUCTION",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 3,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0
@@ -834,7 +834,7 @@
     "category": "Unknown",
     "expertise": "MANUFACTURING",
     "pioneers": 0,
-    "settlers": 0,
+    "settlers": 2,
     "technicians": 0,
     "engineers": 0,
     "scientists": 0

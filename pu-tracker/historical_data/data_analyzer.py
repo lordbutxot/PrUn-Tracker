@@ -283,6 +283,35 @@ class UnifiedAnalysisProcessor:
         if "Key" not in df.columns:
             print("[WARN] buildingrecipes.csv missing 'Key' column.")
             return None
+        
+        # Load buildings.json to get workforce requirements
+        buildings_path = self.cache_dir / "buildings.json"
+        if buildings_path.exists():
+            with open(buildings_path, 'r', encoding='utf-8') as f:
+                buildings_data = json.load(f)
+            
+            # Add workforce columns from buildings.json
+            def get_workforce_info(building_ticker):
+                if building_ticker in buildings_data:
+                    building = buildings_data[building_ticker]
+                    # Determine which workforce type has non-zero amount
+                    for wf_type in ['PIONEER', 'SETTLER', 'TECHNICIAN', 'ENGINEER', 'SCIENTIST']:
+                        wf_key = wf_type.lower() + 's'  # pioneers, settlers, etc.
+                        amount = building.get(wf_key, 0)
+                        if amount > 0:
+                            return wf_type, amount
+                return None, 0
+            
+            df['Workforce'] = df['Building'].apply(lambda x: get_workforce_info(x)[0])
+            df['WorkforceAmount'] = df['Building'].apply(lambda x: get_workforce_info(x)[1])
+            
+            # Rename Duration to Time (in minutes)
+            if 'Duration' in df.columns:
+                # Duration is in seconds, convert to minutes
+                df['Time'] = df['Duration'].astype(float) / 60
+        else:
+            print("[WARN] buildings.json not found, workforce costs will be missing.")
+        
         return df.set_index("Key")
 
     def load_workforceneeds(self):
@@ -292,7 +321,7 @@ class UnifiedAnalysisProcessor:
             return {}
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        # Convert to: { "Pioneers": {"RAT": 0.5, ...}, ... }
+        # Convert to: { "PIONEER": {"RAT": per_hour_per_worker, ...}, ... }
         needs = {}
         for wf in data:
             name = wf.get("name")
@@ -304,9 +333,12 @@ class UnifiedAnalysisProcessor:
                 needs_list = wf.get("needs", wf.get("Needs", []))
                 for need in needs_list:
                     ticker = need.get("ticker", need.get("MaterialTicker"))
-                    per_hour = need.get("amountPerWorkerPerHour", need.get("Amount", 0))
-                    if ticker and per_hour:
-                        needs[name][ticker] = per_hour
+                    amount = need.get("amountPerWorkerPerHour", need.get("Amount", 0))
+                    if ticker and amount:
+                        # The JSON stores consumption per 100 workers per day
+                        # Convert to per single worker per hour: amount / 100 / 24
+                        per_hour_per_worker = float(amount) / 100.0 / 24.0
+                        needs[name][ticker] = per_hour_per_worker
         print(f"[DEBUG] Loaded workforce needs for {len(needs)} workforce types: {list(needs.keys())}")
         return needs
 
@@ -418,6 +450,11 @@ class UnifiedAnalysisProcessor:
                                 total_needed = 0
                             ask_price = float(ask_prices.get(item, 0))
                             bid_price = float(bid_prices.get(item, 0))
+                            
+                            # Debug: Show calculation for first few items
+                            if ticker in ['PE', 'BSE', 'MCG'] and item in ['DW', 'RAT']:
+                                print(f"[WF_DEBUG] {ticker}: {item} - {per_hour:.4f}/hr * {workforce_amount} workers * {time_hours:.2f}hr = {total_needed:.4f} units @ Ask${ask_price}/Bid${bid_price}")
+                            
                             if ask_price == 0 and bid_price == 0:
                                 # Workforce consumable has no market price
                                 pass
