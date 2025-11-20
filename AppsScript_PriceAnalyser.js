@@ -60,12 +60,19 @@ function getExchanges() {
   
   const data = sheet.getDataRange().getValues();
   const exchangesSet = new Set();
+  const knownExchanges = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2'];
   
-  // Skip header row, column C contains exchanges like "CI1", "IC1", etc.
+  // Skip header row, extract exchanges from column A by removing material prefix
   for (let i = 1; i < data.length; i++) {
-    const exchange = data[i][2]; // Column C = Exchange
-    if (exchange && typeof exchange === 'string') {
-      exchangesSet.add(exchange);
+    const fullCode = data[i][0]; // Column A contains codes like "AARCI1"
+    if (fullCode && typeof fullCode === 'string') {
+      // Check if it ends with a known exchange code
+      for (const exchange of knownExchanges) {
+        if (fullCode.endsWith(exchange)) {
+          exchangesSet.add(exchange);
+          break;
+        }
+      }
     }
   }
   
@@ -84,28 +91,80 @@ function getCalculationData(material, exchange) {
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   
-  // Find the row matching material (column B) and exchange (column C)
+  // Build the full material code from material + exchange
+  const fullMaterialCode = material + exchange; // e.g., "AAR" + "CI1" = "AARCI1"
+  
+  // Find the row matching the full code in column A
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === material && data[i][2] === exchange) {
-      // Return data as object - adjust indices based on actual column structure
+    if (data[i][0] === fullMaterialCode) {
+      // Get base data from sheet
+      const askPrice = parseFloat(data[i][1]) || 0;
+      const bidPrice = parseFloat(data[i][2]) || 0;
+      const inputCostAsk = parseFloat(data[i][3]) || 0;
+      const inputCostBid = parseFloat(data[i][4]) || 0;
+      const workforceCostAsk = parseFloat(data[i][5]) || 0;
+      const workforceCostBid = parseFloat(data[i][6]) || 0;
+      const supply = data[i][14] || 0;
+      const demand = data[i][15] || 0;
+      const distance = data[i][16] || 0;
+      
+      // Calculate total costs
+      const totalCostAsk = inputCostAsk + workforceCostAsk;
+      const totalCostBid = inputCostBid + workforceCostBid;
+      
+      // Calculate profitability for all 4 scenarios
+      // Scenario 1: Sell at Ask, Buy inputs at Ask
+      const profitAskAsk = askPrice - totalCostAsk;
+      const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
+      const breakevenAskAsk = askPrice > 0 ? ((totalCostAsk - askPrice) / askPrice) * 100 : 0;
+      
+      // Scenario 2: Sell at Ask, Buy inputs at Bid
+      const profitAskBid = askPrice - totalCostBid;
+      const roiAskBid = totalCostBid > 0 ? (profitAskBid / totalCostBid) * 100 : 0;
+      const breakevenAskBid = askPrice > 0 ? ((totalCostBid - askPrice) / askPrice) * 100 : 0;
+      
+      // Scenario 3: Sell at Bid, Buy inputs at Ask
+      const profitBidAsk = bidPrice - totalCostAsk;
+      const roiBidAsk = totalCostAsk > 0 ? (profitBidAsk / totalCostAsk) * 100 : 0;
+      const breakevenBidAsk = bidPrice > 0 ? ((totalCostAsk - bidPrice) / bidPrice) * 100 : 0;
+      
+      // Scenario 4: Sell at Bid, Buy inputs at Bid
+      const profitBidBid = bidPrice - totalCostBid;
+      const roiBidBid = totalCostBid > 0 ? (profitBidBid / totalCostBid) * 100 : 0;
+      const breakevenBidBid = bidPrice > 0 ? ((totalCostBid - bidPrice) / bidPrice) * 100 : 0;
+      
+      // Return comprehensive data object
       return {
-        materialCode: data[i][0],  // Column A - Full code (e.g., "AARCI1")
-        material: data[i][1],       // Column B - Material ticker
-        exchange: data[i][2],       // Column C - Exchange
-        askPrice: data[i][3],       // Column D
-        bidPrice: data[i][4],       // Column E
-        inputCost: data[i][5],      // Column F
-        workforceCost: data[i][6],  // Column G
-        totalCost: data[i][7],      // Column H
-        profitAsk: data[i][8],      // Column I
-        profitBid: data[i][9],      // Column J
-        roiAsk: data[i][10],        // Column K
-        roiBid: data[i][11],        // Column L
-        breakevenAsk: data[i][12],  // Column M
-        breakevenBid: data[i][13],  // Column N
-        supply: data[i][14],        // Column O
-        demand: data[i][15],        // Column P
-        distance: data[i][16]       // Column Q
+        materialCode: data[i][0],
+        material: material,
+        exchange: exchange,
+        askPrice: askPrice,
+        bidPrice: bidPrice,
+        inputCostAsk: inputCostAsk,
+        inputCostBid: inputCostBid,
+        workforceCostAsk: workforceCostAsk,
+        workforceCostBid: workforceCostBid,
+        totalCostAsk: totalCostAsk,
+        totalCostBid: totalCostBid,
+        // All 4 profit scenarios
+        profitAskAsk: profitAskAsk,
+        profitAskBid: profitAskBid,
+        profitBidAsk: profitBidAsk,
+        profitBidBid: profitBidBid,
+        // All 4 ROI scenarios
+        roiAskAsk: roiAskAsk,
+        roiAskBid: roiAskBid,
+        roiBidAsk: roiBidAsk,
+        roiBidBid: roiBidBid,
+        // All 4 breakeven scenarios
+        breakevenAskAsk: breakevenAskAsk,
+        breakevenAskBid: breakevenAskBid,
+        breakevenBidAsk: breakevenBidAsk,
+        breakevenBidBid: breakevenBidBid,
+        // Market indicators
+        supply: supply,
+        demand: demand,
+        distance: distance
       };
     }
   }

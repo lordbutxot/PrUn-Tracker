@@ -225,52 +225,88 @@
         <h3>📊 Cost Breakdown</h3>
         <div class="data-grid">
           <div class="data-item">
-            <div class="data-label">Input Materials Cost</div>
-            <div class="data-value currency" id="inputCost">-</div>
+            <div class="data-label">Input Cost (Ask Prices)</div>
+            <div class="data-value currency" id="inputCostAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Workforce Consumables</div>
-            <div class="data-value currency" id="workforceCost">-</div>
+            <div class="data-label">Input Cost (Bid Prices)</div>
+            <div class="data-value currency" id="inputCostBid">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Total Production Cost</div>
-            <div class="data-value currency" id="totalCost">-</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="section">
-        <h3>💵 Profitability</h3>
-        <div class="data-grid">
-          <div class="data-item">
-            <div class="data-label">Profit (Ask Price)</div>
-            <div class="data-value currency" id="profitAsk">-</div>
+            <div class="data-label">Workforce Cost (Ask Prices)</div>
+            <div class="data-value currency" id="workforceCostAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Profit (Bid Price)</div>
-            <div class="data-value currency" id="profitBid">-</div>
+            <div class="data-label">Workforce Cost (Bid Prices)</div>
+            <div class="data-value currency" id="workforceCostBid">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">ROI (Ask)</div>
-            <div class="data-value percentage" id="roiAsk">-</div>
+            <div class="data-label">Total Production Cost (Ask)</div>
+            <div class="data-value currency" id="totalCostAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">ROI (Bid)</div>
-            <div class="data-value percentage" id="roiBid">-</div>
+            <div class="data-label">Total Production Cost (Bid)</div>
+            <div class="data-value currency" id="totalCostBid">-</div>
           </div>
         </div>
       </div>
       
       <div class="section">
-        <h3>⚖️ Breakeven Analysis</h3>
+        <h3>💵 Profitability - All Scenarios</h3>
         <div class="data-grid">
           <div class="data-item">
-            <div class="data-label">Breakeven from Ask</div>
-            <div class="data-value percentage" id="breakevenAsk">-</div>
+            <div class="data-label">Profit (Ask Price + Ask Inputs)</div>
+            <div class="data-value currency" id="profitAskAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Breakeven from Bid</div>
-            <div class="data-value percentage" id="breakevenBid">-</div>
+            <div class="data-label">Profit (Ask Price + Bid Inputs)</div>
+            <div class="data-value currency" id="profitAskBid">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Profit (Bid Price + Ask Inputs)</div>
+            <div class="data-value currency" id="profitBidAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Profit (Bid Price + Bid Inputs)</div>
+            <div class="data-value currency" id="profitBidBid">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Ask + Ask) %</div>
+            <div class="data-value percentage" id="roiAskAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Ask + Bid) %</div>
+            <div class="data-value percentage" id="roiAskBid">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Bid + Ask) %</div>
+            <div class="data-value percentage" id="roiBidAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Bid + Bid) %</div>
+            <div class="data-value percentage" id="roiBidBid">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>⚖️ Breakeven Analysis - All Scenarios</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Breakeven (Ask + Ask)</div>
+            <div class="data-value percentage" id="breakevenAskAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Breakeven (Ask + Bid)</div>
+            <div class="data-value percentage" id="breakevenAskBid">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Breakeven (Bid + Ask)</div>
+            <div class="data-value percentage" id="breakevenBidAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Breakeven (Bid + Bid)</div>
+            <div class="data-value percentage" id="breakevenBidBid">-</div>
           </div>
         </div>
       </div>
@@ -383,19 +419,28 @@
       setValue('bidPrice', data.bidPrice);
       
       // Costs
-      setValue('inputCost', data.inputCost);
-      setValue('workforceCost', data.workforceCost);
-      setValue('totalCost', data.totalCost);
+      setValue('inputCostAsk', data.inputCostAsk);
+      setValue('inputCostBid', data.inputCostBid);
+      setValue('workforceCostAsk', data.workforceCostAsk);
+      setValue('workforceCostBid', data.workforceCostBid);
+      setValue('totalCostAsk', data.totalCostAsk);
+      setValue('totalCostBid', data.totalCostBid);
       
-      // Profitability
-      setValue('profitAsk', data.profitAsk, true);
-      setValue('profitBid', data.profitBid, true);
-      setValue('roiAsk', data.roiAsk, true);
-      setValue('roiBid', data.roiBid, true);
+      // Profitability - All Scenarios
+      setValue('profitAskAsk', data.profitAskAsk, true);
+      setValue('profitAskBid', data.profitAskBid, true);
+      setValue('profitBidAsk', data.profitBidAsk, true);
+      setValue('profitBidBid', data.profitBidBid, true);
+      setValue('roiAskAsk', data.roiAskAsk, true);
+      setValue('roiAskBid', data.roiAskBid, true);
+      setValue('roiBidAsk', data.roiBidAsk, true);
+      setValue('roiBidBid', data.roiBidBid, true);
       
-      // Breakeven
-      setValue('breakevenAsk', data.breakevenAsk, true);
-      setValue('breakevenBid', data.breakevenBid, true);
+      // Breakeven - All Scenarios
+      setValue('breakevenAskAsk', data.breakevenAskAsk, true);
+      setValue('breakevenAskBid', data.breakevenAskBid, true);
+      setValue('breakevenBidAsk', data.breakevenBidAsk, true);
+      setValue('breakevenBidBid', data.breakevenBidBid, true);
       
       // Market indicators
       setValueRaw('supply', data.supply);
