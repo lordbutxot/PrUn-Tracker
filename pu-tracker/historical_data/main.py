@@ -97,6 +97,12 @@ def main(mode='full'):
         print("\033[1;31m[FATAL]\033[0m Tier assignment failed. Exiting.")
         return 1
 
+    # 1.6 Generate extraction recipes for tier-0 materials
+    ok, elapsed = run_script("generate_extraction_recipes.py", "Generating extraction recipes", log_file)
+    step_times.append(("Extraction Recipes", elapsed))
+    if not ok:
+        print("\033[1;33m[WARN]\033[0m Extraction recipe generation had issues, but continuing...")
+
     # 2. Process data
     ok, elapsed = run_script("unified_processor.py", "Processing and merging all data", log_file)
     step_times.append(("Process", elapsed))
@@ -123,6 +129,12 @@ def main(mode='full'):
     if not ok:
         print("\033[1;31m[FATAL]\033[0m Upload failed. Exiting.")
         return 1
+
+    # 5.5. Upload Planet Resources for Price Analyser planet selection
+    ok, elapsed = run_script("quick_upload_planets.py", "Uploading Planet Resources for Price Analyser", log_file)
+    step_times.append(("Planet Resources", elapsed))
+    if not ok:
+        print("\033[1;33m[WARN]\033[0m Planet resources upload failed - Price Analyser planet selection won't work")
 
     # 6. Generate and upload Report Tabs
     skip_arbitrage = os.environ.get("PRUN_SKIP_ARBITRAGE", "0") == "1"

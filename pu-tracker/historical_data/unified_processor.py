@@ -209,8 +209,10 @@ class UnifiedDataProcessor:
 
         # Build lookup dicts
         building_to_workforce = defaultdict(list)
+        workforce_capacity = {}  # Map (Building, Level) -> Capacity
         for _, row in workforces.iterrows():
             building_to_workforce[row['Building']].append(row['Level'])
+            workforce_capacity[(row['Building'], row['Level'])] = int(row['Capacity'])
 
         buildingrecipes_dict = buildingrecipes.set_index('Key').to_dict('index')
         
@@ -265,15 +267,8 @@ class UnifiedDataProcessor:
                 expanded_rows.append(row_copy)
                 continue
             
-            # For tier 0 materials: Add extraction option (no recipe) in addition to production recipes
-            if is_tier_0:
-                extraction_row = row.copy()
-                extraction_row['Input Cost per Unit'] = 0
-                extraction_row['Input Cost per Stack'] = 0
-                extraction_row['Input Cost per Hour'] = 0
-                extraction_row['Recipe'] = 'EXTRACTION'
-                extraction_row['Building'] = 'RIG/EXT'
-                expanded_rows.append(extraction_row)
+            # Tier 0 materials now have proper extraction recipes (EXT=>100xFEO, etc.)
+            # No need to add placeholder "EXTRACTION" rows anymore
                 
             for _, recipe_row in recipes.iterrows():
                 recipe_id = recipe_row['Key']
@@ -291,6 +286,8 @@ class UnifiedDataProcessor:
                     workforce_types = building_to_workforce.get(building, ['PIONEER'])
                     # Calculate cost for first workforce type (most common)
                     workforce_type = workforce_types[0] if workforce_types else 'PIONEER'
+                    # Get workforce capacity for this building
+                    workforce_amount = workforce_capacity.get((building, workforce_type), 1)
                     # Workforce needs per hour
                     workforce_data = wf_consumables.get(workforce_type, {})
                     wf_cost = 0
@@ -298,14 +295,14 @@ class UnifiedDataProcessor:
                     # Calculate necessary consumables cost
                     if "necessary" in workforce_data:
                         for ticker_c, amt_per_hour in workforce_data["necessary"].items():
-                            qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
+                            qty = amt_per_hour * hours_per_recipe * workforce_amount
                             price = get_market_price(ticker_c, market_prices, exchange)
                             wf_cost += qty * price
                     
                     # Calculate luxury consumables cost
                     if "luxury" in workforce_data:
                         for ticker_c, amt_per_hour in workforce_data["luxury"].items():
-                            qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
+                            qty = amt_per_hour * hours_per_recipe * workforce_amount
                             price = get_market_price(ticker_c, market_prices, exchange)
                             wf_cost += qty * price
                     # Material input cost - THIS IS RECIPE-SPECIFIC

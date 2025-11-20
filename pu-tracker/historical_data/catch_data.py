@@ -85,6 +85,21 @@ def fetch_market_data_csv():
     except Exception as e:
         print(f"[ERROR] Failed to download market_data.csv: {e}")
 
+def fetch_planetresources_csv():
+    url = "https://rest.fnar.net/csv/planetresources"
+    cache_dir = Path(__file__).parent.parent / "cache"
+    cache_dir.mkdir(exist_ok=True)
+    outfile = cache_dir / "planetresources.csv"
+    try:
+        print("[Catch] Downloading planetresources.csv...")
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        with open(outfile, "wb") as f:
+            f.write(resp.content)
+        print(f"[SUCCESS] Saved planetresources.csv ({outfile})")
+    except Exception as e:
+        print(f"[ERROR] Failed to download planetresources.csv: {e}")
+
 def log_step(message):
     print(f"[STEP] {message}", flush=True)
 
@@ -164,6 +179,9 @@ def main():
 
         log_step("Fetching workforceneeds.json...")
         fetch_workforceneeds_json()
+
+        log_step("Fetching planetresources.csv...")
+        fetch_planetresources_csv()
 
         print("[SUCCESS] Data collection completed", flush=True)
         return True

@@ -2492,6 +2492,19 @@ def create_price_analyser_tab(sheets_manager, all_df):
     except:
         print("[WARN] Could not upload reference data sheet")
     
+    # Upload bids data for breakeven calculations
+    try:
+        base_dir = Path(__file__).parent.parent / "cache"
+        bids_path = base_dir / "bids.csv"
+        if bids_path.exists():
+            bids_df = pd.read_csv(bids_path)
+            sheets_manager.upload_dataframe_to_sheet("Bids", bids_df)
+            print(f"[INFO] Uploaded {len(bids_df)} bids for order book analysis")
+        else:
+            print("[WARN] bids.csv not found, skipping bids upload")
+    except Exception as e:
+        print(f"[WARN] Could not upload bids data: {e}")
+    
     # Get unique materials and exchanges from clean data
     materials = sorted(clean_df['Ticker'].unique().tolist())
     exchanges = sorted(clean_df['Exchange'].unique().tolist())
@@ -2795,10 +2808,13 @@ def apply_price_analyser_formatting(sheets_manager, sheet_name, materials, excha
             ).execute()
             print(f"[SUCCESS] Applied formatting to {sheet_name}")
         
-        # 10. Hide the "Price Analyser Data" reference sheet
+        # 10. Hide the reference sheets (Price Analyser Data and Bids)
         try:
+            hide_requests = []
+            
+            # Hide Price Analyser Data sheet
             data_sheet_id = sheets_manager._get_sheet_id("Price Analyser Data")
-            hide_request = {
+            hide_requests.append({
                 "updateSheetProperties": {
                     "properties": {
                         "sheetId": data_sheet_id,
@@ -2806,12 +2822,28 @@ def apply_price_analyser_formatting(sheets_manager, sheet_name, materials, excha
                     },
                     "fields": "hidden"
                 }
-            }
+            })
+            
+            # Hide Bids sheet if it exists
+            try:
+                bids_sheet_id = sheets_manager._get_sheet_id("Bids")
+                hide_requests.append({
+                    "updateSheetProperties": {
+                        "properties": {
+                            "sheetId": bids_sheet_id,
+                            "hidden": True
+                        },
+                        "fields": "hidden"
+                    }
+                })
+            except:
+                pass  # Bids sheet might not exist
+            
             sheets_manager.sheets_service.spreadsheets().batchUpdate(
                 spreadsheetId=sheets_manager.spreadsheet_id,
-                body={"requests": [hide_request]}
+                body={"requests": hide_requests}
             ).execute()
-            print("[SUCCESS] Hidden 'Price Analyser Data' sheet")
+            print("[SUCCESS] Hidden reference data sheets")
         except Exception as e:
             print(f"[WARN] Could not hide reference sheet: {e}")
         

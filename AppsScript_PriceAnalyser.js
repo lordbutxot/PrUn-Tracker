@@ -26,6 +26,83 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // Allow embedding
 }
 
+// NEW: Load all data at once to avoid multiple API calls
+function getAllData() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return { error: 'Price Analyser Data sheet not found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    // Convert to array of objects for easier client-side processing
+    const rows = [];
+    for (let i = 1; i < data.length; i++) {
+      rows.push({
+        lookupKey: data[i][0],      // Column A
+        ticker: data[i][1],          // Column B
+        recipe: data[i][2],          // Column C
+        materialName: data[i][3],    // Column D
+        exchange: data[i][4],        // Column E
+        askPrice: parseFloat(data[i][5]) || 0,       // Column F
+        bidPrice: parseFloat(data[i][6]) || 0,       // Column G
+        inputCostAsk: parseFloat(data[i][7]) || 0,   // Column H
+        inputCostBid: parseFloat(data[i][8]) || 0,   // Column I
+        workforceCostAsk: parseFloat(data[i][9]) || 0,  // Column J
+        workforceCostBid: parseFloat(data[i][10]) || 0, // Column K
+        amountPerRecipe: parseFloat(data[i][11]) || 1,  // Column L
+        supply: data[i][12] || 0,    // Column M
+        demand: data[i][13] || 0     // Column N
+      });
+    }
+    
+    // Load bids data for breakeven calculation
+    const bidsSheet = ss.getSheetByName('Bids');
+    const bids = [];
+    if (bidsSheet) {
+      const bidsData = bidsSheet.getDataRange().getValues();
+      for (let i = 1; i < bidsData.length; i++) {
+        bids.push({
+          ticker: bidsData[i][0],      // MaterialTicker
+          exchange: bidsData[i][1],    // ExchangeCode
+          quantity: parseInt(bidsData[i][5]) || 0,  // ItemCount
+          price: parseFloat(bidsData[i][6]) || 0    // ItemCost
+        });
+      }
+    }
+    
+    // Load planet resources for extraction recipes
+    const planetSheet = ss.getSheetByName('Planet Resources');
+    const planets = [];
+    if (planetSheet) {
+      const planetData = planetSheet.getDataRange().getValues();
+      // Skip header row (Key, Planet, Ticker, Type, Factor)
+      for (let i = 1; i < planetData.length; i++) {
+        planets.push({
+          planet: planetData[i][1],    // Planet name
+          ticker: planetData[i][2],    // Material ticker
+          factor: parseFloat(planetData[i][4]) || 0  // Concentration factor
+        });
+      }
+    }
+    
+    return {
+      success: true,
+      data: rows,
+      bids: bids,
+      planets: planets,
+      rowCount: rows.length
+    };
+  } catch (error) {
+    Logger.log('Error loading all data: ' + error.toString());
+    return { error: 'Failed to load data: ' + error.toString() };
+  }
+}
+
 // Fetch all material names (unique) from Price Analyser Data sheet
 function getMaterials() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -77,6 +154,65 @@ function getExchanges() {
   }
   
   return Array.from(exchangesSet).sort();
+}
+
+// Get planet concentration factor for a specific material and planet
+function getPlanetFactor(ticker, planetName) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const planetSheet = ss.getSheetByName('Planet Resources');
+    
+    if (!planetSheet) {
+      return 0;
+    }
+    
+    const data = planetSheet.getDataRange().getValues();
+    
+    // Skip header row (Key, Planet, Ticker, Type, Factor)
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] === ticker && data[i][1] === planetName) {
+        return parseFloat(data[i][4]) || 0;
+      }
+    }
+    
+    return 0;
+  } catch (error) {
+    Logger.log('Error in getPlanetFactor: ' + error);
+    return 0;
+  }
+}
+
+// Get planets for extraction material
+function getPlanetsForMaterial(ticker) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const planetSheet = ss.getSheetByName('Planet Resources');
+    
+    if (!planetSheet) {
+      return [];
+    }
+    
+    const data = planetSheet.getDataRange().getValues();
+    const planets = [];
+    
+    // Skip header row (Key, Planet, Ticker, Type, Factor)
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][2] === ticker) {  // Column C is Ticker
+        planets.push({
+          planet: data[i][1],  // Column B is Planet
+          factor: parseFloat(data[i][4]) || 0  // Column E is Factor
+        });
+      }
+    }
+    
+    // Sort by factor descending (best planets first)
+    planets.sort((a, b) => b.factor - a.factor);
+    
+    return planets;
+  } catch (error) {
+    Logger.log('Error in getPlanetsForMaterial: ' + error);
+    return [];
+  }
 }
 
 // Get recipes for a specific material
@@ -156,9 +292,9 @@ function getRecommendedRecipe(material, exchange, includeLuxury, selfProduced) {
         let inputCostAsk = parseFloat(data[i][7]) || 0;      // Column H
         let workforceCostAsk = parseFloat(data[i][9]) || 0;  // Column J
         
-        // Apply luxury consumables toggle (reduce workforce cost by ~30% if excluded)
+        // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
         if (!includeLuxury) {
-          workforceCostAsk *= 0.7;
+          workforceCostAsk *= (1 / 0.79);
         }
         
         // Apply self-production cost (use production cost instead of market price for inputs)
@@ -234,9 +370,12 @@ function getRecommendedRecipe(material, exchange, includeLuxury, selfProduced) {
   }
 }
 
-// Helper function to calculate self-production cost by looking up input materials
-function calculateSelfProductionCost(recipeString, allData, exchange) {
+// Helper function to calculate self-production cost by recursively looking up input materials
+function calculateSelfProductionCost(recipeString, allData, exchange, visited) {
   if (!recipeString || !recipeString.includes('=>')) return 0;
+  
+  // Initialize visited set on first call
+  if (!visited) visited = {};
   
   try {
     const parts = recipeString.split('=>');
@@ -250,28 +389,69 @@ function calculateSelfProductionCost(recipeString, allData, exchange) {
         const amount = parseFloat(match[1]);
         const inputTicker = match[2];
         
-        // Find production cost for this input material
-        for (let i = 1; i < allData.length; i++) {
-          if (allData[i][1] === inputTicker && allData[i][4] === exchange) {
-            const inputCost = parseFloat(allData[i][7]) || 0;
-            const workforceCost = parseFloat(allData[i][9]) || 0;
-            const productionCost = inputCost + workforceCost;
-            totalCost += amount * productionCost;
-            break;
+        // Prevent infinite recursion for circular dependencies
+        const visitKey = inputTicker + '_' + exchange;
+        if (visited[visitKey]) {
+          // If circular, fall back to market price
+          for (let i = 1; i < allData.length; i++) {
+            if (allData[i][1] === inputTicker && allData[i][4] === exchange) {
+              const askPrice = parseFloat(allData[i][5]) || 0;
+              totalCost += amount * askPrice;
+              break;
+            }
           }
+          continue;
+        }
+        
+        // Find the best (cheapest) recipe for this input material
+        let bestInputCost = Infinity;
+        let foundRecipe = false;
+        
+        for (let i = 1; i < allData.length; i++) {
+          if (allData[i][1] === inputTicker && allData[i][4] === exchange && allData[i][2]) {
+            foundRecipe = true;
+            
+            // Create new visited object for this branch
+            const newVisited = Object.assign({}, visited);
+            newVisited[visitKey] = true;
+            
+            // Recursively calculate production cost for this input's recipe
+            const recursiveCost = calculateSelfProductionCost(allData[i][2], allData, exchange, newVisited);
+            const workforceCost = parseFloat(allData[i][9]) || 0;
+            const inputProductionCost = recursiveCost + workforceCost;
+            
+            if (inputProductionCost < bestInputCost) {
+              bestInputCost = inputProductionCost;
+            }
+          }
+        }
+        
+        // If no recipe found (tier-0 material), use market price
+        if (!foundRecipe || bestInputCost === Infinity) {
+          for (let i = 1; i < allData.length; i++) {
+            if (allData[i][1] === inputTicker && allData[i][4] === exchange) {
+              const askPrice = parseFloat(allData[i][5]) || 0;
+              totalCost += amount * askPrice;
+              break;
+            }
+          }
+        } else {
+          totalCost += amount * bestInputCost;
         }
       }
     }
     return totalCost;
   } catch (e) {
+    Logger.log('Error calculating self-production cost: ' + e.toString());
     return 0;
   }
 }
 
 // Get calculation data for selected material, exchange, and optionally specific recipe
-function getCalculationData(material, exchange, recipe, includeLuxury, selfProduced) {
+function getCalculationData(material, exchange, recipe, includeLuxury, selfProduced, planetName) {
   includeLuxury = includeLuxury !== false; // Default true
   selfProduced = selfProduced === true;     // Default false
+  planetName = planetName || null;          // Optional planet for extraction
   
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Price Analyser Data');
@@ -300,7 +480,8 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
         let inputCostAsk = parseFloat(data[i][7]) || 0;
         let workforceCostAsk = parseFloat(data[i][9]) || 0;
         
-        if (!includeLuxury) workforceCostAsk *= 0.7;
+        // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
+        if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
         if (selfProduced) inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
         
         const totalCost = inputCostAsk + workforceCostAsk;
@@ -335,10 +516,34 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
       let workforceCostAsk = parseFloat(data[i][9]) || 0;     // Column J: Workforce Cost Ask
       let workforceCostBid = parseFloat(data[i][10]) || 0;    // Column K: Workforce Cost Bid
       
-      // Apply luxury consumables toggle
+      // Check if this is an extraction recipe
+      const recipeStr = data[i][2] || '';
+      const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
+      
+      // Apply planet-specific extraction time adjustment for extraction recipes
+      if (isExtraction && planetName) {
+        const planetFactor = getPlanetFactor(material, planetName);
+        if (planetFactor > 0) {
+          // Workforce costs in data are based on BASE extraction time (24h or 48h)
+          // Now adjust for the specific planet's concentration factor
+          const building = recipeStr.split('=>')[0];
+          const baseHours = building === 'RIG' ? 48 : 24;
+          
+          // Calculate planet-specific extraction time
+          const adjustedHours = Math.max(6, Math.min(240, baseHours / planetFactor));
+          const timeFactor = adjustedHours / baseHours;
+          
+          // Adjust workforce costs based on planet-specific extraction time
+          workforceCostAsk *= timeFactor;
+          workforceCostBid *= timeFactor;
+        }
+      }
+      // If no planet selected for extraction, use base costs (24h or 48h)
+      
+      // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
       if (!includeLuxury) {
-        workforceCostAsk *= 0.7;
-        workforceCostBid *= 0.7;
+        workforceCostAsk *= (1 / 0.79);
+        workforceCostBid *= (1 / 0.79);
       }
       
       // Apply self-production cost
@@ -387,22 +592,22 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
       // Scenario 1: Sell at Ask, Buy inputs at Ask
       const profitAskAsk = askPrice - totalCostAsk;
       const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
-      const breakevenAskAsk = askPrice > 0 ? ((totalCostAsk - askPrice) / askPrice) * 100 : 0;
+      const breakevenAskAsk = profitAskAsk !== 0 ? Math.abs(totalCostAsk / profitAskAsk) : 0;
       
       // Scenario 2: Sell at Ask, Buy inputs at Bid
       const profitAskBid = askPrice - totalCostBid;
       const roiAskBid = totalCostBid > 0 ? (profitAskBid / totalCostBid) * 100 : 0;
-      const breakevenAskBid = askPrice > 0 ? ((totalCostBid - askPrice) / askPrice) * 100 : 0;
+      const breakevenAskBid = profitAskBid !== 0 ? Math.abs(totalCostBid / profitAskBid) : 0;
       
       // Scenario 3: Sell at Bid, Buy inputs at Ask
       const profitBidAsk = bidPrice - totalCostAsk;
       const roiBidAsk = totalCostAsk > 0 ? (profitBidAsk / totalCostAsk) * 100 : 0;
-      const breakevenBidAsk = bidPrice > 0 ? ((totalCostAsk - bidPrice) / bidPrice) * 100 : 0;
+      const breakevenBidAsk = profitBidAsk !== 0 ? Math.abs(totalCostAsk / profitBidAsk) : 0;
       
       // Scenario 4: Sell at Bid, Buy inputs at Bid
       const profitBidBid = bidPrice - totalCostBid;
       const roiBidBid = totalCostBid > 0 ? (profitBidBid / totalCostBid) * 100 : 0;
-      const breakevenBidBid = bidPrice > 0 ? ((totalCostBid - bidPrice) / bidPrice) * 100 : 0;
+      const breakevenBidBid = profitBidBid !== 0 ? Math.abs(totalCostBid / profitBidBid) : 0;
       
         // Return comprehensive data object
         return {

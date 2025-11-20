@@ -331,6 +331,16 @@
         </select>
       </div>
       
+      <div class="control-group" id="planetGroup" style="display: none;">
+        <label for="planetSelect">🌍 Select Planet (Extraction):</label>
+        <select id="planetSelect">
+          <option value="">-- Select Planet --</option>
+        </select>
+        <div class="option-hint" style="margin-top: 5px; font-size: 12px;">
+          Planet concentration affects extraction time and workforce costs
+        </div>
+      </div>
+      
       <div class="control-group">
         <label for="exchangeSelect">Select Exchange:</label>
         <select id="exchangeSelect">
@@ -345,9 +355,9 @@
         <div class="option-item">
           <label class="checkbox-label">
             <input type="checkbox" id="includeLuxury" checked>
-            <span>Include Luxury Consumables in Workforce Costs</span>
+            <span>Provide Luxury Consumables (100% Workforce Efficiency)</span>
           </label>
-          <div class="option-hint">When unchecked, workforce costs exclude luxury items (reduces cost)</div>
+          <div class="option-hint">When unchecked, workers get only essentials (~79% efficiency = longer production time = higher costs)</div>
         </div>
         <div class="option-item">
           <label class="checkbox-label">
@@ -466,20 +476,20 @@
         <h3>⚖️ Breakeven Analysis - All Scenarios</h3>
         <div class="data-grid">
           <div class="data-item">
-            <div class="data-label">Breakeven (Ask + Ask)</div>
-            <div class="data-value percentage" id="breakevenAskAsk">-</div>
+            <div class="data-label">Breakeven Units (Ask + Ask)</div>
+            <div class="data-value" id="breakevenAskAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Breakeven (Ask + Bid)</div>
-            <div class="data-value percentage" id="breakevenAskBid">-</div>
+            <div class="data-label">Breakeven Units (Ask + Bid)</div>
+            <div class="data-value" id="breakevenAskBid">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Breakeven (Bid + Ask)</div>
-            <div class="data-value percentage" id="breakevenBidAsk">-</div>
+            <div class="data-label">Breakeven Units (Bid + Ask)</div>
+            <div class="data-value" id="breakevenBidAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Breakeven (Bid + Bid)</div>
-            <div class="data-value percentage" id="breakevenBidBid">-</div>
+            <div class="data-label">Breakeven Units (Bid + Bid)</div>
+            <div class="data-value" id="breakevenBidBid">-</div>
           </div>
         </div>
       </div>
@@ -507,50 +517,131 @@
 
   <script>
     // Load materials and exchanges on page load
+    // Global data cache
+    let allData = [];
+    let allBids = [];
+    let planetData = [];
+    
     document.addEventListener('DOMContentLoaded', function() {
-      loadMaterials();
-      loadExchanges();
+      loadAllData();
     });
     
-    // Load materials dropdown
-    function loadMaterials() {
+    // Load all data once at startup
+    function loadAllData() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading').textContent = 'Loading data...';
+      
       google.script.run
-        .withSuccessHandler(function(materials) {
-          const select = document.getElementById('materialSelect');
-          select.innerHTML = '<option value="">-- Select Material --</option>';
-          materials.forEach(function(material) {
-            const option = document.createElement('option');
-            option.value = material;
-            option.textContent = material;
-            select.appendChild(option);
-          });
+        .withSuccessHandler(function(result) {
+          if (result.error) {
+            showError('Failed to load data: ' + result.error);
+            return;
+          }
+          
+          allData = result.data;
+          allBids = result.bids || [];
+          planetData = result.planets || [];
+          document.getElementById('loading').style.display = 'none';
+          
+          // Populate dropdowns from loaded data
+          populateMaterials();
+          populateExchanges();
         })
         .withFailureHandler(function(error) {
-          showError('Failed to load materials: ' + error.message);
+          document.getElementById('loading').style.display = 'none';
+          showError('Failed to load data: ' + error.message);
         })
-        .getMaterials();
+        .getAllData();
     }
     
-    // Load exchanges dropdown
-    function loadExchanges() {
-      google.script.run
-        .withSuccessHandler(function(exchanges) {
-          const select = document.getElementById('exchangeSelect');
-          select.innerHTML = '<option value="">-- Select Exchange --</option>';
-          exchanges.forEach(function(exchange) {
-            const option = document.createElement('option');
-            option.value = exchange;
-            option.textContent = exchange;
-            select.appendChild(option);
-          });
-        })
-        .withFailureHandler(function(error) {
-          showError('Failed to load exchanges: ' + error.message);
-        })
-        .getExchanges();
+    // Populate materials dropdown from cached data
+    function populateMaterials() {
+      const materialsSet = new Set();
+      allData.forEach(row => {
+        if (row.ticker) materialsSet.add(row.ticker);
+      });
+      
+      const select = document.getElementById('materialSelect');
+      select.innerHTML = '<option value="">-- Select Material --</option>';
+      Array.from(materialsSet).sort().forEach(function(material) {
+        const option = document.createElement('option');
+        option.value = material;
+        option.textContent = material;
+        select.appendChild(option);
+      });
     }
     
-    // Load recipes for selected material
+    // Populate exchanges dropdown from cached data
+    function populateExchanges() {
+      const exchangesSet = new Set();
+      allData.forEach(row => {
+        if (row.exchange) exchangesSet.add(row.exchange);
+      });
+      
+      const select = document.getElementById('exchangeSelect');
+      select.innerHTML = '<option value="">-- Select Exchange --</option>';
+      Array.from(exchangesSet).sort().forEach(function(exchange) {
+        const option = document.createElement('option');
+        option.value = exchange;
+        option.textContent = exchange;
+        select.appendChild(option);
+      });
+    }
+    
+    // Check if selected recipe is extraction and show/hide planet selector
+    function checkExtractionRecipe() {
+      const recipe = document.getElementById('recipeSelect').value;
+      const planetGroup = document.getElementById('planetGroup');
+      const planetSelect = document.getElementById('planetSelect');
+      
+      // Check if recipe is extraction (starts with COL=>, EXT=>, or RIG=>)
+      const isExtraction = recipe && (recipe.startsWith('COL=>') || recipe.startsWith('EXT=>') || recipe.startsWith('RIG=>'));
+      
+      if (isExtraction) {
+        // Show planet selector
+        planetGroup.style.display = 'block';
+        
+        // Load planets for this material
+        const material = document.getElementById('materialSelect').value;
+        loadPlanets(material);
+      } else {
+        // Hide planet selector
+        planetGroup.style.display = 'none';
+        planetSelect.innerHTML = '<option value="">-- Select Planet --</option>';
+      }
+    }
+    
+    // Load planets for extraction material
+    function loadPlanets(material) {
+      const planetSelect = document.getElementById('planetSelect');
+      
+      if (!material || !planetData) {
+        planetSelect.innerHTML = '<option value="">-- No Planet Data --</option>';
+        return;
+      }
+      
+      // Filter planets for this material
+      const planets = planetData
+        .filter(p => p.ticker === material)
+        .sort((a, b) => b.factor - a.factor);  // Sort by factor descending (best first)
+      
+      if (planets.length === 0) {
+        planetSelect.innerHTML = '<option value="">-- No Planets Found --</option>';
+        return;
+      }
+      
+      // Build options with factor display
+      planetSelect.innerHTML = '<option value="">-- Average (All Planets) --</option>';
+      planets.forEach(function(planet) {
+        const option = document.createElement('option');
+        option.value = planet.planet;
+        const factorPercent = (planet.factor * 100).toFixed(1);
+        option.textContent = planet.planet + ' (Factor: ' + factorPercent + '%)';
+        planetSelect.appendChild(option);
+      });
+    }
+    
+    // Load recipes for selected material from cached data
     function loadRecipes() {
       const material = document.getElementById('materialSelect').value;
       const recipeSelect = document.getElementById('recipeSelect');
@@ -560,23 +651,30 @@
         return;
       }
       
-      recipeSelect.innerHTML = '<option value="">Loading recipes...</option>';
+      // Filter recipes from cached data
+      const recipesMap = new Map();
+      allData.forEach(row => {
+        if (row.ticker === material && row.recipe) {
+          if (!recipesMap.has(row.recipe)) {
+            const building = row.recipe.split(':')[0];
+            let label = row.recipe;
+            if (label.length > 50) {
+              label = label.substring(0, 47) + '...';
+            }
+            recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
+          }
+        }
+      });
       
-      google.script.run
-        .withSuccessHandler(function(recipes) {
-          recipeSelect.innerHTML = '<option value="">-- All Recipes (Best Cost) --</option>';
-          recipes.forEach(function(recipe) {
-            const option = document.createElement('option');
-            option.value = recipe.key;
-            option.textContent = recipe.label + ' (' + recipe.building + ')';
-            recipeSelect.appendChild(option);
-          });
-        })
-        .withFailureHandler(function(error) {
-          recipeSelect.innerHTML = '<option value="">-- Error Loading --</option>';
-          showError('Failed to load recipes: ' + error.message);
-        })
-        .getRecipesForMaterial(material);
+      const recipes = Array.from(recipesMap.values()).sort((a, b) => a.building.localeCompare(b.building));
+      
+      recipeSelect.innerHTML = '<option value="">-- All Recipes (Best Cost) --</option>';
+      recipes.forEach(function(recipe) {
+        const option = document.createElement('option');
+        option.value = recipe.key;
+        option.textContent = recipe.label + ' (' + recipe.building + ')';
+        recipeSelect.appendChild(option);
+      });
     }
     
     // Listen for selection changes
@@ -584,20 +682,25 @@
       loadRecipes();
       calculate();
     });
-    document.getElementById('recipeSelect').addEventListener('change', calculate);
+    document.getElementById('recipeSelect').addEventListener('change', function() {
+      checkExtractionRecipe();
+      calculate();
+    });
+    document.getElementById('planetSelect').addEventListener('change', calculate);
     document.getElementById('exchangeSelect').addEventListener('change', calculate);
     document.getElementById('includeLuxury').addEventListener('change', calculate);
     document.getElementById('selfProducedInputs').addEventListener('change', calculate);
     
-    // Calculate and display results
+    // Calculate and display results using cached data
     function calculate() {
       const material = document.getElementById('materialSelect').value;
       const recipe = document.getElementById('recipeSelect').value;
       const exchange = document.getElementById('exchangeSelect').value;
       const includeLuxury = document.getElementById('includeLuxury').checked;
       const selfProduced = document.getElementById('selfProducedInputs').checked;
+      const planet = document.getElementById('planetSelect').value;
       
-      if (!material || !exchange) {
+      if (!material || !exchange || allData.length === 0) {
         document.getElementById('results').style.display = 'none';
         return;
       }
@@ -606,52 +709,355 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('results').style.display = 'none';
       
-      // Load both calculation data and recommendation in parallel
-      let calculationData = null;
-      let recommendationData = null;
-      let loadCount = 0;
+      try {
+        // Calculate using cached data
+        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, selfProduced, planet);
+        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, selfProduced);
+        
+        document.getElementById('loading').style.display = 'none';
+        
+        if (calculationData && calculationData.error) {
+          showError(calculationData.error);
+          return;
+        }
+        
+        if (calculationData) {
+          displayResults(calculationData);
+        }
+        
+        if (recommendationData) {
+          displayRecommendation(recommendationData);
+        }
+      } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        showError('Calculation error: ' + error.message);
+      }
+    }
+    
+    // Calculate data from cached data (client-side)
+    function calculateFromCache(material, exchange, recipe, includeLuxury, selfProduced, planet) {
+      let bestRow = null;
+      let lowestCost = Infinity;
       
-      function checkComplete() {
-        loadCount++;
-        if (loadCount === 2) {
-          document.getElementById('loading').style.display = 'none';
-          
-          if (calculationData && calculationData.error) {
-            showError(calculationData.error);
-            return;
+      // Find matching rows
+      for (const row of allData) {
+        if (row.ticker === material && row.exchange === exchange) {
+          if (recipe && row.recipe === recipe) {
+            bestRow = row;
+            break;
           }
           
-          if (calculationData) {
-            displayResults(calculationData);
-          }
-          
-          if (recommendationData) {
-            displayRecommendation(recommendationData);
+          if (!recipe) {
+            let inputCostAsk = row.inputCostAsk;
+            let workforceCostAsk = row.workforceCostAsk;
+            
+            // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
+            if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
+            if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
+            
+            const totalCost = inputCostAsk + workforceCostAsk;
+            if (totalCost < lowestCost) {
+              lowestCost = totalCost;
+              bestRow = row;
+            }
           }
         }
       }
       
-      google.script.run
-        .withSuccessHandler(function(data) {
-          calculationData = data;
-          checkComplete();
-        })
-        .withFailureHandler(function(error) {
-          calculationData = { error: 'Calculation failed: ' + error.message };
-          checkComplete();
-        })
-        .getCalculationData(material, exchange, recipe, includeLuxury, selfProduced);
+      if (!bestRow) {
+        return { error: 'No data found for ' + material + ' on ' + exchange };
+      }
       
-      google.script.run
-        .withSuccessHandler(function(data) {
-          recommendationData = data;
-          checkComplete();
-        })
-        .withFailureHandler(function(error) {
-          recommendationData = { error: 'Recommendation failed: ' + error.message };
-          checkComplete();
-        })
-        .getRecommendedRecipe(material, exchange, includeLuxury, selfProduced);
+      // Apply modifiers
+      let inputCostAsk = bestRow.inputCostAsk;
+      let inputCostBid = bestRow.inputCostBid;
+      let workforceCostAsk = bestRow.workforceCostAsk;
+      let workforceCostBid = bestRow.workforceCostBid;
+      
+      // Check if this is an extraction recipe
+      const recipeStr = bestRow.recipe || '';
+      const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
+      
+      // Apply planet-specific extraction time adjustment
+      if (isExtraction && planet) {
+        const planetFactor = getPlanetFactorClientSide(material, planet);
+        if (planetFactor > 0) {
+          // Workforce costs in data are based on BASE extraction time (24h or 48h)
+          // Now adjust for the specific planet's concentration factor
+          const building = recipeStr.split('=>')[0];
+          const baseHours = building === 'RIG' ? 48 : 24;
+          
+          // Calculate planet-specific extraction time
+          const adjustedHours = Math.max(6, Math.min(240, baseHours / planetFactor));
+          const timeFactor = adjustedHours / baseHours;
+          
+          // Adjust workforce costs based on planet-specific extraction time
+          workforceCostAsk *= timeFactor;
+          workforceCostBid *= timeFactor;
+        }
+      }
+      // If no planet selected for extraction, use base costs (24h or 48h)
+      
+      // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
+      if (!includeLuxury) {
+        workforceCostAsk *= (1 / 0.79);
+        workforceCostBid *= (1 / 0.79);
+      }
+      
+      if (selfProduced) {
+        inputCostAsk = calculateSelfProductionCostClientSide(bestRow.recipe, exchange);
+        inputCostBid = inputCostAsk;
+      }
+      
+      // Parse recipe
+      let recipeInputs = '';
+      let recipeOutputs = '';
+      const recipeString = bestRow.recipe || 'N/A';
+      
+      if (recipeString !== 'N/A' && recipeString.includes('=>')) {
+        const parts = recipeString.split('=>');
+        const inputPart = parts[0].split(':')[1] || parts[0];
+        const outputPart = parts[1];
+        
+        recipeInputs = inputPart.split('-').map(item => {
+          const match = item.match(/(\d+)x([A-Z]+)/);
+          return match ? match[1] + ' ' + match[2] : item;
+        }).join(', ');
+        
+        recipeOutputs = outputPart.split('-').map(item => {
+          const match = item.match(/(\d+)x([A-Z]+)/);
+          return match ? match[1] + ' ' + match[2] : item;
+        }).join(', ');
+      }
+      
+      // Calculate totals and profitability
+      const totalCostAsk = inputCostAsk + workforceCostAsk;
+      const totalCostBid = inputCostBid + workforceCostBid;
+      
+      const profitAskAsk = bestRow.askPrice - totalCostAsk;
+      const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
+      const breakevenAskAsk = calculateBreakevenUnits(material, exchange, totalCostAsk);
+      
+      const profitAskBid = bestRow.askPrice - totalCostBid;
+      const roiAskBid = totalCostBid > 0 ? (profitAskBid / totalCostBid) * 100 : 0;
+      const breakevenAskBid = calculateBreakevenUnits(material, exchange, totalCostBid);
+      
+      const profitBidAsk = bestRow.bidPrice - totalCostAsk;
+      const roiBidAsk = totalCostAsk > 0 ? (profitBidAsk / totalCostAsk) * 100 : 0;
+      const breakevenBidAsk = calculateBreakevenUnits(material, exchange, totalCostAsk);
+      
+      const profitBidBid = bestRow.bidPrice - totalCostBid;
+      const roiBidBid = totalCostBid > 0 ? (profitBidBid / totalCostBid) * 100 : 0;
+      const breakevenBidBid = calculateBreakevenUnits(material, exchange, totalCostBid);
+      
+      return {
+        materialCode: bestRow.lookupKey,
+        recipe: recipeString,
+        recipeInputs: recipeInputs,
+        recipeOutputs: recipeOutputs,
+        material: material,
+        exchange: exchange,
+        askPrice: bestRow.askPrice,
+        bidPrice: bestRow.bidPrice,
+        inputCostAsk: inputCostAsk,
+        inputCostBid: inputCostBid,
+        workforceCostAsk: workforceCostAsk,
+        workforceCostBid: workforceCostBid,
+        totalCostAsk: totalCostAsk,
+        totalCostBid: totalCostBid,
+        profitAskAsk: profitAskAsk,
+        profitAskBid: profitAskBid,
+        profitBidAsk: profitBidAsk,
+        profitBidBid: profitBidBid,
+        roiAskAsk: roiAskAsk,
+        roiAskBid: roiAskBid,
+        roiBidAsk: roiBidAsk,
+        roiBidBid: roiBidBid,
+        breakevenAskAsk: breakevenAskAsk,
+        breakevenAskBid: breakevenAskBid,
+        breakevenBidAsk: breakevenBidAsk,
+        breakevenBidBid: breakevenBidBid,
+        supply: bestRow.supply,
+        demand: bestRow.demand
+      };
+    }
+    
+    // Get recommendation from cached data
+    function getRecommendationFromCache(material, exchange, includeLuxury, selfProduced) {
+      const recipeComparisons = [];
+      
+      for (const row of allData) {
+        if (row.ticker === material && row.exchange === exchange && row.recipe) {
+          let inputCostAsk = row.inputCostAsk;
+          let workforceCostAsk = row.workforceCostAsk;
+          
+          // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
+          if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
+          if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
+          
+          const totalCostAsk = inputCostAsk + workforceCostAsk;
+          const profitAskAsk = row.askPrice - totalCostAsk;
+          const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
+          
+          // Parse recipe
+          let recipeInputs = '';
+          let recipeOutputs = '';
+          let building = '';
+          
+          if (row.recipe.includes('=>')) {
+            building = row.recipe.split(':')[0];
+            const parts = row.recipe.split('=>');
+            const inputPart = parts[0].split(':')[1] || parts[0];
+            const outputPart = parts[1];
+            
+            recipeInputs = inputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[1] + ' ' + match[2] : item;
+            }).join(', ');
+            
+            recipeOutputs = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[1] + ' ' + match[2] : item;
+            }).join(', ');
+          }
+          
+          recipeComparisons.push({
+            recipe: row.recipe,
+            building: building,
+            inputs: recipeInputs,
+            outputs: recipeOutputs,
+            inputCost: inputCostAsk,
+            workforceCost: workforceCostAsk,
+            totalCost: totalCostAsk,
+            profit: profitAskAsk,
+            roi: roiAskAsk
+          });
+        }
+      }
+      
+      if (recipeComparisons.length === 0) {
+        return { count: 0, message: 'No recipes found' };
+      }
+      
+      if (recipeComparisons.length === 1) {
+        return {
+          count: 1,
+          message: 'Only one recipe available',
+          recommended: recipeComparisons[0],
+          alternatives: []
+        };
+      }
+      
+      recipeComparisons.sort((a, b) => b.profit - a.profit);
+      
+      return {
+        count: recipeComparisons.length,
+        recommended: recipeComparisons[0],
+        alternatives: recipeComparisons.slice(1)
+      };
+    }
+    
+    // Calculate self-production cost (client-side) - recursive
+    // Get planet concentration factor client-side
+    function getPlanetFactorClientSide(ticker, planetName) {
+      if (!planetData) return 0;
+      
+      const planetInfo = planetData.find(p => p.ticker === ticker && p.planet === planetName);
+      return planetInfo ? planetInfo.factor : 0;
+    }
+    
+    function calculateSelfProductionCostClientSide(recipeString, exchange, visited = new Set()) {
+      if (!recipeString || !recipeString.includes('=>')) return 0;
+      
+      try {
+        const parts = recipeString.split('=>');
+        const inputPart = parts[0].split(':')[1] || parts[0];
+        const inputs = inputPart.split('-');
+        
+        let totalCost = 0;
+        for (const inputStr of inputs) {
+          const match = inputStr.match(/(\d+)x([A-Z]+)/);
+          if (match) {
+            const amount = parseFloat(match[1]);
+            const inputTicker = match[2];
+            
+            // Prevent infinite recursion for circular dependencies
+            const visitKey = `${inputTicker}_${exchange}`;
+            if (visited.has(visitKey)) {
+              // If circular, fall back to market price
+              for (const row of allData) {
+                if (row.ticker === inputTicker && row.exchange === exchange) {
+                  totalCost += amount * row.askPrice;
+                  break;
+                }
+              }
+              continue;
+            }
+            
+            // Find the best (cheapest) recipe for this input material
+            let bestInputRow = null;
+            let lowestInputCost = Infinity;
+            
+            for (const row of allData) {
+              if (row.ticker === inputTicker && row.exchange === exchange && row.recipe) {
+                // Recursively calculate production cost for this input's recipe
+                const newVisited = new Set(visited);
+                newVisited.add(visitKey);
+                
+                const recursiveCost = calculateSelfProductionCostClientSide(row.recipe, exchange, newVisited);
+                const inputProductionCost = recursiveCost + row.workforceCostAsk;
+                
+                if (inputProductionCost < lowestInputCost) {
+                  lowestInputCost = inputProductionCost;
+                  bestInputRow = row;
+                }
+              }
+            }
+            
+            // If no recipe found (tier-0 material), use market price
+            if (!bestInputRow) {
+              for (const row of allData) {
+                if (row.ticker === inputTicker && row.exchange === exchange) {
+                  totalCost += amount * row.askPrice;
+                  break;
+                }
+              }
+            } else {
+              totalCost += amount * lowestInputCost;
+            }
+          }
+        }
+        return totalCost;
+      } catch (e) {
+        console.error('Error calculating self-production cost:', e);
+        return 0;
+      }
+    }
+    
+    // Calculate breakeven units based on order book depth
+    // Returns how many units can be sold before price drops below production cost
+    function calculateBreakevenUnits(material, exchange, productionCost) {
+      if (!allBids || allBids.length === 0) return 0;
+      
+      // Get all bids for this material and exchange, sorted by price descending
+      const relevantBids = allBids
+        .filter(bid => bid.ticker === material && bid.exchange === exchange)
+        .sort((a, b) => b.price - a.price);
+      
+      if (relevantBids.length === 0) return 0;
+      
+      let totalUnits = 0;
+      
+      // Sum up quantities while price is above production cost
+      for (const bid of relevantBids) {
+        if (bid.price >= productionCost) {
+          totalUnits += bid.quantity;
+        } else {
+          break; // Stop when we hit unprofitable prices
+        }
+      }
+      
+      return totalUnits;
     }
     
     // Display calculation results
@@ -682,11 +1088,11 @@
       setValue('roiBidAsk', data.roiBidAsk, true);
       setValue('roiBidBid', data.roiBidBid, true);
       
-      // Breakeven - All Scenarios
-      setValue('breakevenAskAsk', data.breakevenAskAsk, true);
-      setValue('breakevenAskBid', data.breakevenAskBid, true);
-      setValue('breakevenBidAsk', data.breakevenBidAsk, true);
-      setValue('breakevenBidBid', data.breakevenBidBid, true);
+      // Breakeven - All Scenarios (units to sell)
+      setValue('breakevenAskAsk', data.breakevenAskAsk, false);
+      setValue('breakevenAskBid', data.breakevenAskBid, false);
+      setValue('breakevenBidAsk', data.breakevenBidAsk, false);
+      setValue('breakevenBidBid', data.breakevenBidBid, false);
       
       // Market indicators
       setValueRaw('supply', data.supply);
