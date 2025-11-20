@@ -299,6 +299,7 @@ class UnifiedAnalysisProcessor:
                         wf_key = wf_type.lower() + 's'  # pioneers, settlers, etc.
                         amount = building.get(wf_key, 0)
                         if amount > 0:
+                            # Amount is actual worker count from API
                             return wf_type, amount
                 return None, 0
             
@@ -450,10 +451,6 @@ class UnifiedAnalysisProcessor:
                                 total_needed = 0
                             ask_price = float(ask_prices.get(item, 0))
                             bid_price = float(bid_prices.get(item, 0))
-                            
-                            # Debug: Show calculation for first few items
-                            if ticker in ['PE', 'BSE', 'MCG'] and item in ['DW', 'RAT']:
-                                print(f"[WF_DEBUG] {ticker}: {item} - {per_hour:.4f}/hr * {workforce_amount} workers * {time_hours:.2f}hr = {total_needed:.4f} units @ Ask${ask_price}/Bid${bid_price}")
                             
                             if ask_price == 0 and bid_price == 0:
                                 # Workforce consumable has no market price
