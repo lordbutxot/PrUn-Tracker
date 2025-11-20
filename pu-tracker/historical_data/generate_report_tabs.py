@@ -2392,10 +2392,47 @@ def create_price_analyser_tab(sheets_manager, all_df):
     clean_df = all_df.dropna(subset=['Ticker', 'Exchange']).copy()
     print(f"[INFO] Filtered data: {len(all_df)} -> {len(clean_df)} rows (removed {len(all_df) - len(clean_df)} rows with missing Ticker/Exchange)")
     
+    # Add workforce cost columns if not present
+    if 'Input Cost Ask' not in clean_df.columns:
+        print("[INFO] Calculating separate Ask/Bid input and workforce costs...")
+        from data_analyzer import UnifiedAnalysisProcessor
+        analyzer = UnifiedAnalysisProcessor()
+        
+        # Build price dictionaries per exchange
+        def calculate_costs_for_row(row):
+            ticker = row['Ticker']
+            exchange = row['Exchange']
+            
+            # Get ask and bid prices for this exchange
+            exchange_rows = all_df[(all_df['Ticker'].notna()) & (all_df['Exchange'] == exchange)]
+            ask_prices = dict(zip(exchange_rows['Ticker'], exchange_rows['Ask_Price'].fillna(0)))
+            bid_prices = dict(zip(exchange_rows['Ticker'], exchange_rows['Bid_Price'].fillna(0)))
+            
+            costs = analyzer.calculate_detailed_costs(ticker, ask_prices, bid_prices)
+            return pd.Series(costs)
+        
+        try:
+            cost_cols = clean_df.apply(calculate_costs_for_row, axis=1)
+            clean_df['Input Cost Ask'] = cost_cols['input_cost_ask']
+            clean_df['Input Cost Bid'] = cost_cols['input_cost_bid']
+            clean_df['Workforce Cost Ask'] = cost_cols['workforce_cost_ask']
+            clean_df['Workforce Cost Bid'] = cost_cols['workforce_cost_bid']
+            print("[SUCCESS] Calculated Ask/Bid costs for all materials")
+        except Exception as e:
+            print(f"[WARN] Could not calculate detailed costs: {e}")
+            import traceback
+            traceback.print_exc()
+            # Fallback: use Input Cost per Unit for both, estimate workforce as 10%
+            clean_df['Input Cost Ask'] = clean_df.get('Input Cost per Unit', 0)
+            clean_df['Input Cost Bid'] = clean_df.get('Input Cost per Unit', 0)
+            clean_df['Workforce Cost Ask'] = clean_df['Input Cost Ask'] * 0.10
+            clean_df['Workforce Cost Bid'] = clean_df['Input Cost Bid'] * 0.10
+    
     # Create the reference data tab first (hidden sheet with all data for lookups)
     reference_df = clean_df[['Ticker', 'Material Name', 'Exchange', 'Ask_Price', 'Bid_Price', 
-                           'Input Cost per Unit', 'Input Cost per Stack', 'Amount per Recipe',
-                           'Supply', 'Demand']].copy()
+                           'Input Cost Ask', 'Input Cost Bid', 
+                           'Workforce Cost Ask', 'Workforce Cost Bid',
+                           'Amount per Recipe', 'Supply', 'Demand']].copy()
     
     # Add lookup key (Ticker+Exchange concatenation for VLOOKUP)
     reference_df.insert(0, 'LookupKey', reference_df['Ticker'].astype(str) + reference_df['Exchange'].astype(str))
@@ -2403,7 +2440,7 @@ def create_price_analyser_tab(sheets_manager, all_df):
     # Upload reference data to a hidden sheet
     try:
         sheets_manager.upload_dataframe_to_sheet("Price Analyser Data", reference_df)
-        print("[INFO] Uploaded reference data")
+        print("[INFO] Uploaded reference data with workforce cost breakdown")
     except:
         print("[WARN] Could not upload reference data sheet")
     

@@ -94,19 +94,24 @@ function getCalculationData(material, exchange) {
   // Build the full material code from material + exchange
   const fullMaterialCode = material + exchange; // e.g., "AAR" + "CI1" = "AARCI1"
   
-  // Find the row matching the full code in column A
+  // Find the row matching the full code in column A (LookupKey)
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === fullMaterialCode) {
-      // Get base data from sheet
-      const askPrice = parseFloat(data[i][1]) || 0;
-      const bidPrice = parseFloat(data[i][2]) || 0;
-      const inputCostAsk = parseFloat(data[i][3]) || 0;
-      const inputCostBid = parseFloat(data[i][4]) || 0;
-      const workforceCostAsk = parseFloat(data[i][5]) || 0;
-      const workforceCostBid = parseFloat(data[i][6]) || 0;
-      const supply = data[i][14] || 0;
-      const demand = data[i][15] || 0;
-      const distance = data[i][16] || 0;
+      // Updated column structure with workforce costs:
+      // A: LookupKey (Ticker+Exchange), B: Ticker, C: Material Name, D: Exchange,
+      // E: Ask_Price, F: Bid_Price, G: Input Cost Ask, H: Input Cost Bid,
+      // I: Workforce Cost Ask, J: Workforce Cost Bid,
+      // K: Amount per Recipe, L: Supply, M: Demand
+      
+      const askPrice = parseFloat(data[i][4]) || 0;           // Column E: Ask_Price
+      const bidPrice = parseFloat(data[i][5]) || 0;           // Column F: Bid_Price
+      const inputCostAsk = parseFloat(data[i][6]) || 0;       // Column G: Input Cost Ask
+      const inputCostBid = parseFloat(data[i][7]) || 0;       // Column H: Input Cost Bid
+      const workforceCostAsk = parseFloat(data[i][8]) || 0;   // Column I: Workforce Cost Ask
+      const workforceCostBid = parseFloat(data[i][9]) || 0;   // Column J: Workforce Cost Bid
+      const amountPerRecipe = parseFloat(data[i][10]) || 1;   // Column K: Amount per Recipe
+      const supply = data[i][11] || 0;                         // Column L: Supply
+      const demand = data[i][12] || 0;                         // Column M: Demand
       
       // Calculate total costs
       const totalCostAsk = inputCostAsk + workforceCostAsk;
@@ -163,8 +168,7 @@ function getCalculationData(material, exchange) {
         breakevenBidBid: breakevenBidBid,
         // Market indicators
         supply: supply,
-        demand: demand,
-        distance: distance
+        demand: demand
       };
     }
   }
