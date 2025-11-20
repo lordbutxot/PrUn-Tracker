@@ -36,17 +36,17 @@ function getMaterials() {
   }
   
   const data = sheet.getDataRange().getValues();
-  const materials = [];
+  const materialsSet = new Set();
   
-  // Skip header row, get unique materials from column A
+  // Skip header row, column B contains materials like "AAR", "DW", etc.
   for (let i = 1; i < data.length; i++) {
-    const material = data[i][0];
-    if (material && !materials.includes(material)) {
-      materials.push(material);
+    const material = data[i][1]; // Column B = Material ticker
+    if (material && typeof material === 'string') {
+      materialsSet.add(material);
     }
   }
   
-  return materials.sort();
+  return Array.from(materialsSet).sort();
 }
 
 // Fetch all exchange names (unique) from Price Analyser Data sheet
@@ -59,17 +59,17 @@ function getExchanges() {
   }
   
   const data = sheet.getDataRange().getValues();
-  const exchanges = [];
+  const exchangesSet = new Set();
   
-  // Skip header row, get unique exchanges from column B
+  // Skip header row, column C contains exchanges like "CI1", "IC1", etc.
   for (let i = 1; i < data.length; i++) {
-    const exchange = data[i][1];
-    if (exchange && !exchanges.includes(exchange)) {
-      exchanges.push(exchange);
+    const exchange = data[i][2]; // Column C = Exchange
+    if (exchange && typeof exchange === 'string') {
+      exchangesSet.add(exchange);
     }
   }
   
-  return exchanges.sort();
+  return Array.from(exchangesSet).sort();
 }
 
 // Get calculation data for selected material and exchange
@@ -84,30 +84,31 @@ function getCalculationData(material, exchange) {
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   
-  // Find the row matching material and exchange
+  // Find the row matching material (column B) and exchange (column C)
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === material && data[i][1] === exchange) {
-      // Return data as object with column names
+    if (data[i][1] === material && data[i][2] === exchange) {
+      // Return data as object - adjust indices based on actual column structure
       return {
-        material: data[i][0],
-        exchange: data[i][1],
-        askPrice: data[i][2],
-        bidPrice: data[i][3],
-        inputCost: data[i][4],
-        workforceCost: data[i][5],
-        totalCost: data[i][6],
-        profitAsk: data[i][7],
-        profitBid: data[i][8],
-        roiAsk: data[i][9],
-        roiBid: data[i][10],
-        breakevenAsk: data[i][11],
-        breakevenBid: data[i][12],
-        supply: data[i][13],
-        demand: data[i][14],
-        distance: data[i][15]
+        materialCode: data[i][0],  // Column A - Full code (e.g., "AARCI1")
+        material: data[i][1],       // Column B - Material ticker
+        exchange: data[i][2],       // Column C - Exchange
+        askPrice: data[i][3],       // Column D
+        bidPrice: data[i][4],       // Column E
+        inputCost: data[i][5],      // Column F
+        workforceCost: data[i][6],  // Column G
+        totalCost: data[i][7],      // Column H
+        profitAsk: data[i][8],      // Column I
+        profitBid: data[i][9],      // Column J
+        roiAsk: data[i][10],        // Column K
+        roiBid: data[i][11],        // Column L
+        breakevenAsk: data[i][12],  // Column M
+        breakevenBid: data[i][13],  // Column N
+        supply: data[i][14],        // Column O
+        demand: data[i][15],        // Column P
+        distance: data[i][16]       // Column Q
       };
     }
   }
   
-  return { error: 'No data found for this combination' };
+  return { error: 'No data found for ' + material + ' on ' + exchange };
 }
