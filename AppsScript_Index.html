@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrUn Price Analyser</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 0.95rem;
+    }
+    
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    label {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    
+    select {
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    select:hover {
+      border-color: #667eea;
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #c33;
+    }
+    
+    .results {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .section {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: #f8f9fc;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .section h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+    }
+    
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    
+    .data-item {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .data-label {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .data-value {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .data-value.positive {
+      color: #16a34a;
+    }
+    
+    .data-value.negative {
+      color: #dc2626;
+    }
+    
+    .data-value.currency::before {
+      content: '₡ ';
+      font-size: 0.9em;
+      opacity: 0.7;
+    }
+    
+    .data-value.percentage::after {
+      content: '%';
+      font-size: 0.9em;
+      opacity: 0.7;
+    }
+    
+    @media (max-width: 768px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+      
+      .data-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 PrUn Price Analyser</h1>
+    <p class="subtitle">Interactive material cost calculator with ROI analysis</p>
+    
+    <div class="controls">
+      <div class="control-group">
+        <label for="materialSelect">Select Material:</label>
+        <select id="materialSelect">
+          <option value="">Loading materials...</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="exchangeSelect">Select Exchange:</label>
+        <select id="exchangeSelect">
+          <option value="">Loading exchanges...</option>
+        </select>
+      </div>
+    </div>
+    
+    <div id="loading" class="loading" style="display: none;">
+      Calculating...
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="results" class="results">
+      <div class="section">
+        <h3>💰 Pricing</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Ask Price</div>
+            <div class="data-value currency" id="askPrice">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Bid Price</div>
+            <div class="data-value currency" id="bidPrice">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>📊 Cost Breakdown</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Input Materials Cost</div>
+            <div class="data-value currency" id="inputCost">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Workforce Consumables</div>
+            <div class="data-value currency" id="workforceCost">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Total Production Cost</div>
+            <div class="data-value currency" id="totalCost">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>💵 Profitability</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Profit (Ask Price)</div>
+            <div class="data-value currency" id="profitAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Profit (Bid Price)</div>
+            <div class="data-value currency" id="profitBid">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Ask)</div>
+            <div class="data-value percentage" id="roiAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Bid)</div>
+            <div class="data-value percentage" id="roiBid">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>⚖️ Breakeven Analysis</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Breakeven from Ask</div>
+            <div class="data-value percentage" id="breakevenAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Breakeven from Bid</div>
+            <div class="data-value percentage" id="breakevenBid">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h3>📈 Market Indicators</h3>
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Supply</div>
+            <div class="data-value" id="supply">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Demand</div>
+            <div class="data-value" id="demand">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Distance</div>
+            <div class="data-value" id="distance">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load materials and exchanges on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadMaterials();
+      loadExchanges();
+    });
+    
+    // Load materials dropdown
+    function loadMaterials() {
+      google.script.run
+        .withSuccessHandler(function(materials) {
+          const select = document.getElementById('materialSelect');
+          select.innerHTML = '<option value="">-- Select Material --</option>';
+          materials.forEach(function(material) {
+            const option = document.createElement('option');
+            option.value = material;
+            option.textContent = material;
+            select.appendChild(option);
+          });
+        })
+        .withFailureHandler(function(error) {
+          showError('Failed to load materials: ' + error.message);
+        })
+        .getMaterials();
+    }
+    
+    // Load exchanges dropdown
+    function loadExchanges() {
+      google.script.run
+        .withSuccessHandler(function(exchanges) {
+          const select = document.getElementById('exchangeSelect');
+          select.innerHTML = '<option value="">-- Select Exchange --</option>';
+          exchanges.forEach(function(exchange) {
+            const option = document.createElement('option');
+            option.value = exchange;
+            option.textContent = exchange;
+            select.appendChild(option);
+          });
+        })
+        .withFailureHandler(function(error) {
+          showError('Failed to load exchanges: ' + error.message);
+        })
+        .getExchanges();
+    }
+    
+    // Listen for selection changes
+    document.getElementById('materialSelect').addEventListener('change', calculate);
+    document.getElementById('exchangeSelect').addEventListener('change', calculate);
+    
+    // Calculate and display results
+    function calculate() {
+      const material = document.getElementById('materialSelect').value;
+      const exchange = document.getElementById('exchangeSelect').value;
+      
+      if (!material || !exchange) {
+        document.getElementById('results').style.display = 'none';
+        return;
+      }
+      
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('results').style.display = 'none';
+      
+      google.script.run
+        .withSuccessHandler(function(data) {
+          document.getElementById('loading').style.display = 'none';
+          
+          if (data.error) {
+            showError(data.error);
+            return;
+          }
+          
+          displayResults(data);
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('loading').style.display = 'none';
+          showError('Calculation failed: ' + error.message);
+        })
+        .getCalculationData(material, exchange);
+    }
+    
+    // Display calculation results
+    function displayResults(data) {
+      // Pricing
+      setValue('askPrice', data.askPrice);
+      setValue('bidPrice', data.bidPrice);
+      
+      // Costs
+      setValue('inputCost', data.inputCost);
+      setValue('workforceCost', data.workforceCost);
+      setValue('totalCost', data.totalCost);
+      
+      // Profitability
+      setValue('profitAsk', data.profitAsk, true);
+      setValue('profitBid', data.profitBid, true);
+      setValue('roiAsk', data.roiAsk, true);
+      setValue('roiBid', data.roiBid, true);
+      
+      // Breakeven
+      setValue('breakevenAsk', data.breakevenAsk, true);
+      setValue('breakevenBid', data.breakevenBid, true);
+      
+      // Market indicators
+      setValueRaw('supply', data.supply);
+      setValueRaw('demand', data.demand);
+      setValueRaw('distance', data.distance);
+      
+      document.getElementById('results').style.display = 'block';
+    }
+    
+    // Helper to set formatted value with color coding
+    function setValue(id, value, colorCode = false) {
+      const elem = document.getElementById(id);
+      
+      if (value === null || value === undefined || value === '') {
+        elem.textContent = '-';
+        elem.className = elem.className.replace(' positive', '').replace(' negative', '');
+        return;
+      }
+      
+      const numValue = parseFloat(value);
+      elem.textContent = numValue.toFixed(2);
+      
+      if (colorCode) {
+        elem.classList.remove('positive', 'negative');
+        if (numValue > 0) {
+          elem.classList.add('positive');
+        } else if (numValue < 0) {
+          elem.classList.add('negative');
+        }
+      }
+    }
+    
+    // Helper to set raw value without formatting
+    function setValueRaw(id, value) {
+      const elem = document.getElementById(id);
+      elem.className = 'data-value';
+      elem.textContent = value || '-';
+    }
+    
+    // Show error message
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
