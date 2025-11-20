@@ -292,13 +292,22 @@ class UnifiedDataProcessor:
                     # Calculate cost for first workforce type (most common)
                     workforce_type = workforce_types[0] if workforce_types else 'PIONEER'
                     # Workforce needs per hour
-                    consumables = wf_consumables.get(workforce_type, {})
+                    workforce_data = wf_consumables.get(workforce_type, {})
                     wf_cost = 0
-                    for ticker_c, amt_per_day in consumables.items():
-                        amt_per_hour = amt_per_day  # Already divided by 24 in loader
-                        qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
-                        price = get_market_price(ticker_c, market_prices, exchange)
-                        wf_cost += qty * price
+                    
+                    # Calculate necessary consumables cost
+                    if "necessary" in workforce_data:
+                        for ticker_c, amt_per_hour in workforce_data["necessary"].items():
+                            qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
+                            price = get_market_price(ticker_c, market_prices, exchange)
+                            wf_cost += qty * price
+                    
+                    # Calculate luxury consumables cost
+                    if "luxury" in workforce_data:
+                        for ticker_c, amt_per_hour in workforce_data["luxury"].items():
+                            qty = amt_per_hour * hours_per_recipe * 1  # workforce_amount=1 unless you have more info
+                            price = get_market_price(ticker_c, market_prices, exchange)
+                            wf_cost += qty * price
                     # Material input cost - THIS IS RECIPE-SPECIFIC
                     direct_input_cost = sum(
                         qty * get_market_price(t, market_prices, exchange)

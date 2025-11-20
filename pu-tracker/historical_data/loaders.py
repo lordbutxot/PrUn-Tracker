@@ -237,7 +237,14 @@ def load_byproduct_recipes():
 def load_workforceneeds():
     """
     Load workforceneeds.json and convert to per-worker per-hour consumption rates.
-    Returns dict: {"PIONEER": {"DW": 0.00167, "RAT": 0.00125, ...}, ...}
+    Returns dict with structure:
+    {
+        "PIONEER": {
+            "necessary": {"DW": 0.00167, "RAT": 0.00125, "OVE": 0.00021},
+            "luxury": {"PWO": 0.000083, "COF": 0.00021}
+        },
+        ...
+    }
     """
     path = CACHE_DIR / CACHE_FILES['workforceneeds']
     if not path.exists():
@@ -252,16 +259,23 @@ def load_workforceneeds():
         # Try both possible key names
         name = wf.get("name") or wf.get("WorkforceType")
         if name:
-            needs[name] = {}
+            needs[name] = {"necessary": {}, "luxury": {}}
             needs_list = wf.get("needs", wf.get("Needs", []))
             for need in needs_list:
                 ticker = need.get("ticker") or need.get("MaterialTicker")
                 amount = need.get("amountPerWorkerPerHour") or need.get("Amount", 0)
+                material_name = need.get("MaterialName", "")
+                
                 if ticker and amount:
                     # JSON stores consumption per 100 workers per day
                     # Convert to per single worker per hour: amount / 100 / 24
                     per_hour_per_worker = float(amount) / 100.0 / 24.0
-                    needs[name][ticker] = per_hour_per_worker
+                    
+                    # Categorize as luxury or necessary based on MaterialName
+                    if "Luxury" in material_name or "luxury" in material_name:
+                        needs[name]["luxury"][ticker] = per_hour_per_worker
+                    else:
+                        needs[name]["necessary"][ticker] = per_hour_per_worker
     
     return needs
 

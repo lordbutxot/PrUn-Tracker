@@ -130,8 +130,11 @@ function getRecipesForMaterial(material) {
 }
 
 // Get recommended recipe based on profitability comparison
-function getRecommendedRecipe(material, exchange) {
+function getRecommendedRecipe(material, exchange, includeLuxury, selfProduced) {
   try {
+    includeLuxury = includeLuxury !== false; // Default true
+    selfProduced = selfProduced === true;     // Default false
+    
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName('Price Analyser Data');
     
@@ -150,8 +153,19 @@ function getRecommendedRecipe(material, exchange) {
       if (data[i][1] === material && data[i][4] === exchange && data[i][2]) {
         const recipeString = data[i][2];
         const askPrice = parseFloat(data[i][5]) || 0;        // Column F
-        const inputCostAsk = parseFloat(data[i][7]) || 0;    // Column H
-        const workforceCostAsk = parseFloat(data[i][9]) || 0; // Column J
+        let inputCostAsk = parseFloat(data[i][7]) || 0;      // Column H
+        let workforceCostAsk = parseFloat(data[i][9]) || 0;  // Column J
+        
+        // Apply luxury consumables toggle (reduce workforce cost by ~30% if excluded)
+        if (!includeLuxury) {
+          workforceCostAsk *= 0.7;
+        }
+        
+        // Apply self-production cost (use production cost instead of market price for inputs)
+        if (selfProduced) {
+          inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
+        }
+        
         const totalCostAsk = inputCostAsk + workforceCostAsk;
         const profitAskAsk = askPrice - totalCostAsk;
         const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
@@ -220,8 +234,45 @@ function getRecommendedRecipe(material, exchange) {
   }
 }
 
+// Helper function to calculate self-production cost by looking up input materials
+function calculateSelfProductionCost(recipeString, allData, exchange) {
+  if (!recipeString || !recipeString.includes('=>')) return 0;
+  
+  try {
+    const parts = recipeString.split('=>');
+    const inputPart = parts[0].split(':')[1] || parts[0];
+    const inputs = inputPart.split('-');
+    
+    let totalCost = 0;
+    for (let inputStr of inputs) {
+      const match = inputStr.match(/(\d+)x([A-Z]+)/);
+      if (match) {
+        const amount = parseFloat(match[1]);
+        const inputTicker = match[2];
+        
+        // Find production cost for this input material
+        for (let i = 1; i < allData.length; i++) {
+          if (allData[i][1] === inputTicker && allData[i][4] === exchange) {
+            const inputCost = parseFloat(allData[i][7]) || 0;
+            const workforceCost = parseFloat(allData[i][9]) || 0;
+            const productionCost = inputCost + workforceCost;
+            totalCost += amount * productionCost;
+            break;
+          }
+        }
+      }
+    }
+    return totalCost;
+  } catch (e) {
+    return 0;
+  }
+}
+
 // Get calculation data for selected material, exchange, and optionally specific recipe
-function getCalculationData(material, exchange, recipe) {
+function getCalculationData(material, exchange, recipe, includeLuxury, selfProduced) {
+  includeLuxury = includeLuxury !== false; // Default true
+  selfProduced = selfProduced === true;     // Default false
+  
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Price Analyser Data');
   
@@ -246,8 +297,12 @@ function getCalculationData(material, exchange, recipe) {
       
       // If no recipe specified, find the one with lowest total cost (Ask basis)
       if (!recipe) {
-        const inputCostAsk = parseFloat(data[i][6]) || 0;
-        const workforceCostAsk = parseFloat(data[i][8]) || 0;
+        let inputCostAsk = parseFloat(data[i][7]) || 0;
+        let workforceCostAsk = parseFloat(data[i][9]) || 0;
+        
+        if (!includeLuxury) workforceCostAsk *= 0.7;
+        if (selfProduced) inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
+        
         const totalCost = inputCostAsk + workforceCostAsk;
         
         if (totalCost < lowestCost) {
@@ -275,10 +330,22 @@ function getCalculationData(material, exchange, recipe) {
       
       const askPrice = parseFloat(data[i][5]) || 0;           // Column F: Ask_Price
       const bidPrice = parseFloat(data[i][6]) || 0;           // Column G: Bid_Price
-      const inputCostAsk = parseFloat(data[i][7]) || 0;       // Column H: Input Cost Ask
-      const inputCostBid = parseFloat(data[i][8]) || 0;       // Column I: Input Cost Bid
-      const workforceCostAsk = parseFloat(data[i][9]) || 0;   // Column J: Workforce Cost Ask
-      const workforceCostBid = parseFloat(data[i][10]) || 0;  // Column K: Workforce Cost Bid
+      let inputCostAsk = parseFloat(data[i][7]) || 0;         // Column H: Input Cost Ask
+      let inputCostBid = parseFloat(data[i][8]) || 0;         // Column I: Input Cost Bid
+      let workforceCostAsk = parseFloat(data[i][9]) || 0;     // Column J: Workforce Cost Ask
+      let workforceCostBid = parseFloat(data[i][10]) || 0;    // Column K: Workforce Cost Bid
+      
+      // Apply luxury consumables toggle
+      if (!includeLuxury) {
+        workforceCostAsk *= 0.7;
+        workforceCostBid *= 0.7;
+      }
+      
+      // Apply self-production cost
+      if (selfProduced) {
+        inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
+        inputCostBid = inputCostAsk; // Use same for both
+      }
       const amountPerRecipe = parseFloat(data[i][11]) || 1;   // Column L: Amount per Recipe
       const supply = data[i][12] || 0;                         // Column M: Supply
       const demand = data[i][13] || 0;                         // Column N: Demand

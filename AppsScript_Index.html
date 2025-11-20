@@ -246,6 +246,56 @@
       margin-bottom: 15px;
     }
     
+    .options-panel {
+      background: #f8f9fc;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .options-panel h3 {
+      color: #f59e0b;
+      margin-bottom: 15px;
+      font-size: 1rem;
+    }
+    
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+    }
+    
+    .option-item {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    
+    .option-hint {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #666;
+      font-style: italic;
+    }
+    
     @media (max-width: 768px) {
       .controls {
         grid-template-columns: 1fr;
@@ -286,6 +336,26 @@
         <select id="exchangeSelect">
           <option value="">Loading exchanges...</option>
         </select>
+      </div>
+    </div>
+    
+    <div class="options-panel">
+      <h3>⚙️ Cost Calculation Options</h3>
+      <div class="options-grid">
+        <div class="option-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="includeLuxury" checked>
+            <span>Include Luxury Consumables in Workforce Costs</span>
+          </label>
+          <div class="option-hint">When unchecked, workforce costs exclude luxury items (reduces cost)</div>
+        </div>
+        <div class="option-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="selfProducedInputs">
+            <span>Use Self-Production Costs for Inputs</span>
+          </label>
+          <div class="option-hint">When checked, inputs use their production cost instead of market price</div>
+        </div>
       </div>
     </div>
     
@@ -516,12 +586,16 @@
     });
     document.getElementById('recipeSelect').addEventListener('change', calculate);
     document.getElementById('exchangeSelect').addEventListener('change', calculate);
+    document.getElementById('includeLuxury').addEventListener('change', calculate);
+    document.getElementById('selfProducedInputs').addEventListener('change', calculate);
     
     // Calculate and display results
     function calculate() {
       const material = document.getElementById('materialSelect').value;
       const recipe = document.getElementById('recipeSelect').value;
       const exchange = document.getElementById('exchangeSelect').value;
+      const includeLuxury = document.getElementById('includeLuxury').checked;
+      const selfProduced = document.getElementById('selfProducedInputs').checked;
       
       if (!material || !exchange) {
         document.getElementById('results').style.display = 'none';
@@ -566,7 +640,7 @@
           calculationData = { error: 'Calculation failed: ' + error.message };
           checkComplete();
         })
-        .getCalculationData(material, exchange, recipe);
+        .getCalculationData(material, exchange, recipe, includeLuxury, selfProduced);
       
       google.script.run
         .withSuccessHandler(function(data) {
@@ -577,7 +651,7 @@
           recommendationData = { error: 'Recommendation failed: ' + error.message };
           checkComplete();
         })
-        .getRecommendedRecipe(material, exchange);
+        .getRecommendedRecipe(material, exchange, includeLuxury, selfProduced);
     }
     
     // Display calculation results

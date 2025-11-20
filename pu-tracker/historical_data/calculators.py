@@ -221,18 +221,44 @@ def calculate_detailed_costs(ticker, recipe_inputs_df, recipe_outputs_df, buildi
                 workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
                 
                 if workforce_type and workforce_type in workforceneeds:
-                    consumables = workforceneeds[workforce_type]
-                    for item, per_hour in consumables.items():
-                        try:
-                            total_needed = float(per_hour) * workforce_amount * time_hours
-                        except Exception:
-                            total_needed = 0
-                        ask_price = float(ask_prices.get(item, 0))
-                        bid_price = float(bid_prices.get(item, 0))
-                        workforce_cost_ask += total_needed * ask_price
-                        workforce_cost_bid += total_needed * bid_price
+                    workforce_data = workforceneeds[workforce_type]
+                    
+                    # Calculate necessary consumables cost
+                    if "necessary" in workforce_data:
+                        for item, per_hour in workforce_data["necessary"].items():
+                            try:
+                                total_needed = float(per_hour) * workforce_amount * time_hours
+                            except Exception:
+                                total_needed = 0
+                            ask_price = float(ask_prices.get(item, 0))
+                            bid_price = float(bid_prices.get(item, 0))
+                            workforce_cost_ask += total_needed * ask_price
+                            workforce_cost_bid += total_needed * bid_price
+                    
+                    # Calculate luxury consumables cost
+                    if "luxury" in workforce_data:
+                        for item, per_hour in workforce_data["luxury"].items():
+                            try:
+                                total_needed = float(per_hour) * workforce_amount * time_hours
+                            except Exception:
+                                total_needed = 0
+                            ask_price = float(ask_prices.get(item, 0))
+                            bid_price = float(bid_prices.get(item, 0))
+                            workforce_cost_ask += total_needed * ask_price
+                            workforce_cost_bid += total_needed * bid_price
             except Exception as e:
                 print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
+                import traceback
+                traceback.print_exc()
+        elif buildingrecipes_df is not None:
+            # Recipe not found in index - this is the extraction recipe issue
+            print(f"[WARN] Recipe '{recipe_key}' not found in buildingrecipes index.")
+            print(f"[DEBUG] Available recipe keys sample: {list(buildingrecipes_df.index[:5])}")
+            print(f"[DEBUG] Checking if similar keys exist...")
+            # Try to find recipes with similar keys (case-insensitive or partial match)
+            matching_keys = [k for k in buildingrecipes_df.index if recipe_key.lower() in k.lower() or k.lower() in recipe_key.lower()]
+            if matching_keys:
+                print(f"[DEBUG] Found similar keys: {matching_keys[:3]}")
 
         # Get units produced per recipe
         units_per_recipe = 1
