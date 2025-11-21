@@ -150,6 +150,18 @@ def main():
         except Exception as e:
             print(f"[ERROR] Failed to generate workforces.csv: {e}")
         
+        # Fetch required files BEFORE unified_processor runs
+        log_step("Fetching buildingrecipes.csv...")
+        try:
+            from fetch_buildingrecipes import fetch_buildingrecipes
+            fetch_buildingrecipes()
+            print("[SUCCESS] buildingrecipes.csv fetched")
+        except Exception as e:
+            print(f"[ERROR] Failed to fetch buildingrecipes.csv: {e}")
+
+        log_step("Fetching workforceneeds.json...")
+        fetch_workforceneeds_json()
+        
         log_step("Adding tier information to materials...")
         try:
             import add_tier_to_materials
@@ -177,16 +189,6 @@ def main():
         fetch_orders_csv()
         log_step("Fetching bids.csv...")
         fetch_bids_csv()
-        log_step("Fetching buildingrecipes.csv...")
-        try:
-            from fetch_buildingrecipes import fetch_buildingrecipes
-            fetch_buildingrecipes()
-            print("[SUCCESS] buildingrecipes.csv fetched")
-        except Exception as e:
-            print(f"[ERROR] Failed to fetch buildingrecipes.csv: {e}")
-
-        log_step("Fetching workforceneeds.json...")
-        fetch_workforceneeds_json()
 
         log_step("Fetching planetresources.csv...")
         fetch_planetresources_csv()
