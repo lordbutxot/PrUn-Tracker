@@ -142,6 +142,14 @@ def main():
         except Exception as e:
             print(f"[ERROR] Failed to build buildings dictionary: {e}")
         
+        log_step("Generating workforces.csv from buildings data...")
+        try:
+            import generate_workforces
+            generate_workforces.main()
+            print("[SUCCESS] Workforces.csv generated")
+        except Exception as e:
+            print(f"[ERROR] Failed to generate workforces.csv: {e}")
+        
         log_step("Adding tier information to materials...")
         try:
             import add_tier_to_materials
