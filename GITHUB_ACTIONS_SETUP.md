@@ -10,7 +10,7 @@ The GitHub Actions workflow automatically runs the PrUn-Tracker pipeline every 3
 
 ### Step 1: Prepare Your Google Service Account Credentials
 
-1. **Get your credentials JSON file**: You should have a file named `prun-profit-42c5889f620d.json` (or similar) in `pu-tracker/historical_data/`
+1. **Get your credentials JSON file**: You should have a file named `prun-profit-42c5889f620d.json` in `pu-tracker/historical_data/`
 
 2. **Copy the entire contents** of this JSON file. It should look like:
    ```json
@@ -24,6 +24,8 @@ The GitHub Actions workflow automatically runs the PrUn-Tracker pipeline every 3
      ...
    }
    ```
+
+   **Important**: Make sure to copy the **entire** JSON including all newlines in the private key.
 
 ### Step 2: Add Credentials to GitHub Secrets
 
@@ -96,6 +98,17 @@ Edit `.github/workflows/update-tracker.yml` and modify the cron schedule:
 - `*` = any value
 - `0` = at zero (e.g., top of the hour)
 
+## Current Configuration Status
+
+✅ **Workflow file configured**: `.github/workflows/update-tracker.yml`
+✅ **Credentials filename**: `prun-profit-42c5889f620d.json` (matches expected name)
+✅ **Spreadsheet ID**: Set as environment variable in workflow
+✅ **Schedule**: Every 30 minutes
+✅ **Python version**: 3.13
+✅ **Security**: Credentials cleaned up after each run
+
+**Next step**: Add your `GOOGLE_CREDENTIALS_JSON` secret in GitHub repository settings (see Step 2 above).
+
 ## How It Works
 
 ### Workflow Steps
@@ -104,10 +117,10 @@ Edit `.github/workflows/update-tracker.yml` and modify the cron schedule:
 2. **Set up Python**: Installs Python 3.13
 3. **Cache dependencies**: Speeds up runs by caching pip packages
 4. **Install dependencies**: Installs packages from `requirements.txt`
-5. **Create credentials**: Writes the secret JSON to a temporary file
-6. **Run pipeline**: Executes `main.py` with the credentials
+5. **Create credentials**: Writes the secret JSON to `prun-profit-42c5889f620d.json`
+6. **Run pipeline**: Executes `main.py` with spreadsheet ID environment variable
 7. **Clean up**: Removes the credentials file
-8. **Upload logs**: Saves logs if the run fails
+8. **Upload logs**: Saves logs if the run fails (retained for 7 days)
 
 ### Security Features
 

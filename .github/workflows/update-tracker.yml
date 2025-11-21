@@ -34,11 +34,11 @@ jobs:
         
     - name: Create Google credentials file
       run: |
-        echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > pu-tracker/historical_data/google-credentials.json
+        echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > pu-tracker/historical_data/prun-profit-42c5889f620d.json
         
     - name: Run PrUn Tracker pipeline
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: pu-tracker/historical_data/google-credentials.json
+        PRUN_SPREADSHEET_ID: '1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI'
       run: |
         cd pu-tracker/historical_data
         python main.py
@@ -46,7 +46,7 @@ jobs:
     - name: Clean up credentials
       if: always()
       run: |
-        rm -f pu-tracker/historical_data/google-credentials.json
+        rm -f pu-tracker/historical_data/prun-profit-42c5889f620d.json
         
     - name: Upload logs (on failure)
       if: failure()
