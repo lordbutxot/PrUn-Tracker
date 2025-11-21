@@ -1309,11 +1309,39 @@
     // Get exchange comparison from cached data
     function getExchangeComparisonFromCache(material, recipe, currentExchange) {
       const exchanges = {};
+      const includeLuxury = document.getElementById('includeLuxury').checked;
+      const planet = document.getElementById('planetSelect').value;
       
       for (const row of allData) {
         if (row.ticker === material && (!recipe || row.recipe === recipe)) {
           const exch = row.exchange;
-          const totalCost = row.inputCostAsk + row.workforceCostAsk;
+          
+          // Apply same modifiers as main calculation
+          let inputCostAsk = row.inputCostAsk;
+          let workforceCostAsk = row.workforceCostAsk;
+          
+          // Check if this is an extraction recipe
+          const recipeStr = row.recipe || '';
+          const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
+          
+          // Apply planet-specific extraction time adjustment (same as main calculation)
+          if (isExtraction && planet) {
+            const planetFactor = getPlanetFactorClientSide(material, planet);
+            if (planetFactor > 0) {
+              const building = recipeStr.split('=>')[0];
+              const baseHours = building === 'RIG' ? 48 : 24;
+              const adjustedHours = Math.max(6, Math.min(240, baseHours / planetFactor));
+              const timeFactor = adjustedHours / baseHours;
+              workforceCostAsk *= timeFactor;
+            }
+          }
+          
+          // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
+          if (!includeLuxury) {
+            workforceCostAsk *= (1 / 0.79);
+          }
+          
+          const totalCost = inputCostAsk + workforceCostAsk;
           const profitAsk = row.askPrice - totalCost;
           const roiAsk = totalCost > 0 ? (profitAsk / totalCost) * 100 : 0;
           
