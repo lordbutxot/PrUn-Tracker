@@ -447,6 +447,127 @@ function calculateSelfProductionCost(recipeString, allData, exchange, visited) {
   }
 }
 
+// Get exchange comparison data (prices and profitability across all exchanges)
+function getExchangeComparison(material, recipe, currentExchange) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return { error: 'Price Analyser Data sheet not found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const exchanges = {};
+    
+    // Find data for this material across all exchanges
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === material && (!recipe || data[i][2] === recipe)) {
+        const exch = data[i][4];  // Column E: Exchange
+        const askPrice = parseFloat(data[i][5]) || 0;
+        const bidPrice = parseFloat(data[i][6]) || 0;
+        const inputCostAsk = parseFloat(data[i][7]) || 0;
+        const workforceCostAsk = parseFloat(data[i][9]) || 0;
+        const totalCost = inputCostAsk + workforceCostAsk;
+        const profitAsk = askPrice - totalCost;
+        const roiAsk = totalCost > 0 ? (profitAsk / totalCost) * 100 : 0;
+        
+        exchanges[exch] = {
+          exchange: exch,
+          askPrice: askPrice,
+          bidPrice: bidPrice,
+          totalCost: totalCost,
+          profit: profitAsk,
+          roi: roiAsk,
+          isCurrent: exch === currentExchange
+        };
+      }
+    }
+    
+    // Sort by ROI descending
+    const sortedExchanges = Object.values(exchanges).sort((a, b) => b.roi - a.roi);
+    
+    return {
+      success: true,
+      exchanges: sortedExchanges,
+      bestExchange: sortedExchanges[0]
+    };
+  } catch (error) {
+    Logger.log('Error in getExchangeComparison: ' + error.toString());
+    return { error: error.toString() };
+  }
+}
+
+// Get arbitrage opportunities (buy low at one exchange, sell high at another)
+function getArbitrageOpportunities(material) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return { error: 'Price Analyser Data sheet not found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const exchangePrices = {};
+    
+    // Collect prices for this material at each exchange
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === material) {
+        const exch = data[i][4];
+        const askPrice = parseFloat(data[i][5]) || 0;  // Buy at Ask
+        const bidPrice = parseFloat(data[i][6]) || 0;  // Sell at Bid
+        
+        if (!exchangePrices[exch]) {
+          exchangePrices[exch] = { ask: askPrice, bid: bidPrice };
+        }
+      }
+    }
+    
+    // Find arbitrage opportunities: Buy at Exchange A (ask), Sell at Exchange B (bid)
+    const opportunities = [];
+    const exchanges = Object.keys(exchangePrices);
+    
+    for (let i = 0; i < exchanges.length; i++) {
+      for (let j = 0; j < exchanges.length; j++) {
+        if (i !== j) {
+          const buyExch = exchanges[i];
+          const sellExch = exchanges[j];
+          const buyPrice = exchangePrices[buyExch].ask;  // Cost to buy
+          const sellPrice = exchangePrices[sellExch].bid;  // Revenue from selling
+          
+          const profit = sellPrice - buyPrice;
+          const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
+          
+          // Only include profitable opportunities (accounting for ~5% transfer costs)
+          if (profitPercent > 5) {
+            opportunities.push({
+              buyExchange: buyExch,
+              sellExchange: sellExch,
+              buyPrice: buyPrice,
+              sellPrice: sellPrice,
+              profit: profit,
+              profitPercent: profitPercent
+            });
+          }
+        }
+      }
+    }
+    
+    // Sort by profit percent descending
+    opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
+    
+    return {
+      success: true,
+      opportunities: opportunities,
+      count: opportunities.length
+    };
+  } catch (error) {
+    Logger.log('Error in getArbitrageOpportunities: ' + error.toString());
+    return { error: error.toString() };
+  }
+}
+
 // Get calculation data for selected material, exchange, and optionally specific recipe
 function getCalculationData(material, exchange, recipe, includeLuxury, selfProduced, planetName) {
   includeLuxury = includeLuxury !== false; // Default true

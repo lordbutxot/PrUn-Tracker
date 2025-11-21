@@ -246,6 +246,179 @@
       margin-bottom: 15px;
     }
     
+    .exchange-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.2s;
+    }
+    
+    .exchange-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    
+    .exchange-card.best {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+    
+    .exchange-card.current {
+      border-color: #3b82f6;
+      background: #f0f9ff;
+    }
+    
+    .exchange-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .exchange-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    
+    .exchange-badges {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .exchange-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
+    .badge-best {
+      background: #16a34a;
+      color: white;
+    }
+    
+    .badge-current {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .exchange-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    
+    .arbitrage-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid #16a34a;
+      transition: all 0.2s;
+    }
+    
+    .arbitrage-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .arbitrage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .arbitrage-route {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .arbitrage-profit {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #16a34a;
+      background: rgba(22, 163, 74, 0.1);
+      padding: 4px 12px;
+      border-radius: 6px;
+    }
+    
+    .arbitrage-details {
+      display: grid;
+      gap: 10px;
+    }
+    
+    .arbitrage-detail-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+    
+    .arbitrage-detail-label {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    
+    .arbitrage-detail-value {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .arbitrage-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateX(4px);
+    }
+    
+    .arbitrage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .arbitrage-route {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #333;
+    }
+    
+    .arbitrage-profit {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #16a34a;
+    }
+    
+    .arbitrage-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+    
+    .arbitrage-detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .arbitrage-detail-label {
+      color: #666;
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+    }
+    
+    .arbitrage-detail-value {
+      font-weight: 600;
+      color: #333;
+    }
+    
     .options-panel {
       background: #f8f9fc;
       border-radius: 8px;
@@ -541,6 +714,22 @@
         </div>
       </div>
       
+      <div class="section" id="exchangeComparisonSection" style="display: none;">
+        <h3>🌐 Exchange Comparison</h3>
+        <div style="margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
+          Compare prices and profitability across all exchanges using your current production costs
+        </div>
+        <div id="exchangeComparisonContent"></div>
+      </div>
+      
+      <div class="section" id="arbitrageSection" style="display: none;">
+        <h3>💱 Arbitrage Opportunities</h3>
+        <div style="margin-bottom: 15px; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
+          Profitable buy/sell opportunities between exchanges (showing profit > 5% after transfer costs)
+        </div>
+        <div id="arbitrageContent"></div>
+      </div>
+      
       <div class="section" id="recommendationSection" style="display: none;">
         <h3>🏆 Recommended Recipe</h3>
         <div id="recommendationContent"></div>
@@ -746,6 +935,8 @@
         // Calculate using cached data
         const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, selfProduced, planet);
         const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, selfProduced);
+        const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange);
+        const arbitrageData = getArbitrageOpportunitiesFromCache(material);
         
         document.getElementById('loading').style.display = 'none';
         
@@ -756,6 +947,14 @@
         
         if (calculationData) {
           displayResults(calculationData);
+        }
+        
+        if (exchangeComparisonData) {
+          displayExchangeComparison(exchangeComparisonData, exchange);
+        }
+        
+        if (arbitrageData) {
+          displayArbitrageOpportunities(arbitrageData);
         }
         
         if (recommendationData) {
@@ -912,6 +1111,91 @@
         breakevenBidBid: breakevenBidBid,
         supply: bestRow.supply,
         demand: bestRow.demand
+      };
+    }
+    
+    // Get exchange comparison from cached data
+    function getExchangeComparisonFromCache(material, recipe, currentExchange) {
+      const exchanges = {};
+      
+      for (const row of allData) {
+        if (row.ticker === material && (!recipe || row.recipe === recipe)) {
+          const exch = row.exchange;
+          const totalCost = row.inputCostAsk + row.workforceCostAsk;
+          const profitAsk = row.askPrice - totalCost;
+          const roiAsk = totalCost > 0 ? (profitAsk / totalCost) * 100 : 0;
+          
+          exchanges[exch] = {
+            exchange: exch,
+            askPrice: row.askPrice,
+            bidPrice: row.bidPrice,
+            totalCost: totalCost,
+            profit: profitAsk,
+            roi: roiAsk,
+            isCurrent: exch === currentExchange
+          };
+        }
+      }
+      
+      const sortedExchanges = Object.values(exchanges).sort((a, b) => b.roi - a.roi);
+      
+      return {
+        success: true,
+        exchanges: sortedExchanges,
+        bestExchange: sortedExchanges[0]
+      };
+    }
+    
+    // Get arbitrage opportunities from cached data
+    function getArbitrageOpportunitiesFromCache(material) {
+      const exchangePrices = {};
+      
+      // Collect prices for this material at each exchange
+      for (const row of allData) {
+        if (row.ticker === material) {
+          const exch = row.exchange;
+          if (!exchangePrices[exch]) {
+            exchangePrices[exch] = { ask: row.askPrice, bid: row.bidPrice };
+          }
+        }
+      }
+      
+      // Find arbitrage opportunities
+      const opportunities = [];
+      const exchanges = Object.keys(exchangePrices);
+      
+      for (let i = 0; i < exchanges.length; i++) {
+        for (let j = 0; j < exchanges.length; j++) {
+          if (i !== j) {
+            const buyExch = exchanges[i];
+            const sellExch = exchanges[j];
+            const buyPrice = exchangePrices[buyExch].ask;
+            const sellPrice = exchangePrices[sellExch].bid;
+            
+            const profit = sellPrice - buyPrice;
+            const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
+            
+            // Only include profitable opportunities (> 5% to cover transfer costs)
+            if (profitPercent > 5) {
+              opportunities.push({
+                buyExchange: buyExch,
+                sellExchange: sellExch,
+                buyPrice: buyPrice,
+                sellPrice: sellPrice,
+                profit: profit,
+                profitPercent: profitPercent
+              });
+            }
+          }
+        }
+      }
+      
+      opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
+      
+      return {
+        success: true,
+        opportunities: opportunities,
+        count: opportunities.length
       };
     }
     
@@ -1132,6 +1416,121 @@
       setValueRaw('demand', data.demand);
       
       document.getElementById('results').style.display = 'block';
+    }
+    
+    // Display exchange comparison
+    function displayExchangeComparison(data, currentExchange) {
+      const section = document.getElementById('exchangeComparisonSection');
+      const content = document.getElementById('exchangeComparisonContent');
+      
+      if (!data || !data.success || data.exchanges.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      let html = '';
+      
+      data.exchanges.forEach(function(exch) {
+        const isBest = exch.exchange === data.bestExchange.exchange;
+        const isCurrent = exch.exchange === currentExchange;
+        let cardClass = 'exchange-card';
+        if (isBest) cardClass += ' best';
+        else if (isCurrent) cardClass += ' current';
+        
+        const profitClass = exch.profit >= 0 ? 'positive' : 'negative';
+        const roiClass = exch.roi >= 0 ? 'positive' : 'negative';
+        
+        html += `
+          <div class="${cardClass}">
+            <div class="exchange-header">
+              <div class="exchange-name">${exch.exchange}</div>
+              <div class="exchange-badges">
+                ${isBest ? '<span class="exchange-badge badge-best">BEST ROI</span>' : ''}
+                ${isCurrent ? '<span class="exchange-badge badge-current">SELECTED</span>' : ''}
+              </div>
+            </div>
+            <div class="exchange-stats">
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Ask Price</div>
+                <div class="recipe-detail-value">₡ ${exch.askPrice.toFixed(2)}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Bid Price</div>
+                <div class="recipe-detail-value">₡ ${exch.bidPrice.toFixed(2)}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Production Cost</div>
+                <div class="recipe-detail-value">₡ ${exch.totalCost.toFixed(2)}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Profit (Ask)</div>
+                <div class="recipe-detail-value ${profitClass}">₡ ${exch.profit.toFixed(2)}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">ROI</div>
+                <div class="recipe-detail-value ${roiClass}">${exch.roi.toFixed(2)}%</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      content.innerHTML = html;
+      section.style.display = 'block';
+    }
+    
+    // Display arbitrage opportunities
+    function displayArbitrageOpportunities(data) {
+      const section = document.getElementById('arbitrageSection');
+      const content = document.getElementById('arbitrageContent');
+      
+      if (!data || !data.success || data.count === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      let html = '';
+      
+      // Show top 5 opportunities
+      const topOpportunities = data.opportunities.slice(0, 5);
+      
+      topOpportunities.forEach(function(opp) {
+        html += `
+          <div class="arbitrage-card">
+            <div class="arbitrage-header">
+              <div class="arbitrage-route">
+                <span style="color: #dc2626;">Buy at ${opp.buyExchange}</span>
+                <span style="margin: 0 8px;">→</span>
+                <span style="color: #16a34a;">Sell at ${opp.sellExchange}</span>
+              </div>
+              <div class="arbitrage-profit">+${opp.profitPercent.toFixed(1)}%</div>
+            </div>
+            <div class="arbitrage-details">
+              <div class="arbitrage-detail-item">
+                <div class="arbitrage-detail-label">Buy Price (${opp.buyExchange})</div>
+                <div class="arbitrage-detail-value">₡ ${opp.buyPrice.toFixed(2)}</div>
+              </div>
+              <div class="arbitrage-detail-item">
+                <div class="arbitrage-detail-label">Sell Price (${opp.sellExchange})</div>
+                <div class="arbitrage-detail-value">₡ ${opp.sellPrice.toFixed(2)}</div>
+              </div>
+              <div class="arbitrage-detail-item">
+                <div class="arbitrage-detail-label">Profit per Unit</div>
+                <div class="arbitrage-detail-value" style="color: #16a34a;">₡ ${opp.profit.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      if (data.count > 5) {
+        html += `<div style="text-align: center; margin-top: 10px; color: #666; font-size: 0.9rem;">
+          Showing top 5 of ${data.count} arbitrage opportunities
+        </div>`;
+      }
+      
+      content.innerHTML = html;
+      section.style.display = 'block';
     }
     
     // Display recipe recommendation comparison
