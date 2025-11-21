@@ -59,84 +59,75 @@ def main(mode='full'):
 
     step_times = []
 
-    # 1. Ensure market data is present
+    # 1. Fetch all base data (buildings, recipes, materials, workforce needs, etc.)
+    print("\033[1;36m[STEP]\033[0m Fetching base data from FIO API...")
+    ok, elapsed = run_script("catch_data.py", "Fetching base data (buildings, recipes, materials, workforce)", log_file)
+    step_times.append(("Fetch Base Data", elapsed))
+    if not ok:
+        print("\033[1;31m[FATAL]\033[0m Failed to fetch base data. Cannot proceed.")
+        return 1
+    
+    # 1.5 Ensure market data is present
     if not is_market_data_ready():
         print("\033[1;36m[STEP]\033[0m Market data missing. Fetching market data...")
-        fetchers = ["fetch_all_tickers.py", "catch_data.py"]
-        for fetcher in fetchers:
-            fetcher_path = current_dir / fetcher
-            if fetcher_path.exists():
-                ok, elapsed = run_script(fetcher, f"Fetching data with {fetcher}", log_file)
-                step_times.append((f"Fetch ({fetcher})", elapsed))
-                if not ok:
-                    print(f"\033[1;31m[ERROR]\033[0m {fetcher} failed. Cannot proceed.")
-                    return 1
-                if is_market_data_ready():
-                    break
+        ok, elapsed = run_script("fetch_all_tickers.py", "Fetching market prices", log_file)
+        step_times.append(("Fetch Market Data", elapsed))
+        if not ok:
+            print(f"\033[1;31m[ERROR]\033[0m fetch_all_tickers.py failed. Cannot proceed.")
+            return 1
         if not is_market_data_ready():
             print("\033[1;31m[FATAL]\033[0m Market data still missing after fetch attempts. Exiting.")
             return 1
     else:
         print("\033[1;32m[INFO]\033[0m Market data found.")
-    
-    # 1.5 Ensure workforceneeds.json exists
-    workforceneeds_file = CACHE_DIR / "workforceneeds.json"
-    if not workforceneeds_file.exists():
-        print("\033[1;36m[STEP]\033[0m workforceneeds.json missing. Fetching...")
-        ok, elapsed = run_script("catch_data.py", "Fetching required data files", log_file)
-        step_times.append(("Fetch Data", elapsed))
-        if not ok:
-            print("\033[1;33m[WARN]\033[0m catch_data.py had issues, but continuing...")
-        if not workforceneeds_file.exists():
-            print("\033[1;33m[WARN]\033[0m workforceneeds.json still missing. Some calculations may fail.")
 
-    # --- ADD THIS STEP ---
+    # 2. Assign tiers to materials
     ok, elapsed = run_script("add_tier_to_materials.py", "Assigning tiers to materials", log_file)
     step_times.append(("Assign Tiers", elapsed))
     if not ok:
         print("\033[1;31m[FATAL]\033[0m Tier assignment failed. Exiting.")
         return 1
 
-    # 1.6 Generate extraction recipes for tier-0 materials
+    # 3. Generate extraction recipes for tier-0 materials
     ok, elapsed = run_script("generate_extraction_recipes.py", "Generating extraction recipes", log_file)
     step_times.append(("Extraction Recipes", elapsed))
     if not ok:
         print("\033[1;33m[WARN]\033[0m Extraction recipe generation had issues, but continuing...")
 
-    # 2. Process data
+    # 4. Process data
     ok, elapsed = run_script("unified_processor.py", "Processing and merging all data", log_file)
     step_times.append(("Process", elapsed))
     if not ok:
         print("\033[1;31m[FATAL]\033[0m Data processing failed. Exiting.")
         return 1
 
-    # 3. Run enhanced analysis
+    # 5. Run enhanced analysis
     ok, elapsed = run_script("data_analyzer.py", "Generating enhanced analysis for upload", log_file)
     step_times.append(("Analyze", elapsed))
     if not ok:
         print("\033[1;31m[FATAL]\033[0m Enhanced analysis failed. Exiting.")
         return 1
 
-    # 4. Fetch only orders.csv and bids.csv for arbitrage calculations
+    # 6. Fetch only orders.csv and bids.csv for arbitrage calculations
     ok, elapsed = run_script("fetch_orders_and_bids.py", "Fetching orders.csv and bids.csv for arbitrage calculations", log_file)
     step_times.append(("Fetch Orders/Bids", elapsed))
     if not ok:
         print("\033[1;31m[ERROR]\033[0m Failed to fetch orders/bids. Arbitrage opportunity sizes may be inaccurate.")
 
-    # 5. Upload to Google Sheets
+    # 7. Upload to Google Sheets
     ok, elapsed = run_script("upload_enhanced_analysis.py", "Uploading to Google Sheets", log_file)
     step_times.append(("Upload", elapsed))
     if not ok:
         print("\033[1;31m[FATAL]\033[0m Upload failed. Exiting.")
         return 1
 
-    # 5.5. Upload Planet Resources for Price Analyser planet selection
+    # 8. Upload Planet Resources for Price Analyser planet selection
     ok, elapsed = run_script("quick_upload_planets.py", "Uploading Planet Resources for Price Analyser", log_file)
     step_times.append(("Planet Resources", elapsed))
     if not ok:
         print("\033[1;33m[WARN]\033[0m Planet resources upload failed - Price Analyser planet selection won't work")
 
-    # 6. Generate and upload Report Tabs
+    # 9. Generate and upload Report Tabs
     skip_arbitrage = os.environ.get("PRUN_SKIP_ARBITRAGE", "0") == "1"
     if not skip_arbitrage:
         ok, elapsed = run_script("generate_report_tabs.py", "Generating and uploading Report Tabs", log_file)
