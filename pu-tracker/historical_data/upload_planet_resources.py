@@ -51,14 +51,24 @@ def upload_planet_resources():
         # Merge fertility data into planet resources by planet name
         # Left join to keep all resources, add fertility where available
         df = df.merge(fertility_df, left_on='Planet', right_on='Planet', how='left')
-        print(f"[INFO] Merged fertility data - {df['Fertility'].notna().sum()} planets have fertility values")
+        
+        # Count unique planets with fertility (not just rows)
+        planets_with_fertility = df[df['Fertility'].notna()]['Planet'].unique()
+        print(f"[INFO] Merged fertility data - {len(planets_with_fertility)} unique planets have fertility values")
+        print(f"[INFO] Planets with fertility: {', '.join(sorted(planets_with_fertility))}")
     else:
         print(f"\n[INFO] No fertility data found at {fertility_path}, skipping fertility merge")
         df['Fertility'] = None
     
-    # Show sample data
-    print("\n[INFO] Sample data (first 5 rows):")
-    print(df.head())
+    # Show sample data - show rows WITH fertility if available
+    print("\n[INFO] Sample data (first 5 rows with fertility):")
+    fertility_rows = df[df['Fertility'].notna()].head()
+    if not fertility_rows.empty:
+        print(fertility_rows)
+    else:
+        print("[WARN] No rows with fertility data to display")
+        print("\n[INFO] First 5 rows overall:")
+        print(df.head())
     
     # Initialize Google Sheets manager
     print("\n[STEP] Initializing Google Sheets connection...")

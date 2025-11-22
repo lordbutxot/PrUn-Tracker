@@ -81,8 +81,9 @@ def fetch_planet_fertility():
                         
                         try:
                             fertility = float(fertility_str)
-                            # Skip planets with -1 fertility (no farming possible)
-                            if fertility >= 0:
+                            # Include ALL planets with fertility data (negative values are multipliers)
+                            # Only exclude -1 which means "no farming possible"
+                            if fertility > -1:
                                 writer.writerow([planet, fertility])
                                 planet_count += 1
                         except ValueError:
