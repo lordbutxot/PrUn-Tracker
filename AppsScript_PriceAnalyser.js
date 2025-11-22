@@ -83,6 +83,10 @@ function getAllData() {
     
     if (planetSheet) {
       const planetData = planetSheet.getDataRange().getValues();
+      const headers = planetData[0];
+      Logger.log('Planet Resources headers: ' + JSON.stringify(headers));
+      Logger.log('Total planet resource rows: ' + (planetData.length - 1));
+      
       // Skip header row (Key, Planet, Ticker, Type, Factor, Fertility)
       for (let i = 1; i < planetData.length; i++) {
         planets.push({
@@ -95,6 +99,11 @@ function getAllData() {
         const planetName = planetData[i][1];
         const fertilityValue = parseFloat(planetData[i][5]);
         
+        // DEBUG: Log first few fertility values
+        if (i <= 5) {
+          Logger.log('Row ' + i + ': Planet=' + planetName + ', Column[5]=' + planetData[i][5] + ', Parsed=' + fertilityValue);
+        }
+        
         // Include ALL fertility values > -1 (negative fertility = slower farming, but still farmable)
         // Only exclude -1 (which means "cannot farm")
         if (!isNaN(fertilityValue) && fertilityValue > -1 && !fertilityMap[planetName]) {
@@ -106,6 +115,11 @@ function getAllData() {
         }
       }
       Logger.log('Loaded ' + planets.length + ' planet resources and ' + fertility.length + ' planets with fertility data');
+      if (fertility.length > 0) {
+        Logger.log('Sample fertility data: ' + JSON.stringify(fertility.slice(0, 3)));
+      } else {
+        Logger.log('WARNING: No fertility data found! Check if Fertility column exists and has data.');
+      }
     }
     
     return {

@@ -180,6 +180,16 @@ def main() -> bool:
             for col in missing:
                 df[col] = "" if col not in ['Tier', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Investment Score'] else 0
         df = df[REQUIRED_HEADERS]  # Ensure correct column order
+        
+        # CRITICAL FIX: Ensure numeric columns are actually numeric (not strings or NaN)
+        numeric_columns = ['Tier', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 
+                          'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 
+                          'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 
+                          'Investment Score', 'Amount per Recipe', 'Weight', 'Volume']
+        for col in numeric_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        
         df = expand_multiple_recipes(df)  # <-- keep this line
         df = df.sort_values("Investment Score", ascending=False)
     except Exception as e:
@@ -190,6 +200,15 @@ def main() -> bool:
     print(f"   Columns: {len(df.columns)}")
     print(f"   Required: {len(REQUIRED_HEADERS)} columns")
     print(f"   Target tabs: {len(EXCHANGE_TABS)}")
+    
+    # DEBUG: Show sample Supply/Demand values
+    if 'Supply' in df.columns and 'Demand' in df.columns:
+        print(f"\n Sample Supply/Demand values (first 3 rows):")
+        print(f"   AAR AI1: Supply={df.iloc[0]['Supply']}, Demand={df.iloc[0]['Demand']}, Traded={df.iloc[0]['Traded Volume']}")
+        if len(df) > 1:
+            print(f"   Row 2: Supply={df.iloc[1]['Supply']}, Demand={df.iloc[1]['Demand']}, Traded={df.iloc[1]['Traded Volume']}")
+        if len(df) > 2:
+            print(f"   Row 3: Supply={df.iloc[2]['Supply']}, Demand={df.iloc[2]['Demand']}, Traded={df.iloc[2]['Traded Volume']}")
     if SHEETS_AVAILABLE:
         uploader.upload_to_sheets(df)
         print("[SUCCESS] Upload completed", flush=True)

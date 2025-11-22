@@ -780,6 +780,11 @@
           allBids = result.bids || [];
           planetData = result.planets || [];
           fertilityData = result.fertility || [];
+          
+          // DEBUG: Log fertility data
+          console.log('Loaded fertility data:', fertilityData);
+          console.log('Fertility count:', fertilityData.length);
+          
           document.getElementById('loading').style.display = 'none';
           
           // Populate dropdowns from loaded data
@@ -899,13 +904,18 @@
     function loadPlanetsForFarming() {
       const planetSelect = document.getElementById('planetSelect');
       
+      console.log('loadPlanetsForFarming called, fertilityData:', fertilityData);
+      console.log('fertilityData length:', fertilityData ? fertilityData.length : 'null');
+      
       if (!fertilityData || fertilityData.length === 0) {
+        console.warn('No fertility data available!');
         planetSelect.innerHTML = '<option value="">-- No Fertility Data --</option>';
         return;
       }
       
       // Sort planets by fertility descending (best first)
       const planets = [...fertilityData].sort((a, b) => b.fertility - a.fertility);
+      console.log('Sorted planets for farming:', planets);
       
       planetSelect.innerHTML = '<option value="">-- Average (All Planets) --</option>';
       planets.forEach(function(planet) {
