@@ -1130,11 +1130,12 @@
       // Apply planet-specific farming time adjustment
       if (isFarming && planet) {
         const fertility = getPlanetFertilityClientSide(planet);
-        if (fertility > 0) {
+        if (fertility > -1) {
           // Workforce costs in data are based on BASE farming time (24h typically)
           // Adjust for the specific planet's fertility
+          // Use absolute value for negative fertility (negative = penalty, slower farming)
           const baseFarmingHours = 24;
-          const adjustedHours = Math.max(6, Math.min(240, baseFarmingHours / fertility));
+          const adjustedHours = Math.max(6, Math.min(240, baseFarmingHours / Math.abs(fertility)));
           const timeFactor = adjustedHours / baseFarmingHours;
           
           // Adjust workforce costs based on planet-specific farming time
@@ -1271,9 +1272,10 @@
           // Apply planet-specific farming time adjustment (same as main calculation)
           if (isFarming && planet) {
             const fertility = getPlanetFertilityClientSide(planet);
-            if (fertility > 0) {
+            if (fertility > -1) {
+              // Use absolute value for negative fertility (negative = penalty, slower farming)
               const baseFarmingHours = 24;
-              const adjustedHours = Math.max(6, Math.min(240, baseFarmingHours / fertility));
+              const adjustedHours = Math.max(6, Math.min(240, baseFarmingHours / Math.abs(fertility)));
               const timeFactor = adjustedHours / baseFarmingHours;
               workforceCostAsk *= timeFactor;
             }
