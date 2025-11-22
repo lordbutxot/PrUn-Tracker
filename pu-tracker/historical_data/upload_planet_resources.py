@@ -21,7 +21,7 @@ SHEET_NAME = 'Planet Resources'
 
 def upload_planet_resources():
     """
-    Upload planetresources.csv to Google Sheets.
+    Upload planetresources.csv to Google Sheets with fertility data merged in.
     """
     print("\n" + "=" * 60)
     print("   Planet Resources Upload to Google Sheets")
@@ -40,6 +40,21 @@ def upload_planet_resources():
     df = pd.read_csv(planetresources_path)
     print(f"[INFO] Loaded {len(df)} planet resource records")
     print(f"[INFO] Columns: {list(df.columns)}")
+    
+    # Load and merge fertility data if available
+    fertility_path = CACHE_DIR / "planet_fertility.csv"
+    if fertility_path.exists():
+        print(f"\n[STEP] Loading planet fertility from {fertility_path}")
+        fertility_df = pd.read_csv(fertility_path)
+        print(f"[INFO] Loaded {len(fertility_df)} planets with fertility data")
+        
+        # Merge fertility data into planet resources by planet name
+        # Left join to keep all resources, add fertility where available
+        df = df.merge(fertility_df, left_on='Planet', right_on='Planet', how='left')
+        print(f"[INFO] Merged fertility data - {df['Fertility'].notna().sum()} planets have fertility values")
+    else:
+        print(f"\n[INFO] No fertility data found at {fertility_path}, skipping fertility merge")
+        df['Fertility'] = None
     
     # Show sample data
     print("\n[INFO] Sample data (first 5 rows):")

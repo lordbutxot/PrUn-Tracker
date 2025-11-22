@@ -75,38 +75,35 @@ function getAllData() {
       }
     }
     
-    // Load planet resources for extraction recipes
+    // Load planet resources for extraction recipes AND fertility for farming
     const planetSheet = ss.getSheetByName('Planet Resources');
     const planets = [];
+    const fertility = [];
+    const fertilityMap = {}; // Track unique planets with fertility
+    
     if (planetSheet) {
       const planetData = planetSheet.getDataRange().getValues();
-      // Skip header row (Key, Planet, Ticker, Type, Factor)
+      // Skip header row (Key, Planet, Ticker, Type, Factor, Fertility)
       for (let i = 1; i < planetData.length; i++) {
         planets.push({
           planet: planetData[i][1],    // Planet name
           ticker: planetData[i][2],    // Material ticker
           factor: parseFloat(planetData[i][4]) || 0  // Concentration factor
         });
-      }
-    }
-    
-    // Load planet fertility for farming recipes
-    const fertilitySheet = ss.getSheetByName('Planet Fertility');
-    const fertility = [];
-    if (fertilitySheet) {
-      try {
-        const fertilityData = fertilitySheet.getDataRange().getValues();
-        // Skip header row (Planet, Fertility)
-        for (let i = 1; i < fertilityData.length; i++) {
+        
+        // Extract fertility data (column 5) if available
+        const planetName = planetData[i][1];
+        const fertilityValue = parseFloat(planetData[i][5]);
+        
+        if (fertilityValue && fertilityValue > 0 && !fertilityMap[planetName]) {
+          fertilityMap[planetName] = fertilityValue;
           fertility.push({
-            planet: fertilityData[i][0],    // Planet name
-            fertility: parseFloat(fertilityData[i][1]) || 1.0  // Fertility factor
+            planet: planetName,
+            fertility: fertilityValue
           });
         }
-        Logger.log('Loaded ' + fertility.length + ' planets with fertility data');
-      } catch (e) {
-        Logger.log('Could not load fertility data: ' + e);
       }
+      Logger.log('Loaded ' + planets.length + ' planet resources and ' + fertility.length + ' planets with fertility data');
     }
     
     return {
