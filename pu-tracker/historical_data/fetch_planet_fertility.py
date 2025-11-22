@@ -13,7 +13,7 @@ def fetch_planet_fertility():
     Fertility affects farming building (FRM, ORC, VIN) production times.
     Returns True if successful, False otherwise.
     """
-    url = "https://rest.fnar.net/csv/planets"
+    url = "https://rest.fnar.net/csv/planetdetail"  # Changed from /planets to /planetdetail
     cache_dir = Path(__file__).parent.parent / "cache"
     cache_dir.mkdir(exist_ok=True)
     outfile = cache_dir / "planet_fertility.csv"
@@ -30,17 +30,35 @@ def fetch_planet_fertility():
             return False
         
         header = lines[0].split(',')
-        print(f"[INFO] Columns available: {', '.join(header)}")
+        print(f"[INFO] Found {len(header)} columns in planetdetail endpoint")
         
         # Find required column indices
         try:
+            # Look for PlanetName or PlanetNaturalId column (NOT PlanetId which is a GUID)
             planet_idx = next((i for i, col in enumerate(header) 
-                              if col.lower() in ['planetnaturalid', 'planetid', 'naturalid', 'name']), 0)
-            fertility_idx = next(i for i, col in enumerate(header) 
-                                if 'fertility' in col.lower())
+                              if col.strip().lower() in ['planetname', 'planetnaturalid']), None)
+            if planet_idx is None:
+                # Default to PlanetName (column index 2 based on API structure)
+                planet_idx = 2
+                print(f"[INFO] Planet name column not found in header, defaulting to index 2")
+                
+            fertility_idx = next((i for i, col in enumerate(header) 
+                                if 'fertility' in col.strip().lower()), None)
+            
+            if fertility_idx is None:
+                print("[ERROR] Fertility column not found in planetdetail endpoint")
+                print(f"[INFO] Available columns: {[col.strip() for col in header[:10]]}")
+                # Create empty file with default values
+                with open(outfile, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['Planet', 'Fertility'])
+                print("[WARN] Created empty fertility file - farming calculations will use default (1.0)")
+                return False
+                
+            print(f"[INFO] Using planet column index {planet_idx}, fertility column index {fertility_idx}")
         except StopIteration:
-            print("[ERROR] Fertility column not found in planets endpoint")
-            print(f"[INFO] Available columns: {header}")
+            print("[ERROR] Required columns not found in planetdetail endpoint")
+            print(f"[INFO] Available columns: {[col.strip() for col in header[:10]]}")
             # Create empty file with default values
             with open(outfile, 'w', newline='') as f:
                 writer = csv.writer(f)
@@ -63,13 +81,21 @@ def fetch_planet_fertility():
                         
                         try:
                             fertility = float(fertility_str)
-                            writer.writerow([planet, fertility])
-                            planet_count += 1
+                            # Skip planets with -1 fertility (no farming possible)
+                            if fertility >= 0:
+                                writer.writerow([planet, fertility])
+                                planet_count += 1
                         except ValueError:
-                            print(f"[WARN] Invalid fertility value for planet {planet}: {fertility_str}")
+                            # Skip invalid fertility values
                             continue
         
+        if planet_count == 0:
+            print("[WARN] No planets with valid fertility found (all planets may have fertility = -1)")
+            print("[INFO] Creating empty file - farming calculations will use default values")
+            return False
+        
         print(f"[SUCCESS] Saved planet_fertility.csv with {planet_count} planets to {outfile}")
+        print(f"[INFO] Note: Only planets with fertility >= 0 are included (planets with -1 cannot farm)")
         return True
         
     except requests.exceptions.Timeout:
