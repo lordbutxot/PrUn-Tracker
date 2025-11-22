@@ -222,7 +222,7 @@ MTP,meat,agricultural products,0.7,1.0,3.0
 MUS,mushrooms,agricultural products,0.8,1.0,2.0
 MWF,waferMedium,electronic pieces,0.008,0.008,3.0
 N,nitrogen,gases,0.807,1.0,0.0
-,sodium,elements,0.97,1.0,0.0
+,sodium,elements,0.97,1.0,
 NAB,sodiumBorohydride,chemicals,0.1,0.05,2.0
 NCS,nanoCarbonSheeting,construction materials,0.028,0.01,3.0
 NE,neon,gases,0.9,1.0,0.0
