@@ -1,231 +1,183 @@
 # PrUn-Tracker
 
-**PrUn-Tracker** is an advanced, modular data pipeline and analytics suite for the MMO [Prosperous Universe](https://prosperousuniverse.com/).
+**Advanced data pipeline and analytics suite for [Prosperous Universe](https://prosperousuniverse.com/)**
 
-## Project Overview & Aims
+[![GitHub Actions](https://img.shields.io/badge/Automated-Every%202%20Hours-success)](https://github.com/lordbutxot/PrUn-Tracker/actions)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](#)
 
-PrUn-Tracker automates the entire workflow of collecting, processing, analyzing, and reporting in-game economic and production data.  
-It enables players, corporations, and analysts to make data-driven decisions and optimize their gameplay.
+## 🎯 What is PrUn-Tracker?
 
-### Key Aims and Features
+PrUn-Tracker automates the entire workflow of collecting, processing, analyzing, and reporting in-game economic and production data for Prosperous Universe. It provides:
 
-- **Automated Data Collection:**  
-  Fetches up-to-date market, production, building, and workforce data directly from the Prosperous Universe API.
+- ✅ **True Production Costs** - Complete workforce consumable calculations (RAT, DW, OVE, etc.)
+- ✅ **Planet Optimization** - Extraction concentration & farming fertility factors
+- ✅ **Advanced Efficiency** - Worker luxury, CoGC programs, experts (cumulative bonuses)
+- ✅ **Real-Time Market Data** - Automated fetching every 2 hours via GitHub Actions
+- ✅ **Interactive Web Tool** - Price Analyser with profit calculations & scenario comparisons
+- ✅ **Google Sheets Integration** - Auto-updated spreadsheets with analytics
 
-- **Comprehensive Data Processing:**  
-  Cleans, merges, and transforms raw data into structured formats (CSV, JSON), ready for analysis.
+## 🚀 Quick Start
 
-- **True Cost Calculation:**  
-  Calculates not just the direct input costs for any product or recipe, but also includes the cost of all workforce consumables (like RAT, DW, OVE, etc.) based on the workforce type, hours required, and current market prices.  
-  This provides a **real, all-inclusive input cost per unit, per stack, and per hour**—enabling truly accurate profitability and ROI analysis.
+### Option 1: Use the Live Web App (Easiest)
+👉 **[Open Price Analyser](https://script.google.com/your-app-url)** *(Deploy your own from this repo)*
 
-- **Advanced Analytics & Reporting:**  
-  Generates enhanced analytics, including arbitrage opportunities, bottlenecks, investment scores, and more.  
-  Produces detailed reports and summary tabs for each exchange and product.
+### Option 2: Run Locally
+```bash
+# Clone repository
+git clone https://github.com/lordbutxot/PrUn-Tracker.git
+cd PrUn-Tracker
 
-- **Google Sheets Integration:**  
-  Seamlessly uploads processed and analyzed data to Google Sheets, populating multiple tabs (DATA, REPORT, etc.) for easy access, sharing, and further custom analysis.
+# Install dependencies
+pip install -r requirements.txt
 
-- **Batch Pipeline & Logging:**  
-  One-click batch execution (`run_pipeline.bat`) orchestrates the entire workflow, with robust logging and error handling for transparency and debugging.
+# Run pipeline
+cd pu-tracker/historical_data
+python main.py
+```
 
-- **Extensible & Modular:**  
-  Designed for easy extension—add new scripts, data sources, or analysis modules as needed.
+### Option 3: Fork & Deploy with GitHub Actions
+1. Fork this repository
+2. Add `GOOGLE_CREDENTIALS_JSON` secret (see [Setup Guide](GITHUB_ACTIONS_SETUP.md))
+3. Enable GitHub Actions
+4. Data updates automatically every 2 hours!
 
-- **Testing & Reliability:**  
-  Includes unit and integration tests to ensure the pipeline remains robust as the game and your needs evolve.
+## 📊 Key Features
 
----
+### Price Analyser Web App
+- **Multi-Recipe Comparison** - Find the most profitable production method
+- **Planet Selection** - Optimize for extraction concentration or farming fertility
+- **Efficiency Modeling** - Toggle luxury, CoGC (+25%), experts (up to +28.4%)
+- **4 ROI Scenarios** - Ask/Ask, Ask/Bid, Bid/Ask, Bid/Bid
+- **Exchange Comparison** - See profitability across all exchanges
+- **Arbitrage Detection** - Cross-exchange trading opportunities
 
-## What You Can Use the Results For in Prosperous Universe
+### Automated Data Pipeline
+- Fetches from Prosperous Universe FIO API
+- Processes 15,000+ market records
+- Calculates workforce costs with real market prices
+- Uploads to Google Sheets (DATA tabs, Planet Resources, Reports)
+- Runs every 2 hours via GitHub Actions
 
-With PrUn-Tracker, you can:
+### Advanced Calculations
+- **Additive Efficiency System** - Worker + Planet + CoGC + Experts stack additively
+- **28 Farmable Planets** - Only 0.8% of planets support farming (fertility data)
+- **Self-Production Costs** - Recursive calculation for vertical integration
+- **Investment Scoring** - Proprietary algorithm ranking opportunities
 
-- **Calculate True Production Costs:**  
-  Know the exact cost to produce any item, including all hidden workforce consumable costs, so you never underprice or overpay.
+## 📈 Sample Results
 
-- **Identify Profitable Opportunities:**  
-  Instantly spot arbitrage and trade opportunities across exchanges, with real ROI and risk metrics.
+**Workforce Cost Calculation:**
+```
+Recipe: CHP producing BAC (8 hours)
+Worker: Technician
+Consumables: DW, RAT, OVE, PWO, COF
+Market Prices: DW=10, RAT=15, OVE=8, PWO=12, COF=5
+Workforce Cost: 20 ICA
+```
 
-- **Optimize Production Chains:**  
-  Analyze bottlenecks, workforce needs, and input dependencies to streamline your production lines and maximize output.
+**Efficiency Stacking:**
+```
+Base: 100% (luxury)
+Planet Concentration: +100% (2.0 factor)
+CoGC Program: +25%
+5 Experts: +28.4%
+─────────────────────────
+Total Efficiency: 253.4%
+Effective Cost: 39.5% of base (60.5% savings!)
+```
 
-- **Plan Investments and Expansion:**  
-  Use investment scores, market cap, and liquidity ratios to make informed decisions about what to produce, buy, or sell.
+**Farming Optimization:**
+```
+Material: GRN (Grains)
+28 Farmable Planets:
+  Best: +40% fertility → 71% cost
+  Worst: -50% fertility → 200% cost
+Optimal savings: 65% vs worst planet
+```
 
-- **Collaborate and Share Insights:**  
-  Share live, auto-updating Google Sheets with your corporation or alliance, enabling coordinated strategy and market intelligence.
+## 📚 Documentation
 
-- **React to Market Changes:**  
-  With automated, up-to-date data, you can quickly adapt to shifts in supply, demand, and pricing.
+**Complete Documentation:** See **[WIKI.md](WIKI.md)** for:
+- Full calculation formulas
+- Architecture & data flow diagrams
+- Setup & installation guide
+- Troubleshooting & FAQ
+- API reference
+- Advanced features
 
----
+**GitHub Actions Setup:** See **[GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)**
 
-## Features
+## 🗂️ Project Structure
 
-- **Automated Data Fetching:** Collects market, production, and building data from Prosperous Universe.
-- **Data Cleaning & Processing:** Cleans, merges, and transforms raw data into structured CSV and JSON files.
-- **Advanced Analysis:** Generates enhanced analytics, reports, and metrics for deeper economic insights.
-- **Google Sheets Integration:** Uploads processed and analyzed data directly to Google Sheets, populating multiple tabs for easy access and collaboration.
-- **Batch Pipeline:** One-click batch script (`run_pipeline.bat`) orchestrates the entire workflow, including logging and error handling.
-- **Extensible & Modular:** Designed for easy extension with new scripts, data sources, or analysis modules.
-- **Testing:** Includes comprehensive and unit tests to ensure reliability.
-
----
-
-## Folder Structure
-
+```
 PrUn-Tracker/
-│
-├── .env
-│   # Environment variables for local development (API keys, etc.)
-│
-├── dual_logger.py
-│   # Helper script to duplicate pipeline output to both console and log file.
-│
-├── main_enhanced.py
-│   # Async/advanced pipeline orchestrator (alternative to main.py).
-│
-├── remove_duplicates.bat
-│   # Batch script to remove duplicate entries from data files.
-│
-├── run_pipeline.bat
-│   # Main batch file to run the full pipeline and log output.
-│
-├── writer_profiles.json
-│   # Configuration for Google Sheets writers/profiles.
-│
-├── cache/
-│   # Folder for all intermediate and raw data files.
-│   ├── bids.csv
-│   ├── buildingrecipes.csv
-│   ├── buildings.csv
-│   ├── buildings.json
-│   ├── cache_metadata.json
-│   ├── categories.json
-│   ├── chains.json
-│   ├── daily_analysis_enhanced.csv
-│   ├── daily_analysis.csv
-│   ├── daily_report.csv
-│   ├── DATA AI1_last_hash.txt
-│   ├── DATA CI1_last_hash.txt
-│   ├── DATA CI2_last_hash.txt
-│   ├── DATA IC1_last_hash.txt
-│   ├── DATA NC1_last_hash.txt
-│   ├── DATA NC2_last_hash.txt
-│   ├── data_sheets_cache.json
-│   ├── market_data.csv
-│   ├── materials.csv
-│   ├── orders.csv
-│   ├── prices_all.csv
-│   ├── processed_data.csv
-│   ├── recipe_inputs.csv
-│   ├── recipe_outputs.csv
-│   ├── recipes.json
-│   ├── tickers.json
-│   ├── tier0_resources.json
-│   ├── tiers.json
-│   ├── workforceneeds.json
-│   └── workforces.csv
-│   # (All files here are fetched, processed, or cached data for the pipeline.)
-│
-├── data/
-│   # Folder for persistent data and database files.
-│   ├── historical_data_condensed.json
-│   └── prosperous_universe.db
-│   # (Condensed data and SQLite DB for advanced analysis or backup.)
-│
-├── historical_data/
-│   # Main source folder for all pipeline scripts and modules.
-│   ├── __init__.py
-│   │   # Marks this folder as a Python package.
-│   ├── add_tier_to_materials.py
-│   │   # Adds tier info to materials data.
-│   ├── catch_data.py
-│   │   # Entry point for fetching and caching all raw data.
-│   ├── chain_dictionary_generator.py
-│   │   # Generates a dictionary mapping for production chains.
-│   ├── data_analyzer.py
-│   │   # Performs unified analysis and generates enhanced CSV for upload.
-│   ├── db_manager.py
-│   │   # Handles database operations for persistent storage.
-│   ├── debu_data_file.py
-│   │   # Debug script for testing API endpoints and data.
-│   ├── dictionary_builder_buildings.py
-│   │   # Builds a dictionary of buildings and their properties.
-│   ├── fetch_all_tickers.py
-│   │   # Fetches all market tickers from the API.
-│   ├── fetch_buildingrecipes.py
-│   │   # Fetches building recipes from the API.
-│   ├── fetch_materials.py
-│   │   # Fetches materials data from the API.
-│   ├── fetch_orders_and_bids.py
-│   │   # Fetches orders and bids for arbitrage calculations.
-│   ├── generate_report_tabs.py
-│   │   # Generates and uploads report tabs to Google Sheets.
-│   ├── main.py
-│   │   # Main orchestrator for the full pipeline (fetch, process, analyze, upload).
-│   ├── prun-profit-42c5889f620d.json
-│   │   # Google API credentials for Sheets access.
-│   ├── rate_limiter.py
-│   │   # Handles API rate limiting for data fetching.
-│   ├── sheets_manager.py
-│   │   # Unified manager for Google Sheets API operations.
-│   ├── smart_cache.py
-│   │   # Intelligent caching system to minimize API calls.
-│   ├── StepByStepRun.py
-│   │   # Script to run each pipeline step individually for debugging.
-│   ├── test_setup.bat
-│   │   # Batch script for test environment setup.
-│   ├── ultra_all_exchanges_upload.py
-│   │   # Uploads all exchanges' data to Google Sheets in one go.
-│   ├── unified_config.py
-│   │   # Centralized configuration for the pipeline.
-│   ├── unified_processor.py
-│   │   # Processes and merges all raw data into unified datasets.
-│   ├── upload_enhanced_analysis.py
-│   │   # Uploads enhanced analysis to Google Sheets.
-│   ├── workforce_costs.py
-│   │   # Module for calculating input costs including workforce consumables.
-│   └── __pycache__/
-│       # Compiled Python files for faster loading.
-│
-├── logs/
-│   # Folder for pipeline and debug log files.
-│   └── pipeline_YYYYMMDD_HHMMSS.log
-│   # (All logs from pipeline runs are stored here.)
-│
-└── (other files as needed) 
+├── pu-tracker/
+│   ├── cache/                    # Cached data (CSV/JSON)
+│   ├── historical_data/          # Python pipeline scripts
+│   │   ├── main.py               # Pipeline orchestrator
+│   │   ├── catch_data.py         # API data fetcher
+│   │   ├── unified_processor.py  # Data processor
+│   │   ├── data_analyzer.py      # Analytics engine
+│   │   ├── workforce_costs.py    # Workforce calculator
+│   │   └── sheets_manager.py     # Google Sheets uploader
+│   └── logs/                     # Execution logs
+├── AppsScript_PriceAnalyser.js  # Web app backend
+├── AppsScript_Index.html         # Web app frontend
+├── WIKI.md                       # Complete documentation
+├── GITHUB_ACTIONS_SETUP.md       # Automation setup guide
+└── README.md                     # This file
+```
+
+## 🎮 Use Cases
+
+**Solo Entrepreneur:**
+- Calculate exact production costs including workforce
+- Find most profitable recipes for your setup
+- Optimize planet selection for extraction/farming
+
+**Corporation Logistics Manager:**
+- Identify arbitrage opportunities across exchanges
+- Coordinate production with real-time market data
+- Share live Google Sheets with team
+
+**Market Analyst:**
+- Track supply/demand trends
+- Monitor liquidity and market cap
+- Detect market inefficiencies
+
+## 🔧 Technology Stack
+
+- **Backend:** Python 3.10+ (pandas, requests, gspread)
+- **Frontend:** Google Apps Script (JavaScript + HTML)
+- **Data Source:** Prosperous Universe FIO REST API
+- **Storage:** Google Sheets + Local CSV cache
+- **Automation:** GitHub Actions (cron schedule)
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new features
+4. Submit a pull request
+
+## 📝 License
+
+This project is provided as-is for use with Prosperous Universe.  
+Not affiliated with Simulogics or Prosperous Universe.
+
+## 🙏 Credits
+
+- **Developer:** lordbutxot
+- **Game:** [Prosperous Universe](https://prosperousuniverse.com/) by Simulogics
+- **API:** FIO REST API (PrUn community)
 
 ---
 
-## Summary
+**Ready to optimize your Prosperous Universe gameplay?**
 
-- **Purpose:** Automates the collection and analysis of Prosperous Universe market and production data.
-- **Pipeline:**  
-  1. **Fetch:** Scripts collect data from the game's API.  
-  2. **Process:** Data is cleaned, merged, and analyzed into CSVs.  
-  3. **Analyze:** Enhanced analysis scripts generate advanced metrics and reports.  
-  4. **Upload:** Results are uploaded to Google Sheets for sharing and further use.
-- **Key Outputs:**  
-  - `daily_report.csv` and `daily_analysis.csv` (core processed data)  
-  - `daily_analysis_enhanced.csv` (final, enhanced data for Google Sheets)  
-  - Google Sheets tabs: DATA AI1 (main), Report AI1 (advanced), and others for different exchanges.
-- **Testing:** Includes unit and integration tests to ensure the pipeline remains robust as the game and your needs evolve.
+👉 **[Read Full Documentation (WIKI.md)](WIKI.md)**  
+👉 **[Setup GitHub Actions (GITHUB_ACTIONS_SETUP.md)](GITHUB_ACTIONS_SETUP.md)**  
+👉 **[Open Issues](https://github.com/lordbutxot/PrUn-Tracker/issues)**
 
----
-
-## Conclusion
-
-**PrUn-Tracker** empowers Prosperous Universe players with professional-grade analytics and automation.  
-Whether you’re a solo entrepreneur, a logistics manager, or a corporation leader, you can use its results to:
-
-- **Maximize profits**
-- **Minimize waste**
-- **Outmaneuver competitors**
-- **Make data-driven decisions**
-- **Collaborate more effectively**
-
-All with minimal manual effort—just run the pipeline and get actionable, accurate insights delivered straight to your Google Sheets.
-
-For more details, see the docstrings in each script and the comments throughout the codebase.
