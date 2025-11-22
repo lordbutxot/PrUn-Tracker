@@ -567,6 +567,21 @@
         </div>
         <div class="option-item">
           <label class="checkbox-label">
+            <input type="checkbox" id="customEfficiencyToggle">
+            <span>⚙️ Use Custom Workforce Efficiency</span>
+          </label>
+          <div class="option-hint" style="margin-bottom: 10px;">Override automatic efficiency calculation with manual percentage</div>
+          <div id="customEfficiencyGroup" style="display: none; padding-left: 24px;">
+            <label for="customEfficiency" style="font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 5px; display: block;">Efficiency Percentage:</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="customEfficiency" min="1" max="100" value="79" step="1" 
+                     style="padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; width: 80px; font-size: 1rem;">
+              <span style="font-size: 0.9rem; color: #666;">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="option-item">
+          <label class="checkbox-label">
             <input type="checkbox" id="selfProducedInputs">
             <span>Use Self-Production Costs for Inputs</span>
           </label>
@@ -949,7 +964,28 @@
     });
     document.getElementById('planetSelect').addEventListener('change', calculate);
     document.getElementById('exchangeSelect').addEventListener('change', calculate);
-    document.getElementById('includeLuxury').addEventListener('change', calculate);
+    document.getElementById('includeLuxury').addEventListener('change', function() {
+      // If luxury is checked, disable custom efficiency
+      if (this.checked) {
+        document.getElementById('customEfficiencyToggle').checked = false;
+        document.getElementById('customEfficiencyGroup').style.display = 'none';
+      }
+      calculate();
+    });
+    
+    document.getElementById('customEfficiencyToggle').addEventListener('change', function() {
+      const customGroup = document.getElementById('customEfficiencyGroup');
+      customGroup.style.display = this.checked ? 'block' : 'none';
+      
+      // If custom efficiency is enabled, uncheck luxury consumables
+      if (this.checked) {
+        document.getElementById('includeLuxury').checked = false;
+      }
+      
+      calculate();
+    });
+    
+    document.getElementById('customEfficiency').addEventListener('input', calculate);
     document.getElementById('selfProducedInputs').addEventListener('change', calculate);
     
     // Calculate and display results using cached data
@@ -958,6 +994,8 @@
       const recipe = document.getElementById('recipeSelect').value;
       const exchange = document.getElementById('exchangeSelect').value;
       const includeLuxury = document.getElementById('includeLuxury').checked;
+      const customEfficiencyEnabled = document.getElementById('customEfficiencyToggle').checked;
+      const customEfficiency = parseFloat(document.getElementById('customEfficiency').value) || 79;
       const selfProduced = document.getElementById('selfProducedInputs').checked;
       const planet = document.getElementById('planetSelect').value;
       
@@ -972,8 +1010,8 @@
       
       try {
         // Calculate using cached data
-        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, selfProduced, planet);
-        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, selfProduced);
+        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet);
+        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced);
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
         
@@ -1006,7 +1044,7 @@
     }
     
     // Calculate data from cached data (client-side)
-    function calculateFromCache(material, exchange, recipe, includeLuxury, selfProduced, planet) {
+    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet) {
       let bestRow = null;
       let lowestCost = Infinity;
       
@@ -1023,7 +1061,15 @@
             let workforceCostAsk = row.workforceCostAsk;
             
             // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
-            if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
+            // Apply efficiency penalty based on settings
+            if (customEfficiencyEnabled) {
+              // Custom efficiency: convert percentage to multiplier
+              const efficiencyMultiplier = 100 / customEfficiency;
+              workforceCostAsk *= efficiencyMultiplier;
+            } else if (!includeLuxury) {
+              // Default: 79% efficiency
+              workforceCostAsk *= (1 / 0.79);
+            }
             if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
             
             const totalCost = inputCostAsk + workforceCostAsk;
@@ -1089,7 +1135,12 @@
       // If no planet selected, use base costs (24h or 48h)
       
       // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
-      if (!includeLuxury) {
+      // Apply efficiency penalty based on settings
+      if (customEfficiencyEnabled) {
+        const efficiencyMultiplier = 100 / customEfficiency;
+        workforceCostAsk *= efficiencyMultiplier;
+        workforceCostBid *= efficiencyMultiplier;
+      } else if (!includeLuxury) {
         workforceCostAsk *= (1 / 0.79);
         workforceCostBid *= (1 / 0.79);
       }
@@ -1176,6 +1227,8 @@
     function getExchangeComparisonFromCache(material, recipe, currentExchange) {
       const exchanges = {};
       const includeLuxury = document.getElementById('includeLuxury').checked;
+      const customEfficiencyEnabled = document.getElementById('customEfficiencyToggle').checked;
+      const customEfficiency = parseFloat(document.getElementById('customEfficiency').value) || 79;
       const planet = document.getElementById('planetSelect').value;
       
       for (const row of allData) {
@@ -1217,7 +1270,11 @@
           }
           
           // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
-          if (!includeLuxury) {
+          // Apply efficiency penalty based on settings
+          if (customEfficiencyEnabled) {
+            const efficiencyMultiplier = 100 / customEfficiency;
+            workforceCostAsk *= efficiencyMultiplier;
+          } else if (!includeLuxury) {
             workforceCostAsk *= (1 / 0.79);
           }
           
@@ -1300,7 +1357,7 @@
     }
     
     // Get recommendation from cached data
-    function getRecommendationFromCache(material, exchange, includeLuxury, selfProduced) {
+    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced) {
       const recipeComparisons = [];
       
       for (const row of allData) {
@@ -1308,8 +1365,13 @@
           let inputCostAsk = row.inputCostAsk;
           let workforceCostAsk = row.workforceCostAsk;
           
-          // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
-          if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
+          // Apply efficiency penalty based on settings
+          if (customEfficiencyEnabled) {
+            const efficiencyMultiplier = 100 / customEfficiency;
+            workforceCostAsk *= efficiencyMultiplier;
+          } else if (!includeLuxury) {
+            workforceCostAsk *= (1 / 0.79);
+          }
           if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
           
           const totalCostAsk = inputCostAsk + workforceCostAsk;

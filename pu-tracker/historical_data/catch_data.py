@@ -103,13 +103,18 @@ def fetch_planetresources_csv():
 def fetch_planet_fertility():
     """Fetch planet fertility data for farming calculations"""
     try:
-        log_step("Fetching planet fertility data for farming buildings...")
-        import fetch_planet_fertility
-        fetch_planet_fertility.fetch_planet_fertility()
-        print("[SUCCESS] Planet fertility data fetched")
+        print("[Fetch] Fetching planet fertility data for farming buildings...")
+        from fetch_planet_fertility import fetch_planet_fertility as fetch_fertility
+        success = fetch_fertility()
+        if success:
+            print("[SUCCESS] Planet fertility data fetched")
+        else:
+            print("[WARN] Planet fertility fetch completed with warnings")
     except Exception as e:
         print(f"[WARN] Could not fetch fertility data: {e}")
         print("[INFO] Farming calculations will use default fertility (1.0)")
+        import traceback
+        traceback.print_exc()
 
 def log_step(message):
     print(f"[STEP] {message}", flush=True)
@@ -203,6 +208,9 @@ def main():
 
         log_step("Fetching planetresources.csv...")
         fetch_planetresources_csv()
+        
+        log_step("Fetching planet fertility data...")
+        fetch_planet_fertility()
 
         print("[SUCCESS] Data collection completed", flush=True)
         return True
