@@ -100,6 +100,17 @@ def fetch_planetresources_csv():
     except Exception as e:
         print(f"[ERROR] Failed to download planetresources.csv: {e}")
 
+def fetch_planet_fertility():
+    """Fetch planet fertility data for farming calculations"""
+    try:
+        log_step("Fetching planet fertility data for farming buildings...")
+        import fetch_planet_fertility
+        fetch_planet_fertility.fetch_planet_fertility()
+        print("[SUCCESS] Planet fertility data fetched")
+    except Exception as e:
+        print(f"[WARN] Could not fetch fertility data: {e}")
+        print("[INFO] Farming calculations will use default fertility (1.0)")
+
 def log_step(message):
     print(f"[STEP] {message}", flush=True)
 

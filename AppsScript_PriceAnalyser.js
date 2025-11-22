@@ -90,11 +90,31 @@ function getAllData() {
       }
     }
     
+    // Load planet fertility for farming recipes
+    const fertilitySheet = ss.getSheetByName('Planet Fertility');
+    const fertility = [];
+    if (fertilitySheet) {
+      try {
+        const fertilityData = fertilitySheet.getDataRange().getValues();
+        // Skip header row (Planet, Fertility)
+        for (let i = 1; i < fertilityData.length; i++) {
+          fertility.push({
+            planet: fertilityData[i][0],    // Planet name
+            fertility: parseFloat(fertilityData[i][1]) || 1.0  // Fertility factor
+          });
+        }
+        Logger.log('Loaded ' + fertility.length + ' planets with fertility data');
+      } catch (e) {
+        Logger.log('Could not load fertility data: ' + e);
+      }
+    }
+    
     return {
       success: true,
       data: rows,
       bids: bids,
       planets: planets,
+      fertility: fertility,
       rowCount: rows.length
     };
   } catch (error) {

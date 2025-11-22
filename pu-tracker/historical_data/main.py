@@ -127,6 +127,12 @@ def main(mode='full'):
     if not ok:
         print("\033[1;33m[WARN]\033[0m Planet resources upload failed - Price Analyser planet selection won't work")
 
+    # 8b. Upload Planet Fertility for Price Analyser farming calculations
+    ok, elapsed = run_script("upload_planet_fertility.py", "Uploading Planet Fertility for Farming Buildings", log_file)
+    step_times.append(("Planet Fertility", elapsed))
+    if not ok:
+        print("\033[1;33m[WARN]\033[0m Planet fertility upload failed - Farming planet selection won't work")
+
     # 9. Generate and upload Report Tabs
     skip_arbitrage = os.environ.get("PRUN_SKIP_ARBITRAGE", "0") == "1"
     if not skip_arbitrage:

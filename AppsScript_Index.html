@@ -743,6 +743,7 @@
     let allData = [];
     let allBids = [];
     let planetData = [];
+    let fertilityData = [];
     
     document.addEventListener('DOMContentLoaded', function() {
       loadAllData();
@@ -763,6 +764,7 @@
           allData = result.data;
           allBids = result.bids || [];
           planetData = result.planets || [];
+          fertilityData = result.fertility || [];
           document.getElementById('loading').style.display = 'none';
           
           // Populate dropdowns from loaded data
@@ -810,22 +812,37 @@
       });
     }
     
-    // Check if selected recipe is extraction and show/hide planet selector
+    // Check if selected recipe is extraction or farming and show/hide planet selector
     function checkExtractionRecipe() {
       const recipe = document.getElementById('recipeSelect').value;
       const planetGroup = document.getElementById('planetGroup');
       const planetSelect = document.getElementById('planetSelect');
+      const planetLabel = planetGroup.querySelector('label');
+      const planetHint = planetGroup.querySelector('.option-hint');
       
       // Check if recipe is extraction (starts with COL=>, EXT=>, or RIG=>)
       const isExtraction = recipe && (recipe.startsWith('COL=>') || recipe.startsWith('EXT=>') || recipe.startsWith('RIG=>'));
       
+      // Check if recipe is farming (starts with FRM:, ORC:, or VIN:)
+      const isFarming = recipe && (recipe.startsWith('FRM:') || recipe.startsWith('ORC:') || recipe.startsWith('VIN:'));
+      
       if (isExtraction) {
-        // Show planet selector
+        // Show planet selector for extraction
+        planetLabel.innerHTML = '🌍 Select Planet (Extraction):';
+        planetHint.textContent = 'Planet concentration affects extraction time and workforce costs';
         planetGroup.style.display = 'block';
         
         // Load planets for this material
         const material = document.getElementById('materialSelect').value;
         loadPlanets(material);
+      } else if (isFarming) {
+        // Show planet selector for farming
+        planetLabel.innerHTML = '🌾 Select Planet (Farming):';
+        planetHint.textContent = 'Planet fertility affects farming time and workforce costs';
+        planetGroup.style.display = 'block';
+        
+        // Load planets with fertility
+        loadPlanetsForFarming();
       } else {
         // Hide planet selector
         planetGroup.style.display = 'none';
@@ -858,7 +875,29 @@
         const option = document.createElement('option');
         option.value = planet.planet;
         const factorPercent = (planet.factor * 100).toFixed(1);
-        option.textContent = planet.planet + ' (Factor: ' + factorPercent + '%)';
+        option.textContent = planet.planet + ' (Concentration: ' + factorPercent + '%)';
+        planetSelect.appendChild(option);
+      });
+    }
+    
+    // Load planets for farming (shows fertility instead of concentration)
+    function loadPlanetsForFarming() {
+      const planetSelect = document.getElementById('planetSelect');
+      
+      if (!fertilityData || fertilityData.length === 0) {
+        planetSelect.innerHTML = '<option value="">-- No Fertility Data --</option>';
+        return;
+      }
+      
+      // Sort planets by fertility descending (best first)
+      const planets = [...fertilityData].sort((a, b) => b.fertility - a.fertility);
+      
+      planetSelect.innerHTML = '<option value="">-- Average (All Planets) --</option>';
+      planets.forEach(function(planet) {
+        const option = document.createElement('option');
+        option.value = planet.planet;
+        const fertilityPercent = (planet.fertility * 100).toFixed(1);
+        option.textContent = planet.planet + ' (Fertility: ' + fertilityPercent + '%)';
         planetSelect.appendChild(option);
       });
     }
@@ -1010,6 +1049,9 @@
       const recipeStr = bestRow.recipe || '';
       const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
       
+      // Check if this is a farming recipe
+      const isFarming = recipeStr.startsWith('FRM:') || recipeStr.startsWith('ORC:') || recipeStr.startsWith('VIN:');
+      
       // Apply planet-specific extraction time adjustment
       if (isExtraction && planet) {
         const planetFactor = getPlanetFactorClientSide(material, planet);
@@ -1028,7 +1070,23 @@
           workforceCostBid *= timeFactor;
         }
       }
-      // If no planet selected for extraction, use base costs (24h or 48h)
+      
+      // Apply planet-specific farming time adjustment
+      if (isFarming && planet) {
+        const fertility = getPlanetFertilityClientSide(planet);
+        if (fertility > 0) {
+          // Workforce costs in data are based on BASE farming time (24h typically)
+          // Adjust for the specific planet's fertility
+          const baseFarmingHours = 24;
+          const adjustedHours = Math.max(6, Math.min(240, baseFarmingHours / fertility));
+          const timeFactor = adjustedHours / baseFarmingHours;
+          
+          // Adjust workforce costs based on planet-specific farming time
+          workforceCostAsk *= timeFactor;
+          workforceCostBid *= timeFactor;
+        }
+      }
+      // If no planet selected, use base costs (24h or 48h)
       
       // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
       if (!includeLuxury) {
@@ -1132,6 +1190,9 @@
           const recipeStr = row.recipe || '';
           const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
           
+          // Check if this is a farming recipe
+          const isFarming = recipeStr.startsWith('FRM:') || recipeStr.startsWith('ORC:') || recipeStr.startsWith('VIN:');
+          
           // Apply planet-specific extraction time adjustment (same as main calculation)
           if (isExtraction && planet) {
             const planetFactor = getPlanetFactorClientSide(material, planet);
@@ -1140,6 +1201,17 @@
               const baseHours = building === 'RIG' ? 48 : 24;
               const adjustedHours = Math.max(6, Math.min(240, baseHours / planetFactor));
               const timeFactor = adjustedHours / baseHours;
+              workforceCostAsk *= timeFactor;
+            }
+          }
+          
+          // Apply planet-specific farming time adjustment (same as main calculation)
+          if (isFarming && planet) {
+            const fertility = getPlanetFertilityClientSide(planet);
+            if (fertility > 0) {
+              const baseFarmingHours = 24;
+              const adjustedHours = Math.max(6, Math.min(240, baseFarmingHours / fertility));
+              const timeFactor = adjustedHours / baseFarmingHours;
               workforceCostAsk *= timeFactor;
             }
           }
@@ -1303,12 +1375,20 @@
     }
     
     // Calculate self-production cost (client-side) - recursive
-    // Get planet concentration factor client-side
+    // Get planet concentration factor client-side (for extraction)
     function getPlanetFactorClientSide(ticker, planetName) {
       if (!planetData) return 0;
       
       const planetInfo = planetData.find(p => p.ticker === ticker && p.planet === planetName);
       return planetInfo ? planetInfo.factor : 0;
+    }
+    
+    // Get planet fertility factor client-side (for farming)
+    function getPlanetFertilityClientSide(planetName) {
+      if (!fertilityData || fertilityData.length === 0) return 1.0;
+      
+      const planetInfo = fertilityData.find(p => p.planet === planetName);
+      return planetInfo ? planetInfo.fertility : 1.0;
     }
     
     function calculateSelfProductionCostClientSide(recipeString, exchange, visited = new Set()) {
