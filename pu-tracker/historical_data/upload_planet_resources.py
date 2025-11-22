@@ -74,11 +74,20 @@ def upload_planet_resources():
     print("\n[STEP] Initializing Google Sheets connection...")
     sheets_manager = SheetsManager()
     
+    # Connect to Google Sheets
+    if not sheets_manager.connect():
+        print("[ERROR] Failed to connect to Google Sheets. Check credentials.")
+        return False
+    
     # Upload to Google Sheets
     print(f"[STEP] Uploading to '{SHEET_NAME}' sheet...")
     try:
         # Use upload_to_sheet method instead
-        sheets_manager.upload_to_sheet(SPREADSHEET_ID, SHEET_NAME, df, clear_first=True)
+        success = sheets_manager.upload_to_sheet(SPREADSHEET_ID, SHEET_NAME, df, clear_first=True)
+        
+        if not success:
+            print(f"[ERROR] Upload failed - upload_to_sheet returned False")
+            return False
         
         print(f"[SUCCESS] Uploaded {len(df)} rows to '{SHEET_NAME}' sheet")
         print(f"[INFO] Sheet URL: https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}")

@@ -34,11 +34,13 @@ jobs:
         
     - name: Create Google credentials file
       run: |
+        mkdir -p pu-tracker/historical_data
         echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > pu-tracker/historical_data/prun-profit-42c5889f620d.json
         
     - name: Run PrUn Tracker pipeline
       env:
         PRUN_SPREADSHEET_ID: '1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI'
+        GOOGLE_APPLICATION_CREDENTIALS: pu-tracker/historical_data/prun-profit-42c5889f620d.json
       run: |
         cd pu-tracker/historical_data
         python main.py
