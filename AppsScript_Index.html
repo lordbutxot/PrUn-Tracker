@@ -587,6 +587,24 @@
           </label>
           <div class="option-hint">When checked, inputs use their production cost instead of market price</div>
         </div>
+        <div class="option-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="cogcBonus">
+            <span>🏛️ CoGC Program Active (+25% Efficiency)</span>
+          </label>
+          <div class="option-hint">Chamber of Global Commerce program provides +25% production efficiency bonus</div>
+        </div>
+        <div class="option-item">
+          <label style="font-size: 0.95rem; font-weight: 500; color: #333; margin-bottom: 8px; display: block;">
+            👨‍🔬 Experts Assigned (Cumulative Bonus)
+          </label>
+          <div style="display: flex; align-items: center; gap: 12px; padding-left: 24px;">
+            <input type="number" id="expertCount" min="0" max="5" value="0" step="1" 
+                   style="padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; width: 70px; font-size: 1rem;">
+            <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #2196F3; font-weight: 600;">+0% efficiency</span>
+          </div>
+          <div class="option-hint" style="margin-top: 5px;">Each expert provides cumulative bonus with synergy effects (1-5 experts)</div>
+        </div>
       </div>
     </div>
     
@@ -764,6 +782,40 @@
       loadAllData();
     });
     
+    // Calculate expert efficiency bonus (cumulative with synergy)
+    // Based on actual game data with compound synergy effects
+    function calculateExpertBonus(expertCount) {
+      if (expertCount <= 0) return 0;
+      
+      // Actual game values from PrUn (verified):
+      // Expert bonuses compound with synergy effects
+      const bonusMap = {
+        1: 0.0306,  // 3.06%
+        2: 0.0696,  // 6.96%
+        3: 0.1248,  // 12.48%
+        4: 0.1974,  // 19.74%
+        5: 0.2840   // 28.40%
+      };
+      
+      return bonusMap[expertCount] || 0;
+    }
+    
+    // Update expert bonus display
+    function updateExpertBonusDisplay() {
+      const expertCount = parseInt(document.getElementById('expertCount').value) || 0;
+      const bonus = calculateExpertBonus(expertCount);
+      const bonusPercent = Math.round(bonus * 100);
+      
+      const display = document.getElementById('expertBonusDisplay');
+      if (expertCount === 0) {
+        display.textContent = '+0% efficiency';
+        display.style.color = '#666';
+      } else {
+        display.textContent = `+${bonusPercent}% efficiency (${expertCount} expert${expertCount > 1 ? 's' : ''})`;
+        display.style.color = '#2196F3';
+      }
+    }
+    
     // Load all data once at startup
     function loadAllData() {
       document.getElementById('loading').style.display = 'block';
@@ -790,6 +842,17 @@
           // Populate dropdowns from loaded data
           populateMaterials();
           populateExchanges();
+          
+          // Setup event listeners for new controls
+          document.getElementById('expertCount').addEventListener('input', function() {
+            updateExpertBonusDisplay();
+            calculate(); // Recalculate when expert count changes
+          });
+          
+          document.getElementById('cogcBonus').addEventListener('change', calculate);
+          
+          // Initialize expert bonus display
+          updateExpertBonusDisplay();
         })
         .withFailureHandler(function(error) {
           document.getElementById('loading').style.display = 'none';
@@ -1008,6 +1071,8 @@
       const customEfficiency = parseFloat(document.getElementById('customEfficiency').value) || 79;
       const selfProduced = document.getElementById('selfProducedInputs').checked;
       const planet = document.getElementById('planetSelect').value;
+      const cogcBonus = document.getElementById('cogcBonus').checked;
+      const expertCount = parseInt(document.getElementById('expertCount').value) || 0;
       
       if (!material || !exchange || allData.length === 0) {
         document.getElementById('results').style.display = 'none';
@@ -1020,9 +1085,9 @@
       
       try {
         // Calculate using cached data
-        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet);
-        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced);
-        const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange);
+        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount);
+        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount);
+        const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
         
         document.getElementById('loading').style.display = 'none';
@@ -1054,7 +1119,7 @@
     }
     
     // Calculate data from cached data (client-side)
-    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet) {
+    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount) {
       let bestRow = null;
       let lowestCost = Infinity;
       
@@ -1109,8 +1174,8 @@
       const isFarming = recipeStr.startsWith('FRM:') || recipeStr.startsWith('ORC:') || recipeStr.startsWith('VIN:');
       
       // Calculate total efficiency (ADDITIVE SYSTEM)
-      // Total Efficiency = Base Worker Efficiency + Planet Bonus/Penalty + CoGC Programs + Experts
-      // Example: 79% worker + 40% fertility + 5% CoGC = 124% total = faster production
+      // Total Efficiency = Base Worker Efficiency + Planet Bonus/Penalty + CoGC Program + Experts
+      // Example: 79% worker + 40% fertility + 25% CoGC + 22% (2 experts) = 166% total = faster production
       // Production time = Base time / Total Efficiency
       // Workforce cost = Base cost / Total Efficiency
       let totalEfficiency = 1.0; // Start with 100% base efficiency
@@ -1140,6 +1205,17 @@
           // Negative fertility (-0.5) = -50% efficiency penalty
           totalEfficiency += fertility;
         }
+      }
+      
+      // Apply CoGC Program bonus (ADDITIVE)
+      if (cogcBonus) {
+        totalEfficiency += 0.25; // +25% efficiency from CoGC program
+      }
+      
+      // Apply Expert bonuses (ADDITIVE with synergy)
+      if (expertCount > 0) {
+        const expertBonus = calculateExpertBonus(expertCount);
+        totalEfficiency += expertBonus;
       }
       
       // Ensure minimum efficiency (never below 10% to avoid division by zero)
@@ -1230,7 +1306,7 @@
     }
     
     // Get exchange comparison from cached data
-    function getExchangeComparisonFromCache(material, recipe, currentExchange) {
+    function getExchangeComparisonFromCache(material, recipe, currentExchange, cogcBonus, expertCount) {
       const exchanges = {};
       const includeLuxury = document.getElementById('includeLuxury').checked;
       const customEfficiencyEnabled = document.getElementById('customEfficiencyToggle').checked;
@@ -1275,6 +1351,14 @@
             if (fertility > -1) {
               totalEfficiency += fertility;
             }
+          }
+          
+          // Apply CoGC and Expert bonuses
+          if (cogcBonus) {
+            totalEfficiency += 0.25;
+          }
+          if (expertCount > 0) {
+            totalEfficiency += calculateExpertBonus(expertCount);
           }
           
           // Ensure minimum efficiency
@@ -1363,7 +1447,7 @@
     }
     
     // Get recommendation from cached data
-    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced) {
+    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount) {
       const recipeComparisons = [];
       
       for (const row of allData) {
