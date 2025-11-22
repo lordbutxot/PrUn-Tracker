@@ -95,7 +95,9 @@ function getAllData() {
         const planetName = planetData[i][1];
         const fertilityValue = parseFloat(planetData[i][5]);
         
-        if (fertilityValue && fertilityValue > 0 && !fertilityMap[planetName]) {
+        // Include ALL fertility values > -1 (negative fertility = slower farming, but still farmable)
+        // Only exclude -1 (which means "cannot farm")
+        if (!isNaN(fertilityValue) && fertilityValue > -1 && !fertilityMap[planetName]) {
           fertilityMap[planetName] = fertilityValue;
           fertility.push({
             planet: planetName,

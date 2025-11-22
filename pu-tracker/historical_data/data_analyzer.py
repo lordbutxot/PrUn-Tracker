@@ -392,9 +392,9 @@ class UnifiedAnalysisProcessor:
                 'Profit per Stack': '',  # You can compute this if needed
                 'ROI Ask %': row.get('ROI_Ask', ''),
                 'ROI Bid %': row.get('ROI_Bid', ''),
-                'Supply': row.get('Supply', ''),
-                'Demand': row.get('Demand', ''),
-                'Traded Volume': row.get('Traded', row.get('Traded Volume', 0)),  # Ensure this is filled
+                'Supply': pd.to_numeric(row.get('Supply', 0), errors='coerce') or 0,
+                'Demand': pd.to_numeric(row.get('Demand', 0), errors='coerce') or 0,
+                'Traded Volume': pd.to_numeric(row.get('Traded', row.get('Traded Volume', 0)), errors='coerce') or 0,
                 'Saturation': row.get('Saturation', ''),
                 'Market Cap': '',  # Compute if you have the data
                 'Liquidity Ratio': '',  # Compute if you have the data
