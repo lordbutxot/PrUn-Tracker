@@ -145,6 +145,14 @@ class UnifiedDataProcessor:
         }
         merged = merged.rename(columns=rename_map)
         
+        # Debug: Verify rename preserved Traded values
+        if 'Traded Volume' in merged.columns:
+            sample_val = merged['Traded Volume'].iloc[0] if len(merged) > 0 else 'N/A'
+            non_zero_count = (merged['Traded Volume'] != 0).sum() if len(merged) > 0 else 0
+            print(f"[DEBUG] After rename, 'Traded Volume' exists with sample: {sample_val}, non-zero count: {non_zero_count}/{len(merged)}")
+        else:
+            print(f"[DEBUG] After rename, 'Traded Volume' is MISSING!")
+        
         # After rename, fill any remaining missing columns from REQUIRED_DATA_COLUMNS
         for col in REQUIRED_DATA_COLUMNS:
             if col not in merged.columns:
@@ -163,6 +171,13 @@ class UnifiedDataProcessor:
 
         # Calculate derived fields
         merged = self.calculate_derived_fields(merged)
+
+        # Debug: Check 'Traded Volume' after derived fields
+        if 'Traded Volume' in merged.columns:
+            sample_val = merged['Traded Volume'].iloc[0] if len(merged) > 0 else 'N/A'
+            print(f"[DEBUG] After calculate_derived_fields, 'Traded Volume' exists with sample: {sample_val}")
+        else:
+            print(f"[DEBUG] After calculate_derived_fields, 'Traded Volume' is MISSING!")
 
         # Select only required columns in correct order
         available_cols = [col for col in REQUIRED_DATA_COLUMNS if col in merged.columns]
@@ -440,7 +455,13 @@ class UnifiedDataProcessor:
             
             for filename in ['daily_report.csv', 'daily_analysis.csv', 'processed_data.csv']:
                 file_path = self.cache_dir / filename
+                # Ensure columns are in correct order before saving
+                if 'Traded Volume' in complete_df.columns:
+                    print(f"[DEBUG] Saving {filename} with 'Traded Volume' column (sample: {complete_df['Traded Volume'].iloc[0] if len(complete_df) > 0 else 'N/A'})")
                 complete_df.to_csv(file_path, index=False)
+                # Force flush to disk (especially important in GitHub Actions)
+                import os
+                os.sync() if hasattr(os, 'sync') else None
                 files_saved.append(filename)
             
             print(f"[SUCCESS] Saved {len(complete_df)} records to {len(files_saved)} files")
@@ -472,7 +493,17 @@ class UnifiedDataProcessor:
                         'Demand': pd.to_numeric(demand, errors='coerce') if pd.notnull(demand) else 0,
                         'Traded': pd.to_numeric(traded, errors='coerce') if pd.notnull(traded) else 0,
                     })
-        return pd.DataFrame(records)
+        
+        result_df = pd.DataFrame(records)
+        
+        # Debug: Check first record's Traded value
+        if len(result_df) > 0 and 'Traded' in result_df.columns:
+            first_traded = result_df['Traded'].iloc[0]
+            non_zero_count = (result_df['Traded'] != 0).sum()
+            print(f"[DEBUG] transform_market_data_wide_to_long created 'Traded' column with {len(result_df)} records")
+            print(f"[DEBUG] First record Traded value: {first_traded}, Non-zero Traded count: {non_zero_count}/{len(result_df)}")
+        
+        return result_df
 
 def build_input_materials_dict():
     """
