@@ -140,8 +140,7 @@ class UnifiedDataProcessor:
             'Profit_Ask': 'Profit per Unit',
             'ROI_Ask': 'ROI Ask %',
             'ROI_Bid': 'ROI Bid %',
-            # REMOVE or COMMENT OUT this line:
-            # 'Traded': 'Traded Volume',
+            'Traded': 'Traded Volume',
         }
         merged = merged.rename(columns=rename_map)
 
