@@ -144,6 +144,44 @@
       gap: 15px;
     }
     
+    .collapsible-header {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .collapsible-header h3 {
+      margin: 0;
+      display: inline-block;
+    }
+    
+    .collapse-icon {
+      font-size: 1.2rem;
+      font-weight: bold;
+      transition: transform 0.3s ease;
+      color: #3b82f6;
+    }
+    
+    .collapse-icon.collapsed {
+      transform: rotate(-90deg);
+    }
+    
+    .collapsible-content {
+      max-height: 2000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+      opacity: 1;
+    }
+    
+    .collapsible-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+    
     .data-item {
       background: white;
       padding: 12px;
@@ -782,8 +820,8 @@
             </div>
           </div>
           
-          <!-- Bottom Row: 2 columns centered for Total costs -->
-          <div class="data-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 50%; margin: 0 auto;">
+          <!-- Bottom Row: 4 columns for Total costs (matching Input Cost layout) -->
+          <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="data-item">
               <div class="data-label">Total Cost (Ask)</div>
               <div class="data-value currency" id="totalCostAsk">-</div>
@@ -838,28 +876,6 @@
       </div>
       
       <div class="section">
-        <h3>Breakeven Analysis - All Scenarios</h3>
-        <div class="data-grid">
-          <div class="data-item">
-            <div class="data-label">Breakeven Units (Ask + Ask)</div>
-            <div class="data-value" id="breakevenAskAsk">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Breakeven Units (Ask + Bid)</div>
-            <div class="data-value" id="breakevenAskBid">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Breakeven Units (Bid + Ask)</div>
-            <div class="data-value" id="breakevenBidAsk">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Breakeven Units (Bid + Bid)</div>
-            <div class="data-value" id="breakevenBidBid">-</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="section">
         <h3>Market Indicators</h3>
         <div class="data-grid">
           <div class="data-item">
@@ -873,12 +889,44 @@
         </div>
       </div>
       
-      <div class="section" id="exchangeComparisonSection" style="display: none;">
-        <h3>Exchange Comparison</h3>
-        <div style="margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
-          Compare prices and profitability across all exchanges using your current production costs
+      <div class="section">
+        <div class="collapsible-header" onclick="toggleCollapse('breakevenContent')">
+          <h3>Breakeven Analysis - All Scenarios</h3>
+          <span class="collapse-icon" id="breakevenContent-icon">▼</span>
         </div>
-        <div id="exchangeComparisonContent"></div>
+        <div class="collapsible-content" id="breakevenContent">
+          <div class="data-grid" style="margin-top: 15px;">
+            <div class="data-item">
+              <div class="data-label">Breakeven Units (Ask + Ask)</div>
+              <div class="data-value" id="breakevenAskAsk">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Breakeven Units (Ask + Bid)</div>
+              <div class="data-value" id="breakevenAskBid">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Breakeven Units (Bid + Ask)</div>
+              <div class="data-value" id="breakevenBidAsk">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Breakeven Units (Bid + Bid)</div>
+              <div class="data-value" id="breakevenBidBid">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section" id="exchangeComparisonSection" style="display: none;">
+        <div class="collapsible-header" onclick="toggleCollapse('exchangeComparisonContentWrapper')">
+          <h3>Exchange Comparison</h3>
+          <span class="collapse-icon" id="exchangeComparisonContentWrapper-icon">▼</span>
+        </div>
+        <div class="collapsible-content" id="exchangeComparisonContentWrapper">
+          <div style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
+            Compare prices and profitability across all exchanges using your current production costs
+          </div>
+          <div id="exchangeComparisonContent"></div>
+        </div>
       </div>
       
       <div class="section" id="arbitrageSection" style="display: none;">
@@ -890,8 +938,13 @@
       </div>
       
       <div class="section" id="recommendationSection" style="display: none;">
-        <h3>Recommended Recipe</h3>
-        <div id="recommendationContent"></div>
+        <div class="collapsible-header" onclick="toggleCollapse('recommendationContentWrapper')">
+          <h3>Recommended Recipe</h3>
+          <span class="collapse-icon" id="recommendationContentWrapper-icon">▼</span>
+        </div>
+        <div class="collapsible-content" id="recommendationContentWrapper">
+          <div id="recommendationContent" style="margin-top: 15px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2283,7 +2336,8 @@
       }
       
       const numValue = parseFloat(value);
-      elem.textContent = numValue.toFixed(2);
+      // Add thousand separators
+      elem.textContent = numValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       
       if (colorCode) {
         elem.classList.remove('positive', 'negative');
@@ -2295,11 +2349,32 @@
       }
     }
     
-    // Helper to set raw value without formatting
+    // Helper to set raw value with thousand separators
     function setValueRaw(id, value) {
       const elem = document.getElementById(id);
       elem.className = 'data-value';
-      elem.textContent = value || '-';
+      
+      // Try to format as number with thousand separators
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        elem.textContent = numValue.toLocaleString('en-US');
+      } else {
+        elem.textContent = value || '-';
+      }
+    }
+    
+    // Toggle collapsible sections
+    function toggleCollapse(contentId) {
+      const content = document.getElementById(contentId);
+      const icon = document.getElementById(contentId + '-icon');
+      
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        icon.classList.remove('collapsed');
+      } else {
+        content.classList.add('collapsed');
+        icon.classList.add('collapsed');
+      }
     }
     
     // Show error message
