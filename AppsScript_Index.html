@@ -686,8 +686,11 @@
             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
               <span id="hqBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
             </div>
+            <div id="hqCategoryWarning" style="display: none; margin-top: 8px; padding: 8px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; font-size: 0.85rem; color: #92400e;">
+              ⚠️ HQ bonus only applies to matching industries
+            </div>
           </div>
-          <div class="option-hint" style="margin-top: 5px;">HQ grants faction-specific bonuses (empire-wide). Specialization rewards focused empires (fewer bases = higher multiplier)</div>
+          <div class="option-hint" style="margin-top: 5px;">HQ grants faction-specific bonuses (empire-wide). Specialization rewards focused empires (fewer bases = higher multiplier). Bonus only applies to matching building types.</div>
         </div>
         <div class="option-item">
           <label class="checkbox-label">
@@ -959,11 +962,55 @@
       }
     }
     
+    // Check if building/recipe matches HQ bonus category
+    function checkHqCategoryMatch(recipe, building) {
+      const factionBonusText = document.getElementById('hqFactionBonus').selectedOptions[0].text;
+      
+      // If no HQ bonus selected, return false
+      if (!factionBonusText || factionBonusText.includes('No HQ')) {
+        return false;
+      }
+      
+      // Extract building code from recipe (e.g., "CHP:" from "CHP:1xC=>1xBAC")
+      const buildingCode = recipe ? recipe.split(':')[0] : (building || '');
+      
+      // Define building categories based on game mechanics
+      const categories = {
+        electronics: ['ELP', 'EEP', 'AAP'],  // Electronics Plant, Electronics Factory, etc.
+        manufacturing: ['CHP', 'PPF', 'BMP', 'APF', 'ASM', 'WEL', 'SMP', 'POL', 'CHP'],  // Chemical Plants, Assembly, Welding, etc.
+        agriculture: ['FRM', 'ORC', 'VIN', 'INC'],  // Farms, Orchards, Vineyards, Incubators
+        foodIndustries: ['FP', 'BWY', 'WPL'],  // Food Processor, Brewery, etc.
+        metallurgy: ['SME', 'BLF', 'AMP'],  // Smelter, Blast Furnace, etc.
+        construction: ['CHP', 'PPF', 'BMP'],  // Construction materials
+        chemistry: ['CHP', 'REF', 'LAB'],  // Chemical Plant, Refinery, Lab
+        fuel: ['REF', 'INC'],  // Refinery, Incubator
+        extraction: ['COL', 'EXT', 'RIG', 'DRL']  // Collector, Extractor, Rig, Drill
+      };
+      
+      // Match faction bonus text to category
+      if (factionBonusText.includes('Electronics') && categories.electronics.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Manufacturing') && categories.manufacturing.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Agriculture') && !factionBonusText.includes('Food') && categories.agriculture.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Food Industries') && categories.foodIndustries.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Metallurgy') && categories.metallurgy.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Construction') && categories.construction.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Chemistry') && categories.chemistry.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Fuel') && categories.fuel.includes(buildingCode)) return true;
+      if (factionBonusText.includes('Extraction') && categories.extraction.includes(buildingCode)) return true;
+      
+      return false;
+    }
+    
     // Calculate HQ bonus (faction bonus × multiplier)
     function calculateHqBonus() {
-      const factionBonus = parseFloat(document.getElementById('hqFactionBonus').value) || 0;
-      const multiplier = getHqMultiplier();
-      return factionBonus * multiplier;
+      try {
+        const factionBonus = parseFloat(document.getElementById('hqFactionBonus').value) || 0;
+        const multiplier = getHqMultiplier();
+        return factionBonus * multiplier;
+      } catch (e) {
+        console.error('Error calculating HQ bonus:', e);
+        return 0;
+      }
     }
     
     // Update HQ bonus display
@@ -973,12 +1020,28 @@
       const bonusPercent = (bonus * 100).toFixed(1);
       
       const display = document.getElementById('hqBonusDisplay');
+      const warning = document.getElementById('hqCategoryWarning');
+      
+      // Check if current recipe matches HQ category
+      const recipe = document.getElementById('recipeSelect').value;
+      const recipeMatchesHq = recipe ? checkHqCategoryMatch(recipe, '') : false;
+      
       if (bonus === 0) {
         display.textContent = `+0% efficiency (multiplier: ${multiplier.toFixed(2)}×)`;
         display.style.color = '#666';
+        warning.style.display = 'none';
       } else {
         display.textContent = `+${bonusPercent}% efficiency (multiplier: ${multiplier.toFixed(2)}×)`;
-        display.style.color = '#3b82f6';
+        
+        if (recipe && !recipeMatchesHq) {
+          display.style.color = '#ef4444'; // Red - doesn't match
+          display.textContent += ' ⚠️ Not active';
+          warning.style.display = 'block';
+        } else {
+          display.style.color = '#10b981'; // Green - active
+          display.textContent += ' ✓ Active';
+          warning.style.display = 'none';
+        }
       }
     }
     
@@ -1220,6 +1283,7 @@
     });
     document.getElementById('recipeSelect').addEventListener('change', function() {
       checkExtractionRecipe();
+      updateHqBonusDisplay(); // Update HQ status when recipe changes
       calculate();
     });
     document.getElementById('planetSelect').addEventListener('change', calculate);
@@ -1346,7 +1410,7 @@
       
       try {
         // Calculate using cached data
-        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount);
+        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
@@ -1380,7 +1444,7 @@
     }
     
     // Calculate data from cached data (client-side)
-    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount) {
+    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       let bestRow = null;
       let lowestCost = Infinity;
       
@@ -1481,11 +1545,15 @@
       
       // Apply HQ bonuses (MULTIPLICATIVE after additive bonuses)
       // HQ bonus = faction bonus × specialization multiplier
-      if (hqBonus > 0) {
+      // Only applies if the building/recipe matches the HQ faction's industry
+      const recipeMatchesHqCategory = checkHqCategoryMatch(bestRow.recipe, bestRow.building);
+      
+      if (hqBonus > 0 && recipeMatchesHqCategory) {
         totalEfficiency *= (1 + hqBonus); // e.g., 10% HQ bonus = ×1.10
       }
       
       // Apply Corp HQ bonus (MULTIPLICATIVE)
+      // Corp HQ applies to all production on that planet
       if (corpHqBonus) {
         totalEfficiency *= 1.10; // +10% efficiency on this planet
       }
@@ -1633,8 +1701,9 @@
             totalEfficiency += calculateExpertBonus(expertCount);
           }
           
-          // Apply HQ bonuses (MULTIPLICATIVE)
-          if (hqBonus > 0) {
+          // Apply HQ bonuses (MULTIPLICATIVE) - only if category matches
+          const recipeMatchesHqCategory = checkHqCategoryMatch(row.recipe, row.building);
+          if (hqBonus > 0 && recipeMatchesHqCategory) {
             totalEfficiency *= (1 + hqBonus);
           }
           if (corpHqBonus) {
@@ -1752,8 +1821,9 @@
             totalEfficiency += calculateExpertBonus(expertCount);
           }
           
-          // Apply HQ bonuses (MULTIPLICATIVE)
-          if (hqBonus > 0) {
+          // Apply HQ bonuses (MULTIPLICATIVE) - only if category matches
+          const recipeMatchesHqCategory = checkHqCategoryMatch(row.recipe, row.building);
+          if (hqBonus > 0 && recipeMatchesHqCategory) {
             totalEfficiency *= (1 + hqBonus);
           }
           if (corpHqBonus) {
