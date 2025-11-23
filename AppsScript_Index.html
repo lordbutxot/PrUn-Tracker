@@ -649,14 +649,45 @@
               <option value="0.04">+4% Fuel Refining (No Faction)</option>
               <option value="0.04">+4% Resource Extraction (No Faction)</option>
             </select>
-            <label for="hqMultiplier" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Specialization Multiplier (tall play bonus):</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="number" id="hqMultiplier" min="1" max="3" value="1" step="0.1" 
-                     style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; font-size: 1rem;">
+            <label for="hqSpecMethod" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Specialization Method:</label>
+            <select id="hqSpecMethod" style="padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; margin-bottom: 10px; width: 100%;">
+              <option value="bases">Number of Bases</option>
+              <option value="permits">Used/Total Permits</option>
+              <option value="manual">Manual Multiplier</option>
+            </select>
+            
+            <div id="hqBasesInput" style="margin-bottom: 10px;">
+              <label for="hqNumBases" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Number of Bases in Empire:</label>
+              <input type="number" id="hqNumBases" min="1" max="40" value="1" step="1" 
+                     style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100px; font-size: 1rem;">
+              <span style="font-size: 0.75rem; color: #6b7280; margin-left: 8px;">Typical: 1-5 (tall), 10-15 (medium), 20-40 (wide)</span>
+            </div>
+            
+            <div id="hqPermitsInput" style="margin-bottom: 10px; display: none;">
+              <label style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Permits Used:</label>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="number" id="hqUsedPermits" min="0" max="40" value="0" step="1" 
+                       style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; font-size: 1rem;">
+                <span style="font-size: 1rem; color: #6b7280;">/</span>
+                <input type="number" id="hqTotalPermits" min="1" max="40" value="40" step="1" 
+                       style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; font-size: 1rem;">
+              </div>
+              <span style="font-size: 0.75rem; color: #6b7280;">Formula: -2×(Used/Total)+3</span>
+            </div>
+            
+            <div id="hqManualInput" style="margin-bottom: 10px; display: none;">
+              <label for="hqMultiplier" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Multiplier (1.0-3.0):</label>
+              <input type="number" id="hqMultiplier" min="1" max="3" value="1.0" step="0.1" 
+                     style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 100px; font-size: 1rem;">
+              <span style="font-size: 0.75rem; color: #6b7280; margin-left: 8px;">1.0=Many bases, 3.0=One base</span>
+            </div>
+            
+            <input type="hidden" id="hqMultiplierValue" value="1.0">
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
               <span id="hqBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
             </div>
           </div>
-          <div class="option-hint" style="margin-top: 5px;">HQ grants faction-specific bonuses (empire-wide). Multiplier = -2×(Used/Total Permits)+3</div>
+          <div class="option-hint" style="margin-top: 5px;">HQ grants faction-specific bonuses (empire-wide). Specialization rewards focused empires (fewer bases = higher multiplier)</div>
         </div>
         <div class="option-item">
           <label class="checkbox-label">
@@ -876,24 +907,77 @@
       }
     }
     
+    // Toggle HQ specialization method
+    function toggleHqSpecMethod() {
+      const method = document.getElementById('hqSpecMethod').value;
+      const basesInput = document.getElementById('hqBasesInput');
+      const permitsInput = document.getElementById('hqPermitsInput');
+      const manualInput = document.getElementById('hqManualInput');
+      
+      basesInput.style.display = method === 'bases' ? 'block' : 'none';
+      permitsInput.style.display = method === 'permits' ? 'block' : 'none';
+      manualInput.style.display = method === 'manual' ? 'block' : 'none';
+      
+      // Update the multiplier based on current method
+      if (method === 'bases') {
+        updateHqMultiplierFromBases();
+      } else if (method === 'permits') {
+        updateHqMultiplierFromPermits();
+      }
+      
+      updateHqBonusDisplay();
+      calculate();
+    }
+    
+    // Calculate multiplier from number of bases
+    function updateHqMultiplierFromBases() {
+      const numBases = parseInt(document.getElementById('hqNumBases').value) || 1;
+      // Approximate formula: fewer bases = higher multiplier
+      // Assumes ~2 permits per base on average
+      const estimatedUsedPermits = Math.min(numBases * 2, 40);
+      const multiplier = -2 * (estimatedUsedPermits / 40) + 3;
+      const clampedMultiplier = Math.max(1.0, Math.min(3.0, multiplier));
+      document.getElementById('hqMultiplierValue').value = clampedMultiplier.toFixed(2);
+    }
+    
+    // Calculate multiplier from permits
+    function updateHqMultiplierFromPermits() {
+      const usedPermits = parseInt(document.getElementById('hqUsedPermits').value) || 0;
+      const totalPermits = parseInt(document.getElementById('hqTotalPermits').value) || 40;
+      const multiplier = -2 * (usedPermits / totalPermits) + 3;
+      const clampedMultiplier = Math.max(1.0, Math.min(3.0, multiplier));
+      document.getElementById('hqMultiplierValue').value = clampedMultiplier.toFixed(2);
+    }
+    
+    // Get current HQ multiplier based on selected method
+    function getHqMultiplier() {
+      const method = document.getElementById('hqSpecMethod').value;
+      if (method === 'manual') {
+        return parseFloat(document.getElementById('hqMultiplier').value) || 1.0;
+      } else {
+        return parseFloat(document.getElementById('hqMultiplierValue').value) || 1.0;
+      }
+    }
+    
     // Calculate HQ bonus (faction bonus × multiplier)
     function calculateHqBonus() {
       const factionBonus = parseFloat(document.getElementById('hqFactionBonus').value) || 0;
-      const multiplier = parseFloat(document.getElementById('hqMultiplier').value) || 1;
+      const multiplier = getHqMultiplier();
       return factionBonus * multiplier;
     }
     
     // Update HQ bonus display
     function updateHqBonusDisplay() {
       const bonus = calculateHqBonus();
+      const multiplier = getHqMultiplier();
       const bonusPercent = (bonus * 100).toFixed(1);
       
       const display = document.getElementById('hqBonusDisplay');
       if (bonus === 0) {
-        display.textContent = '+0% efficiency';
+        display.textContent = `+0% efficiency (multiplier: ${multiplier.toFixed(2)}×)`;
         display.style.color = '#666';
       } else {
-        display.textContent = `+${bonusPercent}% efficiency`;
+        display.textContent = `+${bonusPercent}% efficiency (multiplier: ${multiplier.toFixed(2)}×)`;
         display.style.color = '#3b82f6';
       }
     }
@@ -1199,14 +1283,41 @@
       updateExpertBonusDisplay();
       calculate();
     });
+    
+    // HQ specialization method selector
+    document.getElementById('hqSpecMethod').addEventListener('change', toggleHqSpecMethod);
+    
+    // HQ faction bonus
     document.getElementById('hqFactionBonus').addEventListener('change', function() {
       updateHqBonusDisplay();
       calculate();
     });
+    
+    // Number of bases input
+    document.getElementById('hqNumBases').addEventListener('input', function() {
+      updateHqMultiplierFromBases();
+      updateHqBonusDisplay();
+      calculate();
+    });
+    
+    // Permits inputs
+    document.getElementById('hqUsedPermits').addEventListener('input', function() {
+      updateHqMultiplierFromPermits();
+      updateHqBonusDisplay();
+      calculate();
+    });
+    document.getElementById('hqTotalPermits').addEventListener('input', function() {
+      updateHqMultiplierFromPermits();
+      updateHqBonusDisplay();
+      calculate();
+    });
+    
+    // Manual multiplier input
     document.getElementById('hqMultiplier').addEventListener('input', function() {
       updateHqBonusDisplay();
       calculate();
     });
+    
     document.getElementById('corpHqBonus').addEventListener('change', calculate);
     
     // Calculate and display results using cached data
