@@ -86,6 +86,16 @@
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
     
+    input[type="text"]#planetSearch:hover {
+      border-color: #3b82f6;
+    }
+    
+    input[type="text"]#planetSearch:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
     .loading {
       text-align: center;
       padding: 20px;
@@ -549,10 +559,16 @@
       </div>
       
       <div class="control-group" id="planetGroup" style="display: none;">
-        <label for="planetSelect">🌍 Select Planet (Extraction):</label>
-        <select id="planetSelect">
-          <option value="">-- Select Planet --</option>
-        </select>
+        <label for="planetSearch">Select Planet (Extraction):</label>
+        <input 
+          type="text" 
+          id="planetSearch" 
+          list="planetList" 
+          placeholder="Type to search planets..."
+          autocomplete="off"
+          style="padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; background: white; width: 100%; transition: all 0.2s; color: #2c3e50;">
+        <datalist id="planetList"></datalist>
+        <input type="hidden" id="planetSelect">
         <div class="option-hint" style="margin-top: 5px; font-size: 12px;">
           Planet concentration affects extraction time and workforce costs
         </div>
@@ -615,6 +631,39 @@
             <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
           </div>
           <div class="option-hint" style="margin-top: 5px;">Each expert provides cumulative bonus with synergy effects (1-5 experts)</div>
+        </div>
+        <div class="option-item">
+          <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
+            Company HQ Faction Bonus (Multiplicative)
+          </label>
+          <div style="padding-left: 24px;">
+            <select id="hqFactionBonus" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; width: 100%; margin-bottom: 8px;">
+              <option value="0">No HQ Bonus</option>
+              <option value="0.10">+10% Electronics (Antares Initiative)</option>
+              <option value="0.10">+10% Manufacturing (Castillo-Ito)</option>
+              <option value="0.06">+6% Agriculture (Insitor Cooperative)</option>
+              <option value="0.10">+10% Food Industries (Insitor Cooperative)</option>
+              <option value="0.04">+4% Metallurgy (NEO Charter)</option>
+              <option value="0.06">+6% Construction (NEO Charter)</option>
+              <option value="0.04">+4% Chemistry (No Faction)</option>
+              <option value="0.04">+4% Fuel Refining (No Faction)</option>
+              <option value="0.04">+4% Resource Extraction (No Faction)</option>
+            </select>
+            <label for="hqMultiplier" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Specialization Multiplier (tall play bonus):</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="hqMultiplier" min="1" max="3" value="1" step="0.1" 
+                     style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; font-size: 1rem;">
+              <span id="hqBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
+            </div>
+          </div>
+          <div class="option-hint" style="margin-top: 5px;">HQ grants faction-specific bonuses (empire-wide). Multiplier = -2×(Used/Total Permits)+3</div>
+        </div>
+        <div class="option-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="corpHqBonus">
+            <span>Corp HQ on Planet (+10% Multiplicative)</span>
+          </label>
+          <div class="option-hint">Corporate Headquarters provides +10% efficiency for production on that specific planet</div>
         </div>
       </div>
     </div>
@@ -827,6 +876,28 @@
       }
     }
     
+    // Calculate HQ bonus (faction bonus × multiplier)
+    function calculateHqBonus() {
+      const factionBonus = parseFloat(document.getElementById('hqFactionBonus').value) || 0;
+      const multiplier = parseFloat(document.getElementById('hqMultiplier').value) || 1;
+      return factionBonus * multiplier;
+    }
+    
+    // Update HQ bonus display
+    function updateHqBonusDisplay() {
+      const bonus = calculateHqBonus();
+      const bonusPercent = (bonus * 100).toFixed(1);
+      
+      const display = document.getElementById('hqBonusDisplay');
+      if (bonus === 0) {
+        display.textContent = '+0% efficiency';
+        display.style.color = '#666';
+      } else {
+        display.textContent = `+${bonusPercent}% efficiency`;
+        display.style.color = '#3b82f6';
+      }
+    }
+    
     // Load all data once at startup
     function loadAllData() {
       document.getElementById('loading').style.display = 'block';
@@ -922,7 +993,7 @@
       
       if (isExtraction) {
         // Show planet selector for extraction
-        planetLabel.innerHTML = '🌍 Select Planet (Extraction):';
+        planetLabel.innerHTML = 'Select Planet (Extraction):';
         planetHint.textContent = 'Planet concentration affects extraction time and workforce costs';
         planetGroup.style.display = 'block';
         
@@ -931,7 +1002,7 @@
         loadPlanets(material);
       } else if (isFarming) {
         // Show planet selector for farming
-        planetLabel.innerHTML = '🌾 Select Planet (Farming):';
+        planetLabel.innerHTML = 'Select Planet (Farming):';
         planetHint.textContent = 'Planet fertility affects farming time and workforce costs';
         planetGroup.style.display = 'block';
         
@@ -946,10 +1017,15 @@
     
     // Load planets for extraction material
     function loadPlanets(material) {
+      const planetSearch = document.getElementById('planetSearch');
+      const planetList = document.getElementById('planetList');
       const planetSelect = document.getElementById('planetSelect');
       
       if (!material || !planetData) {
-        planetSelect.innerHTML = '<option value="">-- No Planet Data --</option>';
+        planetList.innerHTML = '';
+        planetSearch.value = '';
+        planetSearch.placeholder = 'No planet data available';
+        planetSelect.value = '';
         return;
       }
       
@@ -959,23 +1035,32 @@
         .sort((a, b) => b.factor - a.factor);  // Sort by factor descending (best first)
       
       if (planets.length === 0) {
-        planetSelect.innerHTML = '<option value="">-- No Planets Found --</option>';
+        planetList.innerHTML = '';
+        planetSearch.value = '';
+        planetSearch.placeholder = 'No planets found';
+        planetSelect.value = '';
         return;
       }
       
-      // Build options with factor display
-      planetSelect.innerHTML = '<option value="">-- Average (All Planets) --</option>';
+      // Build datalist options with factor display
+      planetList.innerHTML = '<option value="">-- Average (All Planets) --</option>';
       planets.forEach(function(planet) {
         const option = document.createElement('option');
-        option.value = planet.planet;
         const factorPercent = (planet.factor * 100).toFixed(1);
-        option.textContent = planet.planet + ' (Concentration: ' + factorPercent + '%)';
-        planetSelect.appendChild(option);
+        option.value = planet.planet + ' (Concentration: ' + factorPercent + '%)';
+        option.setAttribute('data-planet', planet.planet);
+        planetList.appendChild(option);
       });
+      
+      planetSearch.placeholder = 'Type to search ' + planets.length + ' planets...';
+      planetSearch.value = '';
+      planetSelect.value = '';
     }
     
     // Load planets for farming (shows fertility instead of concentration)
     function loadPlanetsForFarming() {
+      const planetSearch = document.getElementById('planetSearch');
+      const planetList = document.getElementById('planetList');
       const planetSelect = document.getElementById('planetSelect');
       
       console.log('loadPlanetsForFarming called, fertilityData:', fertilityData);
@@ -983,7 +1068,10 @@
       
       if (!fertilityData || fertilityData.length === 0) {
         console.warn('No fertility data available!');
-        planetSelect.innerHTML = '<option value="">-- No Fertility Data --</option>';
+        planetList.innerHTML = '';
+        planetSearch.value = '';
+        planetSearch.placeholder = 'No fertility data available';
+        planetSelect.value = '';
         return;
       }
       
@@ -991,14 +1079,18 @@
       const planets = [...fertilityData].sort((a, b) => b.fertility - a.fertility);
       console.log('Sorted planets for farming:', planets);
       
-      planetSelect.innerHTML = '<option value="">-- Average (All Planets) --</option>';
+      planetList.innerHTML = '<option value="">-- Average (All Planets) --</option>';
       planets.forEach(function(planet) {
         const option = document.createElement('option');
-        option.value = planet.planet;
         const fertilityPercent = (planet.fertility * 100).toFixed(1);
-        option.textContent = planet.planet + ' (Fertility: ' + fertilityPercent + '%)';
-        planetSelect.appendChild(option);
+        option.value = planet.planet + ' (Fertility: ' + fertilityPercent + '%)';
+        option.setAttribute('data-planet', planet.planet);
+        planetList.appendChild(option);
       });
+      
+      planetSearch.placeholder = 'Type to search ' + planets.length + ' planets...';
+      planetSearch.value = '';
+      planetSelect.value = '';
     }
     
     // Load recipes for selected material from cached data
@@ -1048,6 +1140,35 @@
     });
     document.getElementById('planetSelect').addEventListener('change', calculate);
     document.getElementById('exchangeSelect').addEventListener('change', calculate);
+    
+    // Handle planet search input
+    document.getElementById('planetSearch').addEventListener('input', function() {
+      const planetList = document.getElementById('planetList');
+      const planetSelect = document.getElementById('planetSelect');
+      const searchValue = this.value.trim();
+      
+      // Find matching option in datalist
+      const options = planetList.querySelectorAll('option');
+      let matchedPlanet = '';
+      
+      for (let option of options) {
+        if (option.value === searchValue) {
+          // Extract planet name from the option
+          matchedPlanet = option.getAttribute('data-planet') || searchValue.split(' (')[0];
+          break;
+        }
+      }
+      
+      // Handle "Average" option
+      if (searchValue === '' || searchValue === '-- Average (All Planets) --') {
+        matchedPlanet = '';
+      }
+      
+      // Update hidden select and trigger calculation
+      planetSelect.value = matchedPlanet;
+      calculate();
+    });
+    
     document.getElementById('includeLuxury').addEventListener('change', function() {
       // If luxury is checked, disable custom efficiency
       if (this.checked) {
@@ -1072,6 +1193,22 @@
     document.getElementById('customEfficiency').addEventListener('input', calculate);
     document.getElementById('selfProducedInputs').addEventListener('change', calculate);
     
+    // Add event listeners for new HQ and Corp HQ controls
+    document.getElementById('cogcBonus').addEventListener('change', calculate);
+    document.getElementById('expertCount').addEventListener('input', function() {
+      updateExpertBonusDisplay();
+      calculate();
+    });
+    document.getElementById('hqFactionBonus').addEventListener('change', function() {
+      updateHqBonusDisplay();
+      calculate();
+    });
+    document.getElementById('hqMultiplier').addEventListener('input', function() {
+      updateHqBonusDisplay();
+      calculate();
+    });
+    document.getElementById('corpHqBonus').addEventListener('change', calculate);
+    
     // Calculate and display results using cached data
     function calculate() {
       const material = document.getElementById('materialSelect').value;
@@ -1084,6 +1221,8 @@
       const planet = document.getElementById('planetSelect').value;
       const cogcBonus = document.getElementById('cogcBonus').checked;
       const expertCount = parseInt(document.getElementById('expertCount').value) || 0;
+      const hqBonus = calculateHqBonus();
+      const corpHqBonus = document.getElementById('corpHqBonus').checked;
       
       if (!material || !exchange || allData.length === 0) {
         document.getElementById('results').style.display = 'none';
@@ -1097,8 +1236,8 @@
       try {
         // Calculate using cached data
         const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount);
-        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount);
-        const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount);
+        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
         
         document.getElementById('loading').style.display = 'none';
@@ -1229,6 +1368,17 @@
         totalEfficiency += expertBonus;
       }
       
+      // Apply HQ bonuses (MULTIPLICATIVE after additive bonuses)
+      // HQ bonus = faction bonus × specialization multiplier
+      if (hqBonus > 0) {
+        totalEfficiency *= (1 + hqBonus); // e.g., 10% HQ bonus = ×1.10
+      }
+      
+      // Apply Corp HQ bonus (MULTIPLICATIVE)
+      if (corpHqBonus) {
+        totalEfficiency *= 1.10; // +10% efficiency on this planet
+      }
+      
       // Ensure minimum efficiency (never below 10% to avoid division by zero)
       totalEfficiency = Math.max(0.1, totalEfficiency);
       
@@ -1317,7 +1467,7 @@
     }
     
     // Get exchange comparison from cached data
-    function getExchangeComparisonFromCache(material, recipe, currentExchange, cogcBonus, expertCount) {
+    function getExchangeComparisonFromCache(material, recipe, currentExchange, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const exchanges = {};
       const includeLuxury = document.getElementById('includeLuxury').checked;
       const customEfficiencyEnabled = document.getElementById('customEfficiencyToggle').checked;
@@ -1370,6 +1520,14 @@
           }
           if (expertCount > 0) {
             totalEfficiency += calculateExpertBonus(expertCount);
+          }
+          
+          // Apply HQ bonuses (MULTIPLICATIVE)
+          if (hqBonus > 0) {
+            totalEfficiency *= (1 + hqBonus);
+          }
+          if (corpHqBonus) {
+            totalEfficiency *= 1.10;
           }
           
           // Ensure minimum efficiency
@@ -1458,7 +1616,7 @@
     }
     
     // Get recommendation from cached data
-    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount) {
+    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const recipeComparisons = [];
       
       for (const row of allData) {
@@ -1466,13 +1624,36 @@
           let inputCostAsk = row.inputCostAsk;
           let workforceCostAsk = row.workforceCostAsk;
           
-          // Apply efficiency penalty based on settings
+          // Calculate total efficiency (same as main calculation)
+          let totalEfficiency = 1.0;
+          
           if (customEfficiencyEnabled) {
-            const efficiencyMultiplier = 100 / customEfficiency;
-            workforceCostAsk *= efficiencyMultiplier;
+            totalEfficiency = customEfficiency / 100;
           } else if (!includeLuxury) {
-            workforceCostAsk *= (1 / 0.79);
+            totalEfficiency = 0.79;
           }
+          
+          // Apply CoGC and Expert bonuses (ADDITIVE)
+          if (cogcBonus) {
+            totalEfficiency += 0.25;
+          }
+          if (expertCount > 0) {
+            totalEfficiency += calculateExpertBonus(expertCount);
+          }
+          
+          // Apply HQ bonuses (MULTIPLICATIVE)
+          if (hqBonus > 0) {
+            totalEfficiency *= (1 + hqBonus);
+          }
+          if (corpHqBonus) {
+            totalEfficiency *= 1.10;
+          }
+          
+          totalEfficiency = Math.max(0.1, totalEfficiency);
+          
+          // Apply efficiency to workforce costs
+          workforceCostAsk *= (1.0 / totalEfficiency);
+          
           if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
           
           const totalCostAsk = inputCostAsk + workforceCostAsk;
