@@ -930,11 +930,16 @@
       </div>
       
       <div class="section" id="arbitrageSection" style="display: none;">
-        <h3>Arbitrage Opportunities</h3>
-        <div style="margin-bottom: 15px; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
-          Profitable buy/sell opportunities between exchanges (showing profit > 5% after transfer costs)
+        <div class="collapsible-header" onclick="toggleCollapse('arbitrageContentWrapper')">
+          <h3>Arbitrage Opportunities</h3>
+          <span class="collapse-icon" id="arbitrageContentWrapper-icon">▼</span>
         </div>
-        <div id="arbitrageContent"></div>
+        <div class="collapsible-content" id="arbitrageContentWrapper">
+          <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
+            Profitable buy/sell opportunities between exchanges (showing profit > 5% after transfer costs)
+          </div>
+          <div id="arbitrageContent"></div>
+        </div>
       </div>
       
       <div class="section" id="recommendationSection" style="display: none;">
@@ -943,7 +948,7 @@
           <span class="collapse-icon" id="recommendationContentWrapper-icon">▼</span>
         </div>
         <div class="collapsible-content" id="recommendationContentWrapper">
-          <div id="recommendationContent" style="margin-top: 15px;"></div>
+          <div id="recommendationContent" style="margin-top: 15px; max-height: 600px; overflow-y: auto;"></div>
         </div>
       </div>
     </div>
