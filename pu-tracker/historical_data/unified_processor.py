@@ -257,7 +257,7 @@ class UnifiedDataProcessor:
             
             if recipes.empty:
                 # No recipes, keep original row with zero cost
-                row_copy = row.copy()
+                row_copy = row.to_dict()  # Convert to dict to avoid index issues
                 row_copy['Input Cost per Unit'] = 0
                 row_copy['Input Cost per Stack'] = 0
                 row_copy['Input Cost per Hour'] = 0
@@ -315,7 +315,7 @@ class UnifiedDataProcessor:
                     input_cost_per_hour = total_input_cost / hours_per_recipe if hours_per_recipe else 0
                     
                     # Create a new row for this recipe with its unique costs
-                    row_copy = row.copy()
+                    row_copy = row.to_dict()  # Convert to dict to avoid index issues
                     row_copy['Input Cost per Unit'] = input_cost_per_unit
                     row_copy['Input Cost per Stack'] = input_cost_per_stack
                     row_copy['Input Cost per Hour'] = input_cost_per_hour
@@ -337,7 +337,7 @@ class UnifiedDataProcessor:
         """Calculate derived fields like profit, ROI, etc."""
         try:
             # Ensure numeric columns are numeric
-            numeric_cols = ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Input_Cost', 'Traded']
+            numeric_cols = ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Input_Cost', 'Traded Volume']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -373,7 +373,7 @@ class UnifiedDataProcessor:
 
             # Liquidity Ratio
             df['Liquidity_Ratio'] = df.apply(
-                lambda row: row['Traded'] / (row['Supply'] + row['Demand']) if (row['Supply'] + row['Demand']) > 0 else 0,
+                lambda row: row['Traded Volume'] / (row['Supply'] + row['Demand']) if (row['Supply'] + row['Demand']) > 0 else 0,
                 axis=1
             )
 
