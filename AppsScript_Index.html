@@ -739,30 +739,37 @@
       
       <div class="section">
         <h3>Cost Breakdown</h3>
-        <div class="data-grid">
-          <div class="data-item">
-            <div class="data-label">Input Cost (Ask Prices)</div>
-            <div class="data-value currency" id="inputCostAsk">-</div>
+        <div style="display: grid; gap: 12px;">
+          <!-- Top Row: 4 columns for Input and Workforce costs -->
+          <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="data-item">
+              <div class="data-label">Input Cost (Ask)</div>
+              <div class="data-value currency" id="inputCostAsk">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Input Cost (Bid)</div>
+              <div class="data-value currency" id="inputCostBid">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Workforce Cost (Ask)</div>
+              <div class="data-value currency" id="workforceCostAsk">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Workforce Cost (Bid)</div>
+              <div class="data-value currency" id="workforceCostBid">-</div>
+            </div>
           </div>
-          <div class="data-item">
-            <div class="data-label">Input Cost (Bid Prices)</div>
-            <div class="data-value currency" id="inputCostBid">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Workforce Cost (Ask Prices)</div>
-            <div class="data-value currency" id="workforceCostAsk">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Workforce Cost (Bid Prices)</div>
-            <div class="data-value currency" id="workforceCostBid">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Total Production Cost (Ask)</div>
-            <div class="data-value currency" id="totalCostAsk">-</div>
-          </div>
-          <div class="data-item">
-            <div class="data-label">Total Production Cost (Bid)</div>
-            <div class="data-value currency" id="totalCostBid">-</div>
+          
+          <!-- Bottom Row: 2 columns centered for Total costs -->
+          <div class="data-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 50%; margin: 0 auto;">
+            <div class="data-item">
+              <div class="data-label">Total Cost (Ask)</div>
+              <div class="data-value currency" id="totalCostAsk">-</div>
+            </div>
+            <div class="data-item">
+              <div class="data-label">Total Cost (Bid)</div>
+              <div class="data-value currency" id="totalCostBid">-</div>
+            </div>
           </div>
         </div>
       </div>
