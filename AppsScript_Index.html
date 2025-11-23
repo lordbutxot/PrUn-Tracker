@@ -769,53 +769,41 @@
       
       <div class="section">
         <h3>Profitability - All Scenarios</h3>
-        <div class="data-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
-          <!-- Ask + Ask Scenario -->
-          <div style="display: flex; flex-direction: column; gap: 0;">
-            <div class="data-item" style="margin-bottom: 0; border-bottom: none;">
-              <div class="data-label">Profit (Ask Price + Ask Inputs)</div>
-              <div class="data-value currency" id="profitAskAsk">-</div>
-            </div>
-            <div class="data-item" style="margin-top: 0; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              <div class="data-label">ROI (Ask + Ask) %</div>
-              <div class="data-value percentage" id="roiAskAsk">-</div>
-            </div>
+        <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <!-- Profit Row -->
+          <div class="data-item">
+            <div class="data-label">Profit (Ask + Ask)</div>
+            <div class="data-value currency" id="profitAskAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Profit (Ask + Bid)</div>
+            <div class="data-value currency" id="profitAskBid">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Profit (Bid + Ask)</div>
+            <div class="data-value currency" id="profitBidAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Profit (Bid + Bid)</div>
+            <div class="data-value currency" id="profitBidBid">-</div>
           </div>
           
-          <!-- Ask + Bid Scenario -->
-          <div style="display: flex; flex-direction: column; gap: 0;">
-            <div class="data-item" style="margin-bottom: 0; border-bottom: none;">
-              <div class="data-label">Profit (Ask Price + Bid Inputs)</div>
-              <div class="data-value currency" id="profitAskBid">-</div>
-            </div>
-            <div class="data-item" style="margin-top: 0; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              <div class="data-label">ROI (Ask + Bid) %</div>
-              <div class="data-value percentage" id="roiAskBid">-</div>
-            </div>
+          <!-- ROI Row -->
+          <div class="data-item">
+            <div class="data-label">ROI (Ask + Ask) %</div>
+            <div class="data-value percentage" id="roiAskAsk">-</div>
           </div>
-          
-          <!-- Bid + Ask Scenario -->
-          <div style="display: flex; flex-direction: column; gap: 0;">
-            <div class="data-item" style="margin-bottom: 0; border-bottom: none;">
-              <div class="data-label">Profit (Bid Price + Ask Inputs)</div>
-              <div class="data-value currency" id="profitBidAsk">-</div>
-            </div>
-            <div class="data-item" style="margin-top: 0; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              <div class="data-label">ROI (Bid + Ask) %</div>
-              <div class="data-value percentage" id="roiBidAsk">-</div>
-            </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Ask + Bid) %</div>
+            <div class="data-value percentage" id="roiAskBid">-</div>
           </div>
-          
-          <!-- Bid + Bid Scenario -->
-          <div style="display: flex; flex-direction: column; gap: 0;">
-            <div class="data-item" style="margin-bottom: 0; border-bottom: none;">
-              <div class="data-label">Profit (Bid Price + Bid Inputs)</div>
-              <div class="data-value currency" id="profitBidBid">-</div>
-            </div>
-            <div class="data-item" style="margin-top: 0; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              <div class="data-label">ROI (Bid + Bid) %</div>
-              <div class="data-value percentage" id="roiBidBid">-</div>
-            </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Bid + Ask) %</div>
+            <div class="data-value percentage" id="roiBidAsk">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">ROI (Bid + Bid) %</div>
+            <div class="data-value percentage" id="roiBidBid">-</div>
           </div>
         </div>
       </div>
