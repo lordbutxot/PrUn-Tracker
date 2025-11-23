@@ -119,21 +119,22 @@ class UnifiedDataProcessor:
         # Concatenate all exchanges back together
         merged = pd.concat(results, ignore_index=True)
 
-        # Fill missing columns with appropriate defaults
-        for col in REQUIRED_DATA_COLUMNS:
+        # Fill missing columns with appropriate defaults (check for pre-rename column names)
+        for col in ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded']:
             if col not in merged.columns:
-                if col in ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded']:
-                    merged[col] = 0.0
-                elif col in ['Saturation', 'Input_Cost', 'Profit_Ask', 'Profit_Bid']:
-                    merged[col] = 0.0
-                elif col in ['ROI_Ask', 'ROI_Bid', 'Investment_Score']:
-                    merged[col] = 0.0
-                elif col in ['Risk', 'Viability', 'Recommendation']:
-                    merged[col] = 'Unknown'
-                elif col == 'Price_Spread':
-                    merged[col] = 0.0
-                else:
-                    merged[col] = ''
+                merged[col] = 0.0
+        
+        for col in ['Saturation', 'Input_Cost', 'Profit_Ask', 'Profit_Bid']:
+            if col not in merged.columns:
+                merged[col] = 0.0
+        
+        for col in ['ROI_Ask', 'ROI_Bid', 'Investment_Score']:
+            if col not in merged.columns:
+                merged[col] = 0.0
+        
+        for col in ['Risk', 'Viability']:
+            if col not in merged.columns:
+                merged[col] = 'Unknown'
 
         # --- ENSURE CORRECT COLUMN NAMES FOR DOWNSTREAM ---
         rename_map = {
@@ -143,6 +144,14 @@ class UnifiedDataProcessor:
             'Traded': 'Traded Volume',
         }
         merged = merged.rename(columns=rename_map)
+        
+        # After rename, fill any remaining missing columns from REQUIRED_DATA_COLUMNS
+        for col in REQUIRED_DATA_COLUMNS:
+            if col not in merged.columns:
+                if col in ['Traded Volume', 'Market_Cap', 'Liquidity_Ratio']:
+                    merged[col] = 0.0
+                else:
+                    merged[col] = ''
 
         # Add timestamp
         merged['Timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -337,7 +346,8 @@ class UnifiedDataProcessor:
         """Calculate derived fields like profit, ROI, etc."""
         try:
             # Ensure numeric columns are numeric
-            numeric_cols = ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Input_Cost', 'Traded Volume']
+            numeric_cols = ['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Input_Cost', 'Traded Volume',
+                          'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
