@@ -89,9 +89,9 @@ REPORT_SHEET_NAMES = {
 # Required columns for processed data
 REQUIRED_DATA_COLUMNS = [
     'Ticker', 'Exchange', 'Category', 'Tier',
-    'Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded',
-    'Saturation', 'Input_Cost', 'Profit_Ask', 'Profit_Bid',
-    'ROI_Ask', 'ROI_Bid', 'Investment_Score', 'Risk', 'Viability'
+    'Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded', 'Traded Volume',
+    'Saturation', 'Input_Cost', 'Profit_Ask', 'Profit_Bid', 'Profit per Unit',
+    'ROI_Ask', 'ROI_Bid', 'ROI Ask %', 'ROI Bid %', 'Investment_Score', 'Risk', 'Viability'
 ]
 
 # Target columns for enhanced analysis
