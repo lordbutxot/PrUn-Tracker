@@ -84,6 +84,11 @@ class UnifiedDataProcessor:
         # Check for wide format data and transform if necessary
         if 'AI1-AskPrice' in df.columns:
             print("[INFO] Detected wide market data format, transforming...")
+            print(f"[DEBUG] Wide format DataFrame has columns: {list(df.columns[:15])}...")
+            print(f"[DEBUG] Wide format DataFrame has {len(df)} rows")
+            if len(df) > 0:
+                first_row = df.iloc[0]
+                print(f"[DEBUG] Sample row - Ticker: {first_row.get('Ticker', 'N/A')}, AI1-AskAmt: {first_row.get('AI1-AskAmt', 'N/A')}")
             long_df = self.transform_market_data_wide_to_long(df)
             for exchange in VALID_EXCHANGES:
                 market_data[exchange] = long_df[long_df['Exchange'] == exchange].copy()
@@ -473,8 +478,19 @@ class UnifiedDataProcessor:
 
     def transform_market_data_wide_to_long(self, wide_df):
         print("\n\033[1;36m[STEP]\033[0m Transforming wide market data to long format...")
+        print(f"[DEBUG] Wide DataFrame has {len(wide_df)} rows and columns: {list(wide_df.columns[:10])}...")
+        
         records = []
         exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1']
+        
+        # Debug: Check first row for AI1 data
+        if len(wide_df) > 0:
+            first_row = wide_df.iloc[0]
+            print(f"[DEBUG] First row ticker: {first_row.get('Ticker', 'N/A')}")
+            print(f"[DEBUG] First row AI1-AskAmt: {first_row.get('AI1-AskAmt', 'MISSING')}")
+            print(f"[DEBUG] First row AI1-AskAvail: {first_row.get('AI1-AskAvail', 'MISSING')}")
+            print(f"[DEBUG] First row AI1-BidAvail: {first_row.get('AI1-BidAvail', 'MISSING')}")
+        
         for _, row in wide_df.iterrows():
             ticker = row['Ticker']
             for exch in exchanges:
