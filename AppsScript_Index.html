@@ -2349,14 +2349,17 @@
       }
     }
     
-    // Helper to set raw value with thousand separators
+    // Helper to set raw value with thousand separators for numeric values only
     function setValueRaw(id, value) {
       const elem = document.getElementById(id);
       elem.className = 'data-value';
       
-      // Try to format as number with thousand separators
+      // Only format as number if the entire value is numeric (for Supply/Demand)
+      // Don't format recipe inputs/outputs (which contain text like "1 ALG, 2 GRN")
       const numValue = parseFloat(value);
-      if (!isNaN(numValue)) {
+      const isFullyNumeric = !isNaN(numValue) && String(value).trim() === String(numValue);
+      
+      if (isFullyNumeric) {
         elem.textContent = numValue.toLocaleString('en-US');
       } else {
         elem.textContent = value || '-';
