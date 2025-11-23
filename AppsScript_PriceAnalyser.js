@@ -104,9 +104,9 @@ function getAllData() {
           Logger.log('Row ' + i + ': Planet=' + planetName + ', Column[5]=' + planetData[i][5] + ', Parsed=' + fertilityValue);
         }
         
-        // Include ALL fertility values > -1 (negative fertility = slower farming, but still farmable)
-        // Only exclude -1 (which means "cannot farm")
-        if (!isNaN(fertilityValue) && fertilityValue > -1 && !fertilityMap[planetName]) {
+        // Include ALL fertility values >= -1 (with efficiency bonuses, even -1 fertility can be viable)
+        // Negative fertility = slower farming, but still possible with efficiency factors
+        if (!isNaN(fertilityValue) && fertilityValue >= -1 && !fertilityMap[planetName]) {
           fertilityMap[planetName] = fertilityValue;
           fertility.push({
             planet: planetName,
