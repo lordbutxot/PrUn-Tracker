@@ -36,11 +36,15 @@ def load_market_data():
     
     df = pd.read_csv(path_wide)
     
-    # Check if transformation is needed
-    if 'Exchange' in df.columns:
+    # Check if transformation is needed - look for wide format columns
+    # Even if 'Exchange' column exists, if we have AI1-AskPrice columns, it's wide format
+    if 'AI1-AskPrice' not in df.columns and 'Exchange' in df.columns:
+        # Already in long format
+        print("[DEBUG loaders.py] Market data already in long format, returning as-is")
         return df
     
     # Transform wide to long format
+    print(f"[DEBUG loaders.py] Transforming wide format data ({len(df)} rows) to long format...")
     exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1']
     records = []
     
@@ -64,14 +68,16 @@ def load_market_data():
                     'Exchange': exch,
                     'Ask_Price': pd.to_numeric(ask_price, errors='coerce') if pd.notnull(ask_price) else 0,
                     'Bid_Price': pd.to_numeric(bid_price, errors='coerce') if pd.notnull(bid_price) else 0,
-                    'Ask_Amount': pd.to_numeric(row.get(ask_amt_col, 0), errors='coerce'),
-                    'Bid_Amount': pd.to_numeric(row.get(bid_amt_col, 0), errors='coerce'),
-                    'Ask_Available': pd.to_numeric(row.get(ask_avail_col, 0), errors='coerce'),
-                    'Bid_Available': pd.to_numeric(row.get(bid_avail_col, 0), errors='coerce'),
-                    'Average': pd.to_numeric(row.get(avg_col, 0), errors='coerce'),
+                    'Traded': pd.to_numeric(row.get(ask_amt_col, 0), errors='coerce'),  # Renamed from Ask_Amount
+                    'Supply': pd.to_numeric(row.get(ask_avail_col, 0), errors='coerce'),  # Renamed from Ask_Available
+                    'Demand': pd.to_numeric(row.get(bid_avail_col, 0), errors='coerce'),  # Renamed from Bid_Available
                 })
     
     df_long = pd.DataFrame(records)
+    print(f"[DEBUG loaders.py] Transformation complete: {len(df_long)} records created")
+    if len(df_long) > 0:
+        traded_non_zero = (df_long['Traded'] != 0).sum()
+        print(f"[DEBUG loaders.py] First record Traded value: {df_long['Traded'].iloc[0]}, Non-zero count: {traded_non_zero}/{len(df_long)}")
     
     # Save transformed data for future use
     df_long.to_csv(path_long, index=False)
