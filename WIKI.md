@@ -67,7 +67,9 @@
 - ✅ **CoGC Programs:** +25% efficiency bonus
 - ✅ **Expert Bonuses:** 1-5 experts with cumulative synergy (3.06% to 28.40%)
 - ✅ **Planet Bonuses:** Concentration and fertility add directly to total efficiency
-- ✅ **Additive System:** All bonuses stack additively for maximum benefit
+- ✅ **Company HQ:** Faction bonuses (4-10%) × specialization multiplier (1.0-3.0)
+- ✅ **Corp HQ:** Planet-specific +10% multiplicative bonus
+- ✅ **Hybrid System:** Additive bonuses first, then multiplicative HQ bonuses
 
 ---
 
@@ -235,14 +237,18 @@ Total_Cost_Bid = Input_Cost_Bid + Workforce_Cost_Bid
 - Prevents circular dependencies with visited set
 - Falls back to market price if circular reference detected
 
-### 3. Efficiency System (Additive)
+### 3. Efficiency System (Hybrid: Additive then Multiplicative)
 
 **Formula:**
 ```
-Total Efficiency = Base Worker Efficiency 
-                 + Planet Factor Bonus
-                 + CoGC Program Bonus
-                 + Expert Bonus
+// Step 1: Calculate Additive Bonuses
+Additive Efficiency = Base Worker Efficiency 
+                    + Planet Factor Bonus
+                    + CoGC Program Bonus
+                    + Expert Bonus
+
+// Step 2: Apply Multiplicative HQ Bonuses
+Total Efficiency = Additive Efficiency × (1 + HQ Bonus) × (1.10 if Corp HQ)
 
 Effective Cost = Base Cost × (1 / Total Efficiency)
 ```
@@ -276,19 +282,91 @@ Effective Cost = Base Cost × (1 / Total Efficiency)
 | 4       | 19.74%  |
 | 5       | 28.40%  |
 
-**Example Calculation:**
+**Company HQ Bonus (Multiplicative):**
+
+Company HQ provides empire-wide efficiency bonuses based on:
+1. **Faction Bonus** (4-10% depending on faction and industry)
+2. **Specialization Multiplier** (1.0-3.0 based on empire size)
+
+**Formula:**
 ```
-Scenario: Farming GRN with all bonuses
+HQ Bonus = Faction Base Bonus × Specialization Multiplier
+
+Specialization Multiplier = -2 × (Used Permits / Total Permits) + 3
+```
+
+**Faction Bonuses by Industry:**
+| Faction | Electronics | Manufacturing | Agriculture | Food Ind. | Metallurgy | Construction | Chemistry | Fuel | Extraction |
+|---------|-------------|---------------|-------------|-----------|------------|--------------|-----------|------|------------|
+| Antares | **10%** | - | - | - | - | - | - | - | - |
+| Castillo-Ito | - | **10%** | - | - | - | - | - | - | - |
+| Insitor | - | - | **6%** | **10%** | - | - | - | - | - |
+| NEO Charter | - | - | - | - | **4%** | **6%** | - | - | - |
+| No Faction | - | - | - | - | - | - | **4%** | **4%** | **4%** |
+
+**Specialization Examples:**
+- **1 Base (Focused/Tall):** 0/40 permits → -2×(0/40)+3 = **3.0** multiplier
+- **10 Bases (Medium):** 20/40 permits → -2×(20/40)+3 = **2.0** multiplier
+- **20 Bases (Wide):** 38/40 permits → -2×(38/40)+3 = **1.1** multiplier
+- **40 Bases (Maximum):** 40/40 permits → -2×(40/40)+3 = **1.0** multiplier
+
+**HQ Bonus Examples:**
+- Electronics (Antares), 1 base: 10% × 3.0 = **30% empire-wide bonus**
+- Manufacturing (Castillo-Ito), 10 bases: 10% × 2.0 = **20%**
+- Agriculture (Insitor), 20 bases: 6% × 1.1 = **6.6%**
+- Chemistry (No Faction), 5 bases: 4% × 2.6 = **10.4%**
+
+**Corp HQ Bonus (Multiplicative):**
+- **Planet-Specific:** Fixed +10% bonus on the planet where Corp HQ is built
+- **Not Empire-Wide:** Only applies to production on that specific planet
+- **Stacks with Company HQ:** Applied multiplicatively
+
+**Complete Example Calculation:**
+```
+Scenario: Farming GRN with maximum bonuses
+
+// ADDITIVE BONUSES
 - Base: 100% (luxury enabled)
 - Fertility: +40% (0.4)
 - CoGC: +25%
 - 3 Experts: +12.48%
 ──────────────────────────────
-Total Efficiency: 177.48%
+Additive Subtotal: 177.48%
+
+// MULTIPLICATIVE BONUSES
+- Company HQ (Insitor Agriculture): 6% × 2.0 multiplier = +12%
+- Corp HQ on planet: +10%
+──────────────────────────────
+Total Efficiency: 177.48% × 1.12 × 1.10 = 218.8%
 
 Base Workforce Cost: 50 ICA
-Effective Cost: 50 × (1 / 1.7748) = 28.16 ICA
-Savings: 43.7%
+Effective Cost: 50 × (1 / 2.188) = 22.85 ICA
+Savings: 54.3%
+
+// Comparison without HQ bonuses:
+Without HQ: 50 × (1 / 1.7748) = 28.16 ICA
+HQ Benefit: 5.31 ICA savings per cycle (18.9% additional reduction)
+```
+
+**Maximum Possible Efficiency:**
+```
+Scenario: Extraction with perfect conditions
+
+// ADDITIVE
+- Base: 100% (luxury)
+- Planet: +100% (2.0 concentration)
+- CoGC: +25%
+- 5 Experts: +28.40%
+Additive Subtotal: 253.40%
+
+// MULTIPLICATIVE
+- Company HQ: 4% × 3.0 = +12% (Extraction, No Faction, 1 base)
+- Corp HQ: +10%
+──────────────────────────────
+Total Efficiency: 253.40% × 1.12 × 1.10 = 312.2%
+
+Effective Production Time: 32% of base (68% faster)
+Effective Workforce Cost: 32% of base (68% savings)
 ```
 
 ### 4. Profit & ROI Calculations
@@ -424,6 +502,25 @@ Interactive web-based tool deployed as Google Apps Script web app, providing rea
   - Number input: 0-5 experts
   - Live display shows current bonus (e.g., "+12.48% efficiency (3 experts)")
   - Bonuses: 3.06%, 6.96%, 12.48%, 19.74%, 28.40%
+
+**Company HQ:**
+- **HQ Faction Bonus** (Dropdown)
+  - No HQ Bonus (0%)
+  - Electronics +10% (Antares)
+  - Manufacturing +10% (Castillo-Ito)
+  - Agriculture +6%, Food Industries +10% (Insitor)
+  - Metallurgy +4%, Construction +6% (NEO Charter)
+  - Chemistry/Fuel/Extraction +4% each (No Faction)
+- **HQ Specialization Multiplier** (Number input: 1.0-3.0)
+  - Represents empire specialization: -2×(Used/Total Permits)+3
+  - 1.0 = Wide empire (many bases)
+  - 3.0 = Tall empire (one base)
+  - Live display shows total HQ bonus (e.g., "+26% efficiency")
+
+**Corp HQ:**
+- ☑️ **Corp HQ on Planet (+10% Multiplicative)**
+  - Planet-specific bonus where Corp HQ is built
+  - Stacks multiplicatively with Company HQ
 
 #### Results Display
 
@@ -960,16 +1057,25 @@ Savings vs Worst: 65% reduction in workforce cost
 
 **Maximum Efficiency Example:**
 ```
+// ADDITIVE BONUSES
 Base: 100% (with luxury)
 + Planet: 100% (2.0 concentration)
 + CoGC: 25%
 + 5 Experts: 28.40%
 ─────────────────────────
-Total: 253.40%
+Additive Subtotal: 253.40%
 
-Production Time: Base_Time / 2.534 = 39.5% of base
-Workforce Cost: Base_Cost / 2.534 = 39.5% of base
-Savings: 60.5%!
+// MULTIPLICATIVE BONUSES
+× Company HQ: +12% (4% × 3.0 specialization)
+× Corp HQ: +10%
+─────────────────────────
+Total: 253.40% × 1.12 × 1.10 = 312.2%
+
+Production Time: Base_Time / 3.122 = 32.0% of base
+Workforce Cost: Base_Cost / 3.122 = 32.0% of base
+Savings: 68.0%!
+
+HQ Contribution: Additional 18.5% savings beyond base bonuses
 ```
 
 ---

@@ -48,6 +48,7 @@ python main.py
 - **Multi-Recipe Comparison** - Find the most profitable production method
 - **Planet Selection** - Optimize for extraction concentration or farming fertility
 - **Efficiency Modeling** - Toggle luxury, CoGC (+25%), experts (up to +28.4%)
+- **HQ Bonuses** - Company HQ (faction bonuses × specialization) & Corp HQ (+10%)
 - **4 ROI Scenarios** - Ask/Ask, Ask/Bid, Bid/Ask, Bid/Bid
 - **Exchange Comparison** - See profitability across all exchanges
 - **Arbitrage Detection** - Cross-exchange trading opportunities
@@ -60,7 +61,9 @@ python main.py
 - Runs every 2 hours via GitHub Actions
 
 ### Advanced Calculations
-- **Additive Efficiency System** - Worker + Planet + CoGC + Experts stack additively
+- **Hybrid Efficiency System** - Additive (Worker + Planet + CoGC + Experts) then Multiplicative (HQ × Corp HQ)
+- **Company HQ Bonuses** - Faction-specific industry bonuses (4-10%) × specialization multiplier (1.0-3.0)
+- **Corp HQ Bonuses** - Planet-specific +10% multiplicative bonus
 - **28 Farmable Planets** - Only 0.8% of planets support farming (fertility data)
 - **Self-Production Costs** - Recursive calculation for vertical integration
 - **Investment Scoring** - Proprietary algorithm ranking opportunities
@@ -78,13 +81,19 @@ Workforce Cost: 20 ICA
 
 **Efficiency Stacking:**
 ```
-Base: 100% (luxury)
-Planet Concentration: +100% (2.0 factor)
-CoGC Program: +25%
-5 Experts: +28.4%
-─────────────────────────
-Total Efficiency: 253.4%
-Effective Cost: 39.5% of base (60.5% savings!)
+Additive Bonuses:
+  Base: 100% (luxury)
+  Planet Concentration: +100% (2.0 factor)
+  CoGC Program: +25%
+  5 Experts: +28.4%
+  Subtotal: 253.4%
+
+Multiplicative Bonuses:
+  Company HQ: 10% × 2.6 multiplier = +26%
+  Corp HQ: +10%
+  
+Total: 253.4% × 1.26 × 1.10 = 351.2%
+Effective Cost: 28.5% of base (71.5% savings!)
 ```
 
 **Farming Optimization:**
