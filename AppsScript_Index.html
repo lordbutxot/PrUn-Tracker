@@ -496,7 +496,7 @@
       }
       
       .data-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
       }
       
       .container {
@@ -534,6 +534,28 @@
         margin-top: 5px;
         margin-left: 26px;
         line-height: 1.4;
+      }
+      
+      /* Mobile-specific: Stack Cost Breakdown totals full width */
+      .data-grid[style*="max-width: 50%"] {
+        max-width: 100% !important;
+      }
+      
+      /* Mobile-specific: Better spacing for stacked items */
+      .section > div > .data-grid {
+        gap: 8px;
+      }
+      
+      .data-item {
+        padding: 12px;
+      }
+      
+      .data-label {
+        font-size: 0.85rem;
+      }
+      
+      .data-value {
+        font-size: 1.1rem;
       }
     }
   </style>
