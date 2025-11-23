@@ -63,6 +63,7 @@ python main.py
 ### Advanced Calculations
 - **Hybrid Efficiency System** - Additive (Worker + Planet + CoGC + Experts) then Multiplicative (HQ × Corp HQ)
 - **Company HQ Bonuses** - Faction-specific industry bonuses (4-10%) × specialization multiplier (1.0-3.0)
+- **Three HQ Input Methods** - Enter bases, permits, or multiplier directly for maximum flexibility
 - **Corp HQ Bonuses** - Planet-specific +10% multiplicative bonus
 - **28 Farmable Planets** - Only 0.8% of planets support farming (fertility data)
 - **Self-Production Costs** - Recursive calculation for vertical integration

@@ -511,16 +511,60 @@ Interactive web-based tool deployed as Google Apps Script web app, providing rea
   - Agriculture +6%, Food Industries +10% (Insitor)
   - Metallurgy +4%, Construction +6% (NEO Charter)
   - Chemistry/Fuel/Extraction +4% each (No Faction)
-- **HQ Specialization Multiplier** (Number input: 1.0-3.0)
-  - Represents empire specialization: -2×(Used/Total Permits)+3
-  - 1.0 = Wide empire (many bases)
-  - 3.0 = Tall empire (one base)
-  - Live display shows total HQ bonus (e.g., "+26% efficiency")
+
+- **Specialization Method** (Three input options):
+  1. **Number of Bases** (Default - Most intuitive)
+     - Enter total bases in your empire (1-40)
+     - System calculates multiplier automatically
+     - Assumes ~2 permits per base average
+     - Examples: 1 base = 2.9× | 5 bases = 2.5× | 10 bases = 2.0× | 20 bases = 1.0×
+  
+  2. **Used/Total Permits** (Precise)
+     - Enter exact permit usage (e.g., 15/40)
+     - Uses game formula: -2×(Used/Total)+3
+     - Most accurate if you know your permit count
+     - Examples: 0/40 = 3.0× | 20/40 = 2.0× | 40/40 = 1.0×
+  
+  3. **Manual Multiplier** (Advanced)
+     - Direct input: 1.0-3.0
+     - For testing or external calculations
+
+- **Live Display:** Shows combined bonus and multiplier (e.g., "+26.0% efficiency (multiplier: 2.60×)")
 
 **Corp HQ:**
 - ☑️ **Corp HQ on Planet (+10% Multiplicative)**
   - Planet-specific bonus where Corp HQ is built
   - Stacks multiplicatively with Company HQ
+
+**Understanding HQ Specialization Methods:**
+
+The Price Analyser offers three ways to input your empire's specialization level:
+
+**Method 1: Number of Bases (Recommended for most users)**
+- Simply count your bases and enter the number
+- The system estimates your specialization multiplier
+- Based on typical permit usage (~2 per base)
+- Best for: Players who know base count but not exact permits
+- Example: "I have 8 bases" → Auto-calculates 2.2× multiplier
+
+**Method 2: Used/Total Permits (Most accurate)**
+- Check your permit usage in-game
+- Enter exact numbers (e.g., 12 used out of 40 total)
+- Uses precise game formula: -2×(Used/Total)+3
+- Best for: Players tracking permits carefully
+- Example: "12/40 permits" → Calculates 2.4× multiplier
+
+**Method 3: Manual Multiplier (Advanced)**
+- Directly enter the multiplier value (1.0-3.0)
+- For testing scenarios or if using external tools
+- Best for: Theory-crafting and what-if analysis
+- Example: "What if I had 2.8× multiplier?" → Enter 2.8 directly
+
+**Multiplier Ranges:**
+- **2.5-3.0**: Tall empire (1-5 bases) - Maximum bonuses
+- **2.0-2.5**: Medium empire (5-10 bases) - Balanced
+- **1.5-2.0**: Growing empire (10-20 bases) - Moderate
+- **1.0-1.5**: Wide empire (20-40 bases) - Minimum bonuses
 
 #### Results Display
 
@@ -569,7 +613,40 @@ Interactive web-based tool deployed as Google Apps Script web app, providing rea
    - Toggle luxury consumables
    - Enable CoGC program
    - Add experts (0-5)
-6. **Click Calculate** → Results display with all scenarios
+6. **Configure HQ Bonuses:**
+   - Select faction bonus for your industry
+   - Choose specialization method:
+     * Quick: Enter number of bases
+     * Precise: Enter used/total permits
+     * Advanced: Manual multiplier
+   - Enable Corp HQ if on that planet
+7. **Click Calculate** → Results display with all scenarios
+
+**Example Workflow:**
+```
+Scenario: Electronics production with Antares HQ
+
+1. Material: "Electronic Components" (Ticker: BSE)
+2. Recipe: "ELP:1xFEO=>1xBSE" (Electronics Plant)
+3. Exchange: "AI1" (Antares Exchange)
+4. Options:
+   ☑ Luxury consumables (100% efficiency)
+   ☑ CoGC program (+25%)
+   Experts: 3 (+12.48%)
+5. HQ Setup:
+   Faction: "Electronics +10% (Antares)"
+   Method: "Number of Bases"
+   Bases: 5
+   → Auto-calculates: 2.5× multiplier
+   → Display shows: "+25.0% efficiency"
+   ☑ Corp HQ on this planet (+10%)
+6. Calculate!
+
+Result:
+Additive: 100% + 25% + 12.48% = 137.48%
+Multiplicative: 137.48% × 1.25 × 1.10 = 189.3%
+Effective Cost: 52.8% of base (47.2% savings)
+```
 
 ### Technology Stack
 
