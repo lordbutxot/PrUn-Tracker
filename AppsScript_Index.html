@@ -13,31 +13,37 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
       padding: 20px;
       min-height: 100vh;
+      color: #2c3e50;
+      line-height: 1.6;
     }
     
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
       background: white;
-      border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 35px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid #e5e7eb;
     }
     
     h1 {
-      color: #667eea;
-      margin-bottom: 10px;
-      font-size: 1.8rem;
+      color: #1e40af;
+      margin-bottom: 8px;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
     }
     
     .subtitle {
-      color: #666;
+      color: #6b7280;
       margin-bottom: 30px;
-      font-size: 0.95rem;
+      font-size: 1rem;
+      font-weight: 300;
     }
     
     .controls {
@@ -54,29 +60,30 @@
     
     label {
       font-weight: 600;
-      color: #333;
+      color: #2c3e50;
       margin-bottom: 8px;
       font-size: 0.9rem;
     }
     
     select {
       padding: 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
       font-size: 1rem;
       background: white;
       cursor: pointer;
       transition: all 0.2s;
+      color: #2c3e50;
     }
     
     select:hover {
-      border-color: #667eea;
+      border-color: #3b82f6;
     }
     
     select:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
     
     .loading {
@@ -87,12 +94,12 @@
     }
     
     .error {
-      background: #fee;
-      color: #c33;
+      background: #fef2f2;
+      color: #dc2626;
       padding: 15px;
-      border-radius: 8px;
+      border-radius: 6px;
       margin: 20px 0;
-      border-left: 4px solid #c33;
+      border-left: 4px solid #dc2626;
     }
     
     .results {
@@ -108,15 +115,17 @@
     .section {
       margin-bottom: 25px;
       padding: 20px;
-      background: #f8f9fc;
-      border-radius: 8px;
-      border-left: 4px solid #667eea;
+      background: #fafbfc;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      border-left: 4px solid #3b82f6;
     }
     
     .section h3 {
-      color: #667eea;
+      color: #1e3a8a;
       margin-bottom: 15px;
       font-size: 1.2rem;
+      font-weight: 600;
     }
     
     .data-grid {
@@ -129,19 +138,19 @@
       background: white;
       padding: 12px;
       border-radius: 6px;
-      border: 1px solid #e0e0e0;
+      border: 1px solid #e5e7eb;
     }
     
     .data-label {
       font-size: 0.85rem;
-      color: #666;
+      color: #6b7280;
       margin-bottom: 4px;
     }
     
     .data-value {
       font-size: 1.3rem;
       font-weight: 600;
-      color: #333;
+      color: #2c3e50;
     }
     
     .data-value.positive {
@@ -167,13 +176,13 @@
     .recipe-comparison {
       background: white;
       padding: 15px;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 10px;
       border: 2px solid #16a34a;
     }
     
     .recipe-comparison.alternative {
-      border: 1px solid #ddd;
+      border: 1px solid #d1d5db;
       opacity: 0.85;
     }
     
@@ -188,7 +197,7 @@
     
     .recipe-title {
       font-weight: 600;
-      color: #333;
+      color: #1e3a8a;
       font-size: 1rem;
     }
     
@@ -196,7 +205,7 @@
       background: #16a34a;
       color: white;
       padding: 4px 12px;
-      border-radius: 12px;
+      border-radius: 4px;
       font-size: 0.75rem;
       font-weight: 600;
     }
@@ -218,14 +227,14 @@
     }
     
     .recipe-detail-label {
-      color: #666;
+      color: #6b7280;
       font-size: 0.75rem;
       margin-bottom: 2px;
     }
     
     .recipe-detail-value {
       font-weight: 600;
-      color: #333;
+      color: #2c3e50;
     }
     
     .recipe-detail-value.profit {
@@ -238,7 +247,7 @@
     
     .recommendation-message {
       padding: 15px;
-      background: #f0f9ff;
+      background: #f0f4ff;
       border-radius: 6px;
       border-left: 4px solid #3b82f6;
       color: #1e40af;
@@ -249,14 +258,14 @@
     .exchange-card {
       background: white;
       padding: 15px;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 10px;
-      border: 2px solid #e0e0e0;
+      border: 1px solid #e5e7eb;
       transition: all 0.2s;
     }
     
     .exchange-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       transform: translateY(-2px);
     }
     
@@ -282,7 +291,7 @@
     .exchange-name {
       font-weight: 600;
       font-size: 1.1rem;
-      color: #333;
+      color: #1e3a8a;
     }
     
     .exchange-badges {
@@ -292,7 +301,7 @@
     
     .exchange-badge {
       padding: 4px 10px;
-      border-radius: 12px;
+      border-radius: 4px;
       font-size: 0.7rem;
       font-weight: 600;
     }
@@ -316,14 +325,14 @@
     .arbitrage-card {
       background: white;
       padding: 15px;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 10px;
       border-left: 4px solid #16a34a;
       transition: all 0.2s;
     }
     
     .arbitrage-card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       transform: translateY(-2px);
     }
     
@@ -387,7 +396,7 @@
     .arbitrage-route {
       font-weight: 600;
       font-size: 1rem;
-      color: #333;
+      color: #1e3a8a;
     }
     
     .arbitrage-profit {
@@ -409,28 +418,30 @@
     }
     
     .arbitrage-detail-label {
-      color: #666;
+      color: #6b7280;
       font-size: 0.75rem;
       margin-bottom: 2px;
     }
     
     .arbitrage-detail-value {
       font-weight: 600;
-      color: #333;
+      color: #2c3e50;
     }
     
     .options-panel {
-      background: #f8f9fc;
-      border-radius: 8px;
+      background: #fafbfc;
+      border-radius: 6px;
       padding: 20px;
       margin-bottom: 20px;
-      border-left: 4px solid #f59e0b;
+      border: 1px solid #e5e7eb;
+      border-left: 4px solid #3b82f6;
     }
     
     .options-panel h3 {
-      color: #f59e0b;
+      color: #1e3a8a;
       margin-bottom: 15px;
       font-size: 1rem;
+      font-weight: 600;
     }
     
     .options-grid {
@@ -443,14 +454,14 @@
       background: white;
       padding: 15px;
       border-radius: 6px;
-      border: 1px solid #e0e0e0;
+      border: 1px solid #e5e7eb;
     }
     
     .checkbox-label {
       display: flex;
       align-items: center;
       font-weight: 600;
-      color: #333;
+      color: #2c3e50;
       cursor: pointer;
       user-select: none;
     }
@@ -465,7 +476,7 @@
     .option-hint {
       margin-top: 8px;
       font-size: 0.85rem;
-      color: #666;
+      color: #6b7280;
       font-style: italic;
     }
     
@@ -556,7 +567,7 @@
     </div>
     
     <div class="options-panel">
-      <h3>⚙️ Cost Calculation Options</h3>
+      <h3>Cost Calculation Options</h3>
       <div class="options-grid">
         <div class="option-item">
           <label class="checkbox-label">
@@ -568,15 +579,15 @@
         <div class="option-item">
           <label class="checkbox-label">
             <input type="checkbox" id="customEfficiencyToggle">
-            <span>⚙️ Use Custom Workforce Efficiency</span>
+            <span>Use Custom Workforce Efficiency</span>
           </label>
           <div class="option-hint" style="margin-bottom: 10px;">Override automatic efficiency calculation with manual percentage</div>
           <div id="customEfficiencyGroup" style="display: none; padding-left: 24px;">
-            <label for="customEfficiency" style="font-size: 0.85rem; font-weight: 500; color: #555; margin-bottom: 5px; display: block;">Efficiency Percentage:</label>
+            <label for="customEfficiency" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Efficiency Percentage:</label>
             <div style="display: flex; align-items: center; gap: 8px;">
               <input type="number" id="customEfficiency" min="1" max="100" value="79" step="1" 
-                     style="padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; width: 80px; font-size: 1rem;">
-              <span style="font-size: 0.9rem; color: #666;">%</span>
+                     style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; font-size: 1rem;">
+              <span style="font-size: 0.9rem; color: #6b7280;">%</span>
             </div>
           </div>
         </div>
@@ -590,18 +601,18 @@
         <div class="option-item">
           <label class="checkbox-label">
             <input type="checkbox" id="cogcBonus">
-            <span>🏛️ CoGC Program Active (+25% Efficiency)</span>
+            <span>CoGC Program Active (+25% Efficiency)</span>
           </label>
           <div class="option-hint">Chamber of Global Commerce program provides +25% production efficiency bonus</div>
         </div>
         <div class="option-item">
-          <label style="font-size: 0.95rem; font-weight: 500; color: #333; margin-bottom: 8px; display: block;">
-            👨‍🔬 Experts Assigned (Cumulative Bonus)
+          <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
+            Experts Assigned (Cumulative Bonus)
           </label>
           <div style="display: flex; align-items: center; gap: 12px; padding-left: 24px;">
             <input type="number" id="expertCount" min="0" max="5" value="0" step="1" 
-                   style="padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; width: 70px; font-size: 1rem;">
-            <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #2196F3; font-weight: 600;">+0% efficiency</span>
+                   style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 70px; font-size: 1rem;">
+            <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
           </div>
           <div class="option-hint" style="margin-top: 5px;">Each expert provides cumulative bonus with synergy effects (1-5 experts)</div>
         </div>
@@ -616,7 +627,7 @@
     
     <div id="results" class="results">
       <div class="section">
-        <h3>🔬 Recipe Details</h3>
+        <h3>Recipe Details</h3>
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Inputs Required</div>
@@ -630,7 +641,7 @@
       </div>
       
       <div class="section">
-        <h3>💰 Pricing</h3>
+        <h3>Pricing</h3>
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Ask Price</div>
@@ -644,7 +655,7 @@
       </div>
       
       <div class="section">
-        <h3>📊 Cost Breakdown</h3>
+        <h3>Cost Breakdown</h3>
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Input Cost (Ask Prices)</div>
@@ -674,7 +685,7 @@
       </div>
       
       <div class="section">
-        <h3>💵 Profitability - All Scenarios</h3>
+        <h3>Profitability - All Scenarios</h3>
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Profit (Ask Price + Ask Inputs)</div>
@@ -712,7 +723,7 @@
       </div>
       
       <div class="section">
-        <h3>⚖️ Breakeven Analysis - All Scenarios</h3>
+        <h3>Breakeven Analysis - All Scenarios</h3>
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Breakeven Units (Ask + Ask)</div>
@@ -734,7 +745,7 @@
       </div>
       
       <div class="section">
-        <h3>📈 Market Indicators</h3>
+        <h3>Market Indicators</h3>
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Supply</div>
@@ -748,7 +759,7 @@
       </div>
       
       <div class="section" id="exchangeComparisonSection" style="display: none;">
-        <h3>🌐 Exchange Comparison</h3>
+        <h3>Exchange Comparison</h3>
         <div style="margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
           Compare prices and profitability across all exchanges using your current production costs
         </div>
@@ -756,7 +767,7 @@
       </div>
       
       <div class="section" id="arbitrageSection" style="display: none;">
-        <h3>💱 Arbitrage Opportunities</h3>
+        <h3>Arbitrage Opportunities</h3>
         <div style="margin-bottom: 15px; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
           Profitable buy/sell opportunities between exchanges (showing profit > 5% after transfer costs)
         </div>
@@ -764,7 +775,7 @@
       </div>
       
       <div class="section" id="recommendationSection" style="display: none;">
-        <h3>🏆 Recommended Recipe</h3>
+        <h3>Recommended Recipe</h3>
         <div id="recommendationContent"></div>
       </div>
     </div>
