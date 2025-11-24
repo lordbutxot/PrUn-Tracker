@@ -2542,6 +2542,8 @@
             totalCost: totalCostAsk,
             profit: profitAsk,
             roi: roiAsk,
+            supply: row.supply || 0,
+            demand: row.demand || 0,
             isCurrent: recipeString === currentRecipe
           });
         }
@@ -2649,6 +2651,14 @@
               <div class="recipe-detail-item">
                 <div class="recipe-detail-label">ROI</div>
                 <div class="recipe-detail-value ${roiClass}">${recipe.roi.toFixed(2)}%</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Supply</div>
+                <div class="recipe-detail-value">${recipe.supply.toLocaleString('en-US')}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Demand</div>
+                <div class="recipe-detail-value">${recipe.demand.toLocaleString('en-US')}</div>
               </div>
             </div>
           </div>
