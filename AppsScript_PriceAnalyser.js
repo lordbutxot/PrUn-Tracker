@@ -2,6 +2,15 @@
 // GOOGLE APPS SCRIPT - INTERACTIVE PRICE ANALYSER WEB APP
 // ====================================================================
 // 
+// FEATURES:
+// - 💎 Best ROI badges with color-coded comparison (green/red/blue)
+// - 📊 Real-time traded volume display across all sections
+// - 🌍 Planet-based extraction building filtering
+// - ⏱️ Last update timestamp with timezone support
+// - 📱 Mobile responsive design with badge stacking
+// - ✅ Corrected fertility calculations using PCT formula
+// - 🔄 Unique material recommendations (deduplicated)
+//
 // DEPLOYMENT INSTRUCTIONS:
 // 1. Open your Google Sheet: https://docs.google.com/spreadsheets/d/1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI/edit
 // 2. Go to: Extensions → Apps Script
@@ -16,6 +25,12 @@
 // 8. Click "Deploy"
 // 9. Copy the Web App URL (ends with /exec)
 // 10. Replace the iframe src in index.html with this URL
+//
+// DATA REQUIREMENTS:
+// - Price Analyser Data sheet (15 columns including Traded Volume in column O)
+// - Metadata sheet (Key-Value pairs with Last Data Update timestamp)
+// - Planet Resources sheet (Planet, Ticker, Type, Factor, Fertility columns)
+// - Bids sheet (for breakeven calculations)
 //
 // ====================================================================
 

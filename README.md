@@ -45,13 +45,17 @@ python main.py
 ## 📊 Key Features
 
 ### Price Analyser Web App
-- **Multi-Recipe Comparison** - Find the most profitable production method
+- **Multi-Recipe Comparison** - Find the most profitable production method with 💎 Best ROI badges
+- **Visual ROI Indicators** - Color-coded comparison (🟢 better, 🔴 worse, 🔵 selected)
 - **Planet Selection** - Optimize for extraction concentration or farming fertility
+- **Planet-Based Filtering** - Extraction buildings show only planet-available materials
 - **Efficiency Modeling** - Toggle luxury, CoGC (+25%), experts (up to +28.4%)
 - **HQ Bonuses** - Company HQ (faction bonuses × specialization) & Corp HQ (+10%)
 - **4 ROI Scenarios** - Ask/Ask, Ask/Bid, Bid/Ask, Bid/Bid
-- **Exchange Comparison** - See profitability across all exchanges
+- **Exchange Comparison** - See profitability across all exchanges with supply/demand/volume
 - **Arbitrage Detection** - Cross-exchange trading opportunities
+- **Real-Time Updates** - Timestamp showing last data refresh with timezone support
+- **Mobile Responsive** - Optimized layout with badge stacking for smaller screens
 
 ### Automated Data Pipeline
 - Fetches from Prosperous Universe FIO API
@@ -65,9 +69,10 @@ python main.py
 - **Company HQ Bonuses** - Faction-specific industry bonuses (4-10%) × specialization multiplier (1.0-3.0)
 - **Three HQ Input Methods** - Enter bases, permits, or multiplier directly for maximum flexibility
 - **Corp HQ Bonuses** - Planet-specific +10% multiplicative bonus
-- **28 Farmable Planets** - Only 0.8% of planets support farming (fertility data)
+- **28 Farmable Planets** - Only 0.8% of planets support farming with corrected PCT fertility formula
+- **Official Fertility Formula** - `Fertility = RawFertility × (10/33)` from PCT reference
 - **Self-Production Costs** - Recursive calculation for vertical integration
-- **Investment Scoring** - Proprietary algorithm ranking opportunities
+- **Investment Scoring** - Proprietary algorithm ranking unique opportunities (deduplicated)
 
 ## 📈 Sample Results
 
@@ -115,6 +120,17 @@ Optimal savings: 65% vs worst planet
 - Troubleshooting & FAQ
 - API reference
 - Advanced features
+
+**Feature Guide:** See **[FEATURES.md](FEATURES.md)** for detailed guide to all features:
+- ROI badges and color coding system
+- Planet-based extraction filtering
+- Fertility calculations and farming
+- Market indicators and timestamp display
+- UI/UX features and mobile responsiveness
+- Cost calculation options
+- Bug fixes and technical details
+
+**Recent Changes:** See **[CHANGELOG.md](CHANGELOG.md)** for latest features and bug fixes
 
 **GitHub Actions Setup:** See **[GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)**
 
@@ -187,7 +203,9 @@ Not affiliated with Simulogics or Prosperous Universe.
 
 **Ready to optimize your Prosperous Universe gameplay?**
 
-👉 **[Read Full Documentation (WIKI.md)](WIKI.md)**  
-👉 **[Setup GitHub Actions (GITHUB_ACTIONS_SETUP.md)](GITHUB_ACTIONS_SETUP.md)**  
-👉 **[Open Issues](https://github.com/lordbutxot/PrUn-Tracker/issues)**
+👉 **[Feature Guide (FEATURES.md)](FEATURES.md)** - Complete guide to all features  
+👉 **[Read Full Documentation (WIKI.md)](WIKI.md)** - Technical documentation  
+👉 **[Recent Changes (CHANGELOG.md)](CHANGELOG.md)** - Latest updates  
+👉 **[Setup GitHub Actions (GITHUB_ACTIONS_SETUP.md)](GITHUB_ACTIONS_SETUP.md)** - Automation guide  
+👉 **[Open Issues](https://github.com/lordbutxot/PrUn-Tracker/issues)** - Report bugs or request features
 
