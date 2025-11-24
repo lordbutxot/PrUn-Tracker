@@ -2475,7 +2475,7 @@
       const indent = node.depth * 20;
       const connector = node.depth > 0 ? '├─ ' : '';
       const hasChildren = node.children && node.children.length > 0;
-      const icon = node.hasRecipes ? '🏭' : '⛏️';
+      const label = node.hasRecipes ? '[P]' : '[T0]';
       const disabledAttr = !node.hasRecipes ? 'disabled' : '';
       const disabledStyle = !node.hasRecipes ? 'opacity: 0.5; cursor: not-allowed;' : '';
       
@@ -2488,7 +2488,8 @@
                    ${disabledAttr}
                    onchange="inputOverrides['${node.ticker}'] = this.checked; selfProductionCache = {}; bestRecipeCache = {}; calculate();">
             <span style="color: #6b7280; margin-right: 4px;">${connector}</span>
-            <span>${icon} ${node.amount}× ${node.ticker}</span>
+            <span style="color: ${node.hasRecipes ? '#16a34a' : '#6b7280'}; font-weight: 500; margin-right: 4px;">${label}</span>
+            <span>${node.amount}× ${node.ticker}</span>
             ${!node.hasRecipes ? '<span style="color: #9ca3af; font-size: 0.75rem; margin-left: 4px;">(tier-0)</span>' : ''}
           </label>
         </div>
