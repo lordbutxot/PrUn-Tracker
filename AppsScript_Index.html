@@ -1299,6 +1299,7 @@
           // Display last updated timestamp
           const lastUpdatedElement = document.getElementById('lastUpdatedText');
           if (result.lastUpdated) {
+            // Parse UTC timestamp (ISO format) and convert to local time
             const updateDate = new Date(result.lastUpdated);
             const now = new Date();
             const diffMs = now - updateDate;
@@ -1314,7 +1315,18 @@
               timeAgo = 'just now';
             }
             
-            lastUpdatedElement.textContent = `📊 Data last updated: ${timeAgo} (${updateDate.toLocaleString()})`;
+            // Display in user's local timezone
+            const localTimeString = updateDate.toLocaleString(undefined, {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+            
+            lastUpdatedElement.textContent = `📊 Data last updated: ${timeAgo} (${localTimeString} local time)`;
           } else {
             lastUpdatedElement.textContent = '📊 Data loaded successfully';
           }

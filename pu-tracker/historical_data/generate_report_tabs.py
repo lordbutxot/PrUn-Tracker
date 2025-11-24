@@ -2501,12 +2501,13 @@ def create_price_analyser_tab(sheets_manager, all_df):
     except:
         print("[WARN] Could not upload reference data sheet")
     
-    # Upload metadata with timestamp
+    # Upload metadata with timestamp (UTC ISO format for consistent timezone handling)
     try:
-        from datetime import datetime
+        from datetime import datetime, timezone
+        utc_timestamp = datetime.now(timezone.utc).isoformat()
         metadata_df = pd.DataFrame({
             'Key': ['Last Data Update'],
-            'Value': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+            'Value': [utc_timestamp]
         })
         sheets_manager.upload_dataframe_to_sheet("Metadata", metadata_df)
         print(f"[INFO] Updated metadata timestamp: {metadata_df['Value'][0]}")
