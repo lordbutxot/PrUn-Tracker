@@ -824,10 +824,10 @@
             
             <div style="margin-top: 10px;">
               <button id="customizeInputsBtn" style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
-                Customize Per Input
+                Customize Production Chain
               </button>
-              <div id="inputCustomization" style="display: none; margin-top: 10px; padding: 8px; background: white; border-radius: 4px; max-height: 200px; overflow-y: auto;">
-                <!-- Dynamic input checkboxes will be inserted here -->
+              <div id="inputCustomization" style="display: none; margin-top: 10px; padding: 8px; background: white; border-radius: 4px; max-height: 400px; overflow-y: auto;">
+                <!-- Dynamic hierarchical input tree will be inserted here -->
               </div>
             </div>
           </div>
@@ -1712,11 +1712,11 @@
       const customDiv = document.getElementById('inputCustomization');
       if (customDiv.style.display === 'none') {
         customDiv.style.display = 'block';
-        this.textContent = 'Hide Customization';
-        populateInputCustomization();
+        this.textContent = 'Hide Production Chain';
+        populateProductionChainCustomization();
       } else {
         customDiv.style.display = 'none';
-        this.textContent = 'Customize Per Input';
+        this.textContent = 'Customize Production Chain';
       }
     });
     
@@ -2423,32 +2423,144 @@
       return fertilityModifier;
     }
     
-    // Populate input customization checkboxes based on current recipe
-    function populateInputCustomization() {
+    // Build hierarchical production chain for current recipe
+    function buildProductionChainTree(recipeString, exchange, depth = 0, visited = new Set()) {
+      if (!recipeString || !recipeString.includes('=>') || depth > 10) return [];
+      
+      const parts = recipeString.split('=>');
+      const inputPart = parts[0].split(':')[1] || parts[0];
+      const inputs = inputPart.split('-');
+      const tree = [];
+      
+      for (const inputStr of inputs) {
+        const match = inputStr.match(/(\d+)x([A-Z]+)/);
+        if (match) {
+          const amount = parseInt(match[1]);
+          const ticker = match[2];
+          
+          // Check if material has recipes (producible)
+          const recipes = allData.filter(row => 
+            row.ticker === ticker && row.exchange === exchange && row.recipe
+          );
+          
+          const node = {
+            ticker: ticker,
+            amount: amount,
+            hasRecipes: recipes.length > 0,
+            depth: depth,
+            children: []
+          };
+          
+          // If has recipes and not visited (prevent circular), recurse
+          if (recipes.length > 0 && !visited.has(ticker)) {
+            const newVisited = new Set(visited);
+            newVisited.add(ticker);
+            
+            // Use first recipe for tree building (could be improved to use cheapest)
+            const firstRecipe = recipes[0];
+            node.children = buildProductionChainTree(firstRecipe.recipe, exchange, depth + 1, newVisited);
+          }
+          
+          tree.push(node);
+        }
+      }
+      
+      return tree;
+    }
+    
+    // Render production chain tree with checkboxes
+    function renderProductionChainNode(node, parentPath = '') {
+      const nodePath = parentPath ? `${parentPath}.${node.ticker}` : node.ticker;
+      const isChecked = inputOverrides[node.ticker] !== false; // Default true
+      const indent = node.depth * 20;
+      const connector = node.depth > 0 ? '├─ ' : '';
+      const hasChildren = node.children && node.children.length > 0;
+      const icon = node.hasRecipes ? '🏭' : '⛏️';
+      const disabledAttr = !node.hasRecipes ? 'disabled' : '';
+      const disabledStyle = !node.hasRecipes ? 'opacity: 0.5; cursor: not-allowed;' : '';
+      
+      let html = `
+        <div style="margin-bottom: 4px; padding-left: ${indent}px; ${disabledStyle}">
+          <label class="checkbox-label" style="display: flex; align-items: center; font-size: 0.85rem;">
+            <input type="checkbox" 
+                   id="input_${nodePath}" 
+                   ${isChecked ? 'checked' : ''} 
+                   ${disabledAttr}
+                   onchange="inputOverrides['${node.ticker}'] = this.checked; selfProductionCache = {}; bestRecipeCache = {}; calculate();">
+            <span style="color: #6b7280; margin-right: 4px;">${connector}</span>
+            <span>${icon} ${node.amount}× ${node.ticker}</span>
+            ${!node.hasRecipes ? '<span style="color: #9ca3af; font-size: 0.75rem; margin-left: 4px;">(tier-0)</span>' : ''}
+          </label>
+        </div>
+      `;
+      
+      // Render children
+      if (hasChildren) {
+        for (const child of node.children) {
+          html += renderProductionChainNode(child, nodePath);
+        }
+      }
+      
+      return html;
+    }
+    
+    // Populate hierarchical production chain customization
+    function populateProductionChainCustomization() {
       const customDiv = document.getElementById('inputCustomization');
-      if (!currentRecipeInputs || currentRecipeInputs.length === 0) {
-        customDiv.innerHTML = '<div style="color: #6b7280; font-size: 0.85rem;">No inputs to customize</div>';
+      const recipe = document.getElementById('recipeSelect').value;
+      const exchange = document.getElementById('exchangeSelect').value;
+      
+      if (!recipe || !exchange) {
+        customDiv.innerHTML = '<div style="color: #6b7280; font-size: 0.85rem;">Select a recipe to customize production chain</div>';
         return;
       }
       
-      customDiv.innerHTML = '<div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #374151;">Select inputs to self-produce:</div>';
+      customDiv.innerHTML = `
+        <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #374151;">
+          Production Chain Customization
+          <div style="font-weight: 400; color: #6b7280; font-size: 0.75rem; margin-top: 2px;">
+            Check to produce, uncheck to buy from market. Tier-0 materials cannot be produced.
+          </div>
+        </div>
+        <div style="margin-top: 8px;">
+          <button onclick="toggleAllInputs(true)" style="padding: 4px 8px; margin-right: 4px; font-size: 0.75rem; background: #10b981; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Produce All
+          </button>
+          <button onclick="toggleAllInputs(false)" style="padding: 4px 8px; font-size: 0.75rem; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            Buy All
+          </button>
+        </div>
+        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+      `;
       
-      currentRecipeInputs.forEach(input => {
-        const isChecked = inputOverrides[input.ticker] !== false; // Default true
-        const checkbox = document.createElement('label');
-        checkbox.className = 'checkbox-label';
-        checkbox.style.display = 'flex';
-        checkbox.style.alignItems = 'center';
-        checkbox.style.marginBottom = '6px';
-        checkbox.style.fontSize = '0.85rem';
-        checkbox.innerHTML = `
-          <input type="checkbox" id="input_${input.ticker}" ${isChecked ? 'checked' : ''} 
-                 onchange="inputOverrides['${input.ticker}'] = this.checked; selfProductionCache = {}; calculate();">
-          <span>${input.amount}× ${input.ticker}</span>
-        `;
-        customDiv.appendChild(checkbox);
-      });
+      // Build and render tree
+      const tree = buildProductionChainTree(recipe, exchange);
+      
+      if (tree.length === 0) {
+        customDiv.innerHTML += '<div style="color: #6b7280; font-size: 0.85rem;">No producible inputs found</div>';
+      } else {
+        for (const node of tree) {
+          customDiv.innerHTML += renderProductionChainNode(node);
+        }
+      }
+      
+      customDiv.innerHTML += '</div>';
     }
+    
+    // Toggle all inputs in production chain
+    window.toggleAllInputs = function(produceAll) {
+      const checkboxes = document.querySelectorAll('#inputCustomization input[type="checkbox"]:not([disabled])');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = produceAll;
+        // Extract ticker from ID (format: input_[path.]ticker)
+        const idParts = checkbox.id.split('_')[1].split('.');
+        const ticker = idParts[idParts.length - 1];
+        inputOverrides[ticker] = produceAll;
+      });
+      selfProductionCache = {};
+      bestRecipeCache = {};
+      calculate();
+    };
     
     function calculateSelfProductionCostClientSide(recipeString, exchange, consumablesOnly = false, visited = new Set(), treeNodes = null) {
       if (!recipeString || !recipeString.includes('=>')) return { cost: 0, tree: null };
