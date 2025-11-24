@@ -1667,15 +1667,25 @@
         
         // Get building comparison if a recipe is selected
         if (calculationData && calculationData.recipe) {
+          console.log('=== BUILDING COMPARISON TRIGGER ===');
+          console.log('Recipe:', calculationData.recipe);
+          console.log('Material:', calculationData.material);
+          console.log('Exchange:', exchange);
+          
           const buildingComparisonData = getBuildingComparisonFromCache(calculationData.recipe, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
+          
+          console.log('Building comparison result:', buildingComparisonData ? 'Found data' : 'No data');
+          
           if (buildingComparisonData) {
             displayBuildingComparison(buildingComparisonData);
           } else {
             // Hide building comparison if no data or only one recipe
+            console.log('Hiding building comparison section');
             document.getElementById('buildingComparisonSection').style.display = 'none';
           }
         } else {
           // Hide building comparison if no recipe selected
+          console.log('No recipe in calculationData, hiding building comparison');
           document.getElementById('buildingComparisonSection').style.display = 'none';
         }
       } catch (error) {
@@ -2500,7 +2510,9 @@
     
     // Get building comparison from cached data
     function getBuildingComparisonFromCache(currentRecipe, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) {
-      if (!currentRecipe || !currentRecipe.includes(':')) {
+      // Validate recipe format - must contain either ':' or '=>'
+      if (!currentRecipe || (!currentRecipe.includes(':') && !currentRecipe.includes('=>'))) {
+        console.log('Invalid recipe format:', currentRecipe);
         return null;
       }
       
@@ -2515,6 +2527,8 @@
       } else {
         return null;
       }
+      
+      console.log('Building comparison starting for:', building);
       
       const buildingRecipes = [];
       const seenMaterials = new Set();
@@ -2808,12 +2822,17 @@
       const content = document.getElementById(contentId);
       const icon = document.getElementById(contentId + '-icon');
       
+      if (!content) {
+        console.error('toggleCollapse: Element not found:', contentId);
+        return;
+      }
+      
       if (content.classList.contains('collapsed')) {
         content.classList.remove('collapsed');
-        icon.classList.remove('collapsed');
+        if (icon) icon.classList.remove('collapsed');
       } else {
         content.classList.add('collapsed');
-        icon.classList.add('collapsed');
+        if (icon) icon.classList.add('collapsed');
       }
     }
     
