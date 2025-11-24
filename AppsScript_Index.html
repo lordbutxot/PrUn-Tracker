@@ -1446,48 +1446,18 @@
     
     // Populate category dropdown from cached data
     function populateCategories() {
-      // Static list of all game categories
-      const gameCategories = [
-        'manufacturing',
-        'agriculture',
-        'electronics',
-        'food industries',
-        'metallurgy',
-        'construction',
-        'chemistry',
-        'fuel',
-        'extraction',
-        'consumables (basic)',
-        'consumables (luxury)',
-        'consumable bundles',
-        'software tools',
-        'software components',
-        'software systems',
-        'energy systems',
-        'infrastructure',
-        'unit prefabs',
-        'ship engines',
-        'ship parts',
-        'ship shields',
-        'ship kits',
-        'alloys',
-        'metals',
-        'minerals',
-        'elements',
-        'gases',
-        'ores',
-        'textiles',
-        'plastics',
-        'construction materials',
-        'medical equipment',
-        'drones',
-        'utility',
-        'chemicals',
-        'agricultural products'
-      ];
+      // Get unique categories from materials data
+      const categoriesSet = new Set();
+      if (window.allData) {
+        window.allData.forEach(row => {
+          if (row.category) {
+            categoriesSet.add(row.category.trim());
+          }
+        });
+      }
       const select = document.getElementById('categorySelect');
       select.innerHTML = '<option value="">-- All Categories --</option>';
-      gameCategories.forEach(function(category) {
+      Array.from(categoriesSet).sort((a, b) => a.localeCompare(b)).forEach(function(category) {
         const option = document.createElement('option');
         option.value = category;
         option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
@@ -1498,57 +1468,16 @@
     // Populate materials dropdown from cached data, filtered by selected category
     function populateMaterials() {
       const selectedCategory = document.getElementById('categorySelect').value.trim().toLowerCase();
-      // Map broad dropdown categories to all possible real data categories
-      const categoryMap = {
-        "manufacturing": [
-          "manufacturing", "construction materials", "construction parts", "construction prefabs", "unit prefabs", "alloys", "elements", "minerals", "consumables (basic)", "consumables (luxury)", "ship engines", "ship parts", "ship shields", "ship kits", "plastics", "textiles", "medical equipment", "utility"
-        ],
-        "agriculture": [
-          "agriculture", "agricultural products"
-        ],
-        "electronics": [
-          "electronics", "electronic pieces", "software components", "software systems", "software tools"
-        ],
-        "food industries": [
-          "food industries", "consumables (basic)", "consumables (luxury)"
-        ],
-        "metallurgy": [
-          "metallurgy", "alloys", "metals", "minerals", "elements"
-        ],
-        "construction": [
-          "construction", "construction materials", "construction parts", "construction prefabs", "unit prefabs"
-        ],
-        "chemistry": [
-          "chemistry", "chemicals", "liquids", "gases"
-        ],
-        "fuel": [
-          "fuel", "liquids", "gases"
-        ],
-        "extraction": [
-          "extraction", "ores", "minerals", "elements", "gases"
-        ],
-        // Add more mappings as needed
-      };
-
       const materialsSet = new Set();
       allData.forEach(row => {
-        if (row.ticker) {
-          if (!selectedCategory) {
-            materialsSet.add(row.ticker);
-          } else if (row.category) {
-            const cat = row.category.trim().toLowerCase();
-            // If selectedCategory is mapped, match any mapped real category
-            if (categoryMap[selectedCategory]) {
-              if (categoryMap[selectedCategory].some(mappedCat => cat === mappedCat)) {
-                materialsSet.add(row.ticker);
-              }
-            } else {
-              // Fallback: substring match
-              if (cat.includes(selectedCategory)) {
-                materialsSet.add(row.ticker);
-              }
-            }
-          }
+        if (
+          row.ticker &&
+          (
+            !selectedCategory ||
+            (row.category && row.category.trim().toLowerCase() === selectedCategory)
+          )
+        ) {
+          materialsSet.add(row.ticker);
         }
       });
       const select = document.getElementById('materialSelect');
