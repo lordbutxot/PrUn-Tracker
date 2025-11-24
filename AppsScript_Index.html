@@ -1497,17 +1497,58 @@
 
     // Populate materials dropdown from cached data, filtered by selected category
     function populateMaterials() {
-      const selectedCategory = document.getElementById('categorySelect').value;
+      const selectedCategory = document.getElementById('categorySelect').value.trim().toLowerCase();
+      // Map broad dropdown categories to all possible real data categories
+      const categoryMap = {
+        "manufacturing": [
+          "manufacturing", "construction materials", "construction parts", "construction prefabs", "unit prefabs", "alloys", "elements", "minerals", "consumables (basic)", "consumables (luxury)", "ship engines", "ship parts", "ship shields", "ship kits", "plastics", "textiles", "medical equipment", "utility"
+        ],
+        "agriculture": [
+          "agriculture", "agricultural products"
+        ],
+        "electronics": [
+          "electronics", "electronic pieces", "software components", "software systems", "software tools"
+        ],
+        "food industries": [
+          "food industries", "consumables (basic)", "consumables (luxury)"
+        ],
+        "metallurgy": [
+          "metallurgy", "alloys", "metals", "minerals", "elements"
+        ],
+        "construction": [
+          "construction", "construction materials", "construction parts", "construction prefabs", "unit prefabs"
+        ],
+        "chemistry": [
+          "chemistry", "chemicals", "liquids", "gases"
+        ],
+        "fuel": [
+          "fuel", "liquids", "gases"
+        ],
+        "extraction": [
+          "extraction", "ores", "minerals", "elements", "gases"
+        ],
+        // Add more mappings as needed
+      };
+
       const materialsSet = new Set();
       allData.forEach(row => {
-        if (
-          row.ticker &&
-          (
-            !selectedCategory ||
-            (row.category && row.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase())
-          )
-        ) {
-          materialsSet.add(row.ticker);
+        if (row.ticker) {
+          if (!selectedCategory) {
+            materialsSet.add(row.ticker);
+          } else if (row.category) {
+            const cat = row.category.trim().toLowerCase();
+            // If selectedCategory is mapped, match any mapped real category
+            if (categoryMap[selectedCategory]) {
+              if (categoryMap[selectedCategory].some(mappedCat => cat === mappedCat)) {
+                materialsSet.add(row.ticker);
+              }
+            } else {
+              // Fallback: substring match
+              if (cat.includes(selectedCategory)) {
+                materialsSet.add(row.ticker);
+              }
+            }
+          }
         }
       });
       const select = document.getElementById('materialSelect');
