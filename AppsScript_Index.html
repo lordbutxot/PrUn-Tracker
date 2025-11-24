@@ -1834,12 +1834,12 @@
         const outputPart = parts[1];
         
         recipeInputs = inputPart.split('-').map(item => {
-          const match = item.match(/(\d+)x([A-Z]+)/);
+          const match = item.match(/(\d+)x([A-Z0-9]+)/);
           return match ? match[1] + ' ' + match[2] : item;
         }).join(', ');
         
         recipeOutputs = outputPart.split('-').map(item => {
-          const match = item.match(/(\d+)x([A-Z]+)/);
+          const match = item.match(/(\d+)x([A-Z0-9]+)/);
           return match ? match[1] + ' ' + match[2] : item;
         }).join(', ');
       }
@@ -2108,12 +2108,12 @@
             const outputPart = parts[1];
             
             recipeInputs = inputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
+              const match = item.match(/(\d+)x([A-Z0-9]+)/);
               return match ? match[1] + ' ' + match[2] : item;
             }).join(', ');
             
             recipeOutputs = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
+              const match = item.match(/(\d+)x([A-Z0-9]+)/);
               return match ? match[1] + ' ' + match[2] : item;
             }).join(', ');
           }
@@ -2620,7 +2620,7 @@
           if (recipeString.includes('=>')) {
             const outputPart = recipeString.split('=>')[1];
             outputDisplay = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
+              const match = item.match(/(\d+)x([A-Z0-9]+)/);
               return match ? match[1] + ' ' + match[2] : item;
             }).join(', ');
           }
