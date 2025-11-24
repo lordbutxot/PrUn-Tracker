@@ -2526,15 +2526,20 @@
         return null; // Don't show if only one recipe
       }
       
-      // Sort by profit descending
-      buildingRecipes.sort((a, b) => b.profit - a.profit);
+      // Sort by ROI descending (not profit)
+      buildingRecipes.sort((a, b) => b.roi - a.roi);
+      
+      // Find best profit recipe separately for badge display
+      const bestProfitRecipe = buildingRecipes.reduce((best, recipe) => 
+        recipe.profit > best.profit ? recipe : best
+      , buildingRecipes[0]);
       
       return {
         success: true,
         building: building,
         recipes: buildingRecipes,
         count: buildingRecipes.length,
-        bestRecipe: buildingRecipes[0]
+        bestRecipe: bestProfitRecipe // Keep for best profit badge
       };
     }
     
