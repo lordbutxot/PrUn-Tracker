@@ -2462,11 +2462,11 @@ def create_price_analyser_tab(sheets_manager, all_df):
     reference_df = clean_df[['Ticker', 'Recipe', 'Material Name', 'Exchange', 'Ask_Price', 'Bid_Price', 
                            'Input Cost Ask', 'Input Cost Bid', 
                            'Workforce Cost Ask', 'Workforce Cost Bid',
-                           'Amount per Recipe', 'Supply', 'Demand', 'Traded']].copy()
+                           'Amount per Recipe', 'Supply', 'Demand', 'Traded Volume']].copy()
     
     # Fill NaN values with 0 for numeric columns
     numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost Ask', 'Input Cost Bid', 
-                    'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand', 'Traded']
+                    'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand', 'Traded Volume']
     for col in numeric_cols:
         reference_df[col] = reference_df[col].fillna(0)
     
