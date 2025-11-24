@@ -482,6 +482,15 @@
       font-weight: 600;
     }
     
+    .badge-best-roi {
+      background: #16a34a;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
     .badge-selected {
       background: #3b82f6;
       color: white;
@@ -495,6 +504,24 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 10px;
+    }
+    
+    .roi-better {
+      color: #16a34a !important;
+      font-weight: 700 !important;
+      font-size: 1.1rem !important;
+    }
+    
+    .roi-worse {
+      color: #dc2626 !important;
+      font-weight: 700 !important;
+      font-size: 1.1rem !important;
+    }
+    
+    .roi-selected {
+      font-weight: 700 !important;
+      font-size: 1.1rem !important;
+      color: #3b82f6 !important;
     }
     
     .arbitrage-card:hover {
@@ -2521,26 +2548,47 @@
         return;
       }
       
+      // Find best ROI and current recipe's ROI for comparison
+      const bestRoiRecipe = data.recipes.reduce((best, recipe) => 
+        recipe.roi > best.roi ? recipe : best
+      , data.recipes[0]);
+      
+      const currentRecipe = data.recipes.find(r => r.isCurrent);
+      const currentRoi = currentRecipe ? currentRecipe.roi : 0;
+      
       let html = `<div style="margin-bottom: 15px; font-weight: 600; color: #1e3a8a; font-size: 1rem;">
         🏭 ${data.building} Building - ${data.count} Recipe${data.count > 1 ? 's' : ''} Available
       </div>`;
       
       data.recipes.forEach(function(recipe) {
-        const isBest = recipe.material === data.bestRecipe.material;
+        const isBestProfit = recipe.material === data.bestRecipe.material;
+        const isBestRoi = recipe.material === bestRoiRecipe.material;
         const isCurrent = recipe.isCurrent;
         let cardClass = 'building-recipe-card';
-        if (isBest) cardClass += ' best';
+        if (isBestProfit) cardClass += ' best';
         else if (isCurrent) cardClass += ' current';
         
         const profitClass = recipe.profit >= 0 ? 'positive' : 'negative';
-        const roiClass = recipe.roi >= 0 ? 'positive' : 'negative';
+        
+        // ROI color coding relative to selected recipe
+        let roiClass = '';
+        if (isCurrent) {
+          roiClass = 'roi-selected';
+        } else if (recipe.roi > currentRoi) {
+          roiClass = 'roi-better'; // Better than selected = green
+        } else if (recipe.roi < currentRoi) {
+          roiClass = 'roi-worse';  // Worse than selected = red
+        } else {
+          roiClass = recipe.roi >= 0 ? 'positive' : 'negative';
+        }
         
         html += `
           <div class="${cardClass}">
             <div class="building-recipe-header">
               <div class="building-recipe-name">${recipe.materialName} (${recipe.material})</div>
               <div class="building-recipe-badges">
-                ${isBest ? '<span class="badge-best-profit">🏆 BEST PROFIT</span>' : ''}
+                ${isBestProfit ? '<span class="badge-best-profit">🏆 BEST PROFIT</span>' : ''}
+                ${isBestRoi ? '<span class="badge-best-roi">💎 BEST ROI</span>' : ''}
                 ${isCurrent ? '<span class="badge-selected">SELECTED</span>' : ''}
               </div>
             </div>
