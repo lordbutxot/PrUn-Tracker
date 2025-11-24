@@ -717,6 +717,9 @@
   <div class="container">
     <h1>🚀 PrUn Price Analyser</h1>
     <p class="subtitle">Interactive material cost calculator with ROI analysis</p>
+    <div id="lastUpdated" style="text-align: center; color: #6b7280; font-size: 0.875rem; margin-top: -10px; margin-bottom: 15px;">
+      <span id="lastUpdatedText">Loading data...</span>
+    </div>
     
     <div class="controls">
       <div class="control-group">
@@ -1292,6 +1295,29 @@
           // DEBUG: Log fertility data
           console.log('Loaded fertility data:', fertilityData);
           console.log('Fertility count:', fertilityData.length);
+          
+          // Display last updated timestamp
+          const lastUpdatedElement = document.getElementById('lastUpdatedText');
+          if (result.lastUpdated) {
+            const updateDate = new Date(result.lastUpdated);
+            const now = new Date();
+            const diffMs = now - updateDate;
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            let timeAgo = '';
+            if (diffHours > 0) {
+              timeAgo = `${diffHours}h ${diffMins}m ago`;
+            } else if (diffMins > 0) {
+              timeAgo = `${diffMins}m ago`;
+            } else {
+              timeAgo = 'just now';
+            }
+            
+            lastUpdatedElement.textContent = `📊 Data last updated: ${timeAgo} (${updateDate.toLocaleString()})`;
+          } else {
+            lastUpdatedElement.textContent = '📊 Data loaded successfully';
+          }
           
           document.getElementById('loading').style.display = 'none';
           

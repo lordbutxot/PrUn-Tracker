@@ -177,13 +177,33 @@ function getAllData() {
       }
     }
     
+    // Try to get last update timestamp from a metadata cell
+    // Look for "Last Updated" in the Price Analyser Data sheet or use file timestamp
+    let lastUpdated = null;
+    try {
+      // Check if there's a "Metadata" sheet with timestamp
+      const metadataSheet = ss.getSheetByName('Metadata');
+      if (metadataSheet) {
+        const metadataData = metadataSheet.getDataRange().getValues();
+        for (let i = 0; i < metadataData.length; i++) {
+          if (metadataData[i][0] === 'Last Data Update') {
+            lastUpdated = metadataData[i][1];
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('Could not read metadata timestamp: ' + e);
+    }
+    
     return {
       success: true,
       data: rows,
       bids: bids,
       planets: planets,
       fertility: fertility,
-      rowCount: rows.length
+      rowCount: rows.length,
+      lastUpdated: lastUpdated
     };
   } catch (error) {
     Logger.log('Error loading all data: ' + error.toString());

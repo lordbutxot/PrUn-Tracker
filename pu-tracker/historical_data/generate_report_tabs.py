@@ -2501,6 +2501,18 @@ def create_price_analyser_tab(sheets_manager, all_df):
     except:
         print("[WARN] Could not upload reference data sheet")
     
+    # Upload metadata with timestamp
+    try:
+        from datetime import datetime
+        metadata_df = pd.DataFrame({
+            'Key': ['Last Data Update'],
+            'Value': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+        })
+        sheets_manager.upload_dataframe_to_sheet("Metadata", metadata_df)
+        print(f"[INFO] Updated metadata timestamp: {metadata_df['Value'][0]}")
+    except Exception as e:
+        print(f"[WARN] Could not upload metadata: {e}")
+    
     # Upload bids data for breakeven calculations
     try:
         base_dir = Path(__file__).parent.parent / "cache"
