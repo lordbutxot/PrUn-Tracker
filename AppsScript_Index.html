@@ -1482,7 +1482,7 @@
         "construction": ["construction"],
         "chemistry": ["chemistry"],
         "fuel": ["fuel"],
-        "extraction": ["extraction", "chemistry"],  // Include chemistry for minerals, liquids, etc.
+        "extraction": ["extraction"],
         // Add more mappings as needed
       };
 
@@ -1503,7 +1503,7 @@
           if (!selectedCategory) {
             materialsSet.add(row.ticker);
           } else if (row.recipe) {
-            const buildingCode = row.recipe.split(':')[0];
+            const buildingCode = row.recipe.split('=>')[0].split(':')[0];
             const buildingCategory = buildingCategories[buildingCode];
             if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
               materialsSet.add(row.ticker);
