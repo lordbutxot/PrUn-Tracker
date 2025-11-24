@@ -1006,6 +1006,10 @@
             <div class="data-label">Demand</div>
             <div class="data-value" id="demand">-</div>
           </div>
+          <div class="data-item">
+            <div class="data-label">Traded Volume</div>
+            <div class="data-value" id="traded">-</div>
+          </div>
         </div>
       </div>
       
@@ -1959,6 +1963,9 @@
             totalCost: totalCost,
             profit: profitAsk,
             roi: roiAsk,
+            supply: row.supply || 0,
+            demand: row.demand || 0,
+            traded: row.traded || 0,
             isCurrent: exch === currentExchange
           };
         }
@@ -2278,6 +2285,7 @@
       // Market indicators
       setValueRaw('supply', data.supply);
       setValueRaw('demand', data.demand);
+      setValueRaw('traded', data.traded);
       
       document.getElementById('results').style.display = 'block';
     }
@@ -2333,6 +2341,18 @@
               <div class="recipe-detail-item">
                 <div class="recipe-detail-label">ROI</div>
                 <div class="recipe-detail-value ${roiClass}">${exch.roi.toFixed(2)}%</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Supply</div>
+                <div class="recipe-detail-value">${exch.supply.toLocaleString('en-US')}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Demand</div>
+                <div class="recipe-detail-value">${exch.demand.toLocaleString('en-US')}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Traded Volume</div>
+                <div class="recipe-detail-value">${exch.traded.toLocaleString('en-US')}</div>
               </div>
             </div>
           </div>
@@ -2544,6 +2564,7 @@
             roi: roiAsk,
             supply: row.supply || 0,
             demand: row.demand || 0,
+            traded: row.traded || 0,
             isCurrent: recipeString === currentRecipe
           });
         }
@@ -2659,6 +2680,10 @@
               <div class="recipe-detail-item">
                 <div class="recipe-detail-label">Demand</div>
                 <div class="recipe-detail-value">${recipe.demand.toLocaleString('en-US')}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Traded Volume</div>
+                <div class="recipe-detail-value">${recipe.traded.toLocaleString('en-US')}</div>
               </div>
             </div>
           </div>
