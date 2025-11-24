@@ -690,6 +690,26 @@
       .data-value {
         font-size: 1.1rem;
       }
+      
+      /* Mobile: Stack badges on top of material name */
+      .building-recipe-header,
+      .exchange-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 8px;
+      }
+      
+      .building-recipe-badges,
+      .exchange-badges {
+        order: -1;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      
+      .building-recipe-name,
+      .exchange-name {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -1025,7 +1045,7 @@
           <div style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
             Compare prices and profitability across all exchanges using your current production costs
           </div>
-          <div id="exchangeComparisonContent"></div>
+          <div id="exchangeComparisonContent" style="max-height: 600px; overflow-y: auto;"></div>
         </div>
       </div>
       
