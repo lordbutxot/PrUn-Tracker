@@ -1740,8 +1740,8 @@
       
       try {
         // Calculate using cached data
-        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
-        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
         
@@ -1749,9 +1749,6 @@
         const calcTime = (endTime - startTime).toFixed(1);
         
         // Log performance info for debugging
-        if (selfProduced && calcTime > 100) {
-          console.log(`⚡ Calculation took ${calcTime}ms (cache size: ${Object.keys(selfProductionCache).length} entries)`);
-        }
         
         document.getElementById('loading').style.display = 'none';
         
@@ -1806,7 +1803,7 @@
     }
     
     // Calculate data from cached data (client-side)
-    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, planet, cogcBonus, expertCount, hqBonus, corpHqBonus) {
+    function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       let bestRow = null;
       let lowestCost = Infinity;
       
@@ -1831,11 +1828,6 @@
             } else if (!includeLuxury) {
               // Default: 79% efficiency
               workforceCostAsk *= (1 / 0.79);
-            }
-            if (selfProduced) {
-              const consumablesOnly = document.getElementById('consumablesOnly').checked;
-              const result = calculateSelfProductionCostClientSide(row.recipe, exchange, consumablesOnly);
-              inputCostAsk = result.cost;
             }
             
             const totalCost = inputCostAsk + workforceCostAsk;
@@ -1934,12 +1926,6 @@
       workforceCostBid *= efficiencyMultiplier;
       
       let costTree = null;
-      if (selfProduced) {
-        const result = calculateSelfProductionCostClientSide(bestRow.recipe, exchange, true, new Set(), []); // Always consumables-only
-        inputCostAsk = result.cost;
-        inputCostBid = inputCostAsk;
-        costTree = result.tree;
-      }
       
       // Parse recipe
       let recipeInputs = '';
@@ -2203,7 +2189,7 @@
     }
     
     // Get recommendation from cached data
-    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount, hqBonus, corpHqBonus) {
+    function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const recipeComparisons = [];
       
       for (const row of allData) {
@@ -2242,10 +2228,6 @@
           // Apply efficiency to workforce costs
           workforceCostAsk *= (1.0 / totalEfficiency);
           
-          if (selfProduced) {
-            const result = calculateSelfProductionCostClientSide(row.recipe, exchange, true); // Always consumables-only
-            inputCostAsk = result.cost;
-          }
           const totalCostAsk = inputCostAsk + workforceCostAsk;
           const profitAskAsk = row.askPrice - totalCostAsk;
           const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
