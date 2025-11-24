@@ -2531,7 +2531,13 @@
             planetMaterials.add(planet.ticker);
           }
         });
-        console.log('Planet materials for ' + selectedPlanet + ':', Array.from(planetMaterials));
+        console.log('Building comparison: Extraction building on planet ' + selectedPlanet);
+        console.log('  Planet has materials:', Array.from(planetMaterials));
+        console.log('  Will filter to show only these materials with ' + building + ' recipes');
+      } else if (isExtractionBuilding) {
+        console.log('Building comparison: Extraction building but no planet selected - showing all materials');
+      } else {
+        console.log('Building comparison: Manufacturing building ' + building + ' - showing all outputs');
       }
       
       // Find all recipes for this building at the specified exchange
@@ -2567,6 +2573,14 @@
             totalEfficiency = 0.79;
           }
           
+          // For extraction buildings, apply planet concentration factor
+          if (isExtractionBuilding && selectedPlanet) {
+            const planetFactor = getPlanetFactorClientSide(material, selectedPlanet);
+            if (planetFactor > 0) {
+              totalEfficiency += (planetFactor - 1.0);
+            }
+          }
+          
           if (cogcBonus) totalEfficiency += 0.25;
           if (expertCount > 0) totalEfficiency += calculateExpertBonus(expertCount);
           
@@ -2576,6 +2590,9 @@
             const finalMultiplier = (1 + hqBonus) * corpMultiplier;
             totalEfficiency *= finalMultiplier;
           }
+          
+          // Ensure minimum efficiency
+          totalEfficiency = Math.max(0.1, totalEfficiency);
           
           // Apply efficiency to workforce cost
           workforceCostAsk = workforceCostAsk / totalEfficiency;
