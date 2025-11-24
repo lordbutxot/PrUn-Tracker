@@ -831,13 +831,6 @@
           <div class="option-hint">Corporate Headquarters provides +10% efficiency for production on that specific planet</div>
         </div>
         <div class="option-item">
-          <label class="checkbox-label">
-            <input type="checkbox" id="selfProducedInputs">
-            <span>Self-Produce Workforce Consumables</span>
-          </label>
-          <div class="option-hint">Calculate production cost for workforce consumables (COF, RAT, DW, OVE, etc.) instead of using market price</div>
-        </div>
-        <div class="option-item">
           <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
             Company HQ Faction Bonus (Multiplicative)
           </label>
@@ -1673,10 +1666,6 @@
     
     document.getElementById('customEfficiency').addEventListener('input', calculate);
     // Self-production inputs listener
-    document.getElementById('selfProducedInputs').addEventListener('change', function() {
-      selfProductionCache = {}; // Clear cache when toggling self-production
-      calculate();
-    });
     
     // Add event listeners for new HQ and Corp HQ controls
     document.getElementById('cogcBonus').addEventListener('change', calculate);
@@ -1734,7 +1723,6 @@
       const includeLuxury = document.getElementById('includeLuxury').checked;
       const customEfficiencyEnabled = document.getElementById('customEfficiencyToggle').checked;
       const customEfficiency = parseFloat(document.getElementById('customEfficiency').value) || 79;
-      const selfProduced = document.getElementById('selfProducedInputs').checked;
       const planet = document.getElementById('planetSelect').value;
       const cogcBonus = document.getElementById('cogcBonus').checked;
       const expertCount = parseInt(document.getElementById('expertCount').value) || 0;
