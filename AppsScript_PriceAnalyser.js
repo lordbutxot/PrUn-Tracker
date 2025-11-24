@@ -806,8 +806,9 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
         inputCostBid = inputCostAsk; // Use same for both
       }
       const amountPerRecipe = parseFloat(data[i][11]) || 1;   // Column L: Amount per Recipe
-      const supply = data[i][12] || 0;                         // Column M: Supply
-      const demand = data[i][13] || 0;                         // Column N: Demand
+      const supply = parseFloat(data[i][12]) || 0;            // Column M: Supply
+      const demand = parseFloat(data[i][13]) || 0;            // Column N: Demand
+      const traded = parseFloat(data[i][14]) || 0;            // Column O: Traded Volume
       
       // Parse recipe to extract inputs and outputs
       const recipeString = data[i][2] || 'N/A';
@@ -896,7 +897,8 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
         breakevenBidBid: breakevenBidBid,
         // Market indicators
         supply: supply,
-        demand: demand
+        demand: demand,
+        traded: traded
         };
     }
 }
