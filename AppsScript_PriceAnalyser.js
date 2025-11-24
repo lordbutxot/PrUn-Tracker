@@ -55,8 +55,9 @@ function getAllData() {
         workforceCostAsk: parseFloat(data[i][9]) || 0,  // Column J
         workforceCostBid: parseFloat(data[i][10]) || 0, // Column K
         amountPerRecipe: parseFloat(data[i][11]) || 1,  // Column L
-        supply: data[i][12] || 0,    // Column M
-        demand: data[i][13] || 0     // Column N
+        supply: parseFloat(data[i][12]) || 0,    // Column M
+        demand: parseFloat(data[i][13]) || 0,    // Column N
+        traded: parseFloat(data[i][14]) || 0     // Column O
       });
     }
     
