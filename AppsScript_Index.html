@@ -811,6 +811,26 @@
             <span>Use Self-Production Costs for Inputs</span>
           </label>
           <div class="option-hint">When checked, inputs use their production cost instead of market price</div>
+          
+          <!-- Submenu for self-production options -->
+          <div id="selfProductionSubmenu" style="display: none; margin-left: 20px; margin-top: 10px; padding: 10px; background: #f9fafb; border-left: 3px solid #3b82f6; border-radius: 4px;">
+            <div style="margin-bottom: 10px;">
+              <label class="checkbox-label" style="font-size: 0.9rem;">
+                <input type="checkbox" id="consumablesOnly">
+                <span>Consumables Only</span>
+              </label>
+              <div class="option-hint" style="font-size: 0.75rem;">Apply self-production costs only to consumable inputs (COF, RAT, DW, OVE, EXO, etc.)</div>
+            </div>
+            
+            <div style="margin-top: 10px;">
+              <button id="customizeInputsBtn" style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                Customize Per Input
+              </button>
+              <div id="inputCustomization" style="display: none; margin-top: 10px; padding: 8px; background: white; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                <!-- Dynamic input checkboxes will be inserted here -->
+              </div>
+            </div>
+          </div>
         </div>
         <div class="option-item">
           <label class="checkbox-label">
@@ -988,6 +1008,19 @@
         </div>
       </div>
       
+      <!-- Cost Breakdown Tree Section -->
+      <div id="costBreakdownTreeSection" class="section" style="display: none;">
+        <h3 class="collapsible-header" onclick="toggleCollapse('costBreakdownTreeContent')">
+          <span class="collapse-icon" id="costBreakdownTreeContent-icon">▼</span>
+          Input Cost Breakdown Tree
+        </h3>
+        <div id="costBreakdownTreeContent" class="collapsible-content">
+          <div id="costTree" style="font-family: monospace; font-size: 0.85rem; padding: 10px; background: #f9fafb; border-radius: 4px; overflow-x: auto;">
+            <!-- Cost tree will be rendered here -->
+          </div>
+        </div>
+      </div>
+      
       <div class="section">
         <h3 class="collapsible-header" onclick="toggleCollapse('profitabilityContent')">
           <span class="collapse-icon" id="profitabilityContent-icon">▼</span>
@@ -1147,6 +1180,15 @@
     let allBids = [];
     let planetData = [];
     let fertilityData = [];
+    let inputOverrides = {}; // Track per-input production/market overrides
+    let currentRecipeInputs = []; // Track inputs of current recipe for customization
+    
+    // Consumables list (basic + luxury)
+    const CONSUMABLES = new Set([
+      'ALE', 'COF', 'DW', 'EXO', 'FIM', 'GIN', 'HMS', 'HSS', 'KOM', 'LC',
+      'MEA', 'MED', 'NST', 'OVE', 'PDA', 'PT', 'PWO', 'RAT', 'REP', 'SC',
+      'SCN', 'VG', 'WIN', 'WS'
+    ]);
     
     document.addEventListener('DOMContentLoaded', function() {
       loadAllData();
@@ -1650,7 +1692,27 @@
     });
     
     document.getElementById('customEfficiency').addEventListener('input', calculate);
-    document.getElementById('selfProducedInputs').addEventListener('change', calculate);
+    // Self-production inputs listeners
+    document.getElementById('selfProducedInputs').addEventListener('change', function() {
+      const submenu = document.getElementById('selfProductionSubmenu');
+      submenu.style.display = this.checked ? 'block' : 'none';
+      calculate();
+    });
+    
+    document.getElementById('consumablesOnly').addEventListener('change', calculate);
+    
+    // Customize inputs button
+    document.getElementById('customizeInputsBtn').addEventListener('click', function() {
+      const customDiv = document.getElementById('inputCustomization');
+      if (customDiv.style.display === 'none') {
+        customDiv.style.display = 'block';
+        this.textContent = 'Hide Customization';
+        populateInputCustomization();
+      } else {
+        customDiv.style.display = 'none';
+        this.textContent = 'Customize Per Input';
+      }
+    });
     
     // Add event listeners for new HQ and Corp HQ controls
     document.getElementById('cogcBonus').addEventListener('change', calculate);
@@ -1805,7 +1867,11 @@
               // Default: 79% efficiency
               workforceCostAsk *= (1 / 0.79);
             }
-            if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
+            if (selfProduced) {
+              const consumablesOnly = document.getElementById('consumablesOnly').checked;
+              const result = calculateSelfProductionCostClientSide(row.recipe, exchange, consumablesOnly);
+              inputCostAsk = result.cost;
+            }
             
             const totalCost = inputCostAsk + workforceCostAsk;
             if (totalCost < lowestCost) {
@@ -1902,9 +1968,30 @@
       workforceCostAsk *= efficiencyMultiplier;
       workforceCostBid *= efficiencyMultiplier;
       
+      // Extract recipe inputs for customization menu
+      currentRecipeInputs = [];
+      if (bestRow.recipe && bestRow.recipe.includes('=>')) {
+        const parts = bestRow.recipe.split('=>');
+        const inputPart = parts[0].split(':')[1] || parts[0];
+        const inputs = inputPart.split('-');
+        inputs.forEach(inputStr => {
+          const match = inputStr.match(/(\d+)x([A-Z]+)/);
+          if (match) {
+            currentRecipeInputs.push({
+              amount: parseInt(match[1]),
+              ticker: match[2]
+            });
+          }
+        });
+      }
+      
+      let costTree = null;
       if (selfProduced) {
-        inputCostAsk = calculateSelfProductionCostClientSide(bestRow.recipe, exchange);
+        const consumablesOnly = document.getElementById('consumablesOnly').checked;
+        const result = calculateSelfProductionCostClientSide(bestRow.recipe, exchange, consumablesOnly, new Set(), []);
+        inputCostAsk = result.cost;
         inputCostBid = inputCostAsk;
+        costTree = result.tree;
       }
       
       // Parse recipe
@@ -2010,7 +2097,8 @@
         breakevenBidBid: breakevenBidBid,
         supply: bestRow.supply,
         demand: bestRow.demand,
-        traded: bestRow.traded
+        traded: bestRow.traded,
+        costTree: costTree
       };
     }
     
@@ -2207,7 +2295,11 @@
           // Apply efficiency to workforce costs
           workforceCostAsk *= (1.0 / totalEfficiency);
           
-          if (selfProduced) inputCostAsk = calculateSelfProductionCostClientSide(row.recipe, exchange);
+          if (selfProduced) {
+            const consumablesOnly = document.getElementById('consumablesOnly').checked;
+            const result = calculateSelfProductionCostClientSide(row.recipe, exchange, consumablesOnly);
+            inputCostAsk = result.cost;
+          }
           
           const totalCostAsk = inputCostAsk + workforceCostAsk;
           const profitAskAsk = row.askPrice - totalCostAsk;
@@ -2312,8 +2404,37 @@
       return fertilityModifier;
     }
     
-    function calculateSelfProductionCostClientSide(recipeString, exchange, visited = new Set()) {
-      if (!recipeString || !recipeString.includes('=>')) return 0;
+    // Populate input customization checkboxes based on current recipe
+    function populateInputCustomization() {
+      const customDiv = document.getElementById('inputCustomization');
+      if (!currentRecipeInputs || currentRecipeInputs.length === 0) {
+        customDiv.innerHTML = '<div style="color: #6b7280; font-size: 0.85rem;">No inputs to customize</div>';
+        return;
+      }
+      
+      customDiv.innerHTML = '<div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #374151;">Select inputs to self-produce:</div>';
+      
+      currentRecipeInputs.forEach(input => {
+        const isChecked = inputOverrides[input.ticker] !== false; // Default true
+        const checkbox = document.createElement('label');
+        checkbox.className = 'checkbox-label';
+        checkbox.style.display = 'flex';
+        checkbox.style.alignItems = 'center';
+        checkbox.style.marginBottom = '6px';
+        checkbox.style.fontSize = '0.85rem';
+        checkbox.innerHTML = `
+          <input type="checkbox" id="input_${input.ticker}" ${isChecked ? 'checked' : ''} 
+                 onchange="inputOverrides['${input.ticker}'] = this.checked; calculate();">
+          <span>${input.amount}× ${input.ticker}</span>
+        `;
+        customDiv.appendChild(checkbox);
+      });
+    }
+    
+    function calculateSelfProductionCostClientSide(recipeString, exchange, consumablesOnly = false, visited = new Set(), treeNodes = null) {
+      if (!recipeString || !recipeString.includes('=>')) return { cost: 0, tree: null };
+      
+      const isTreeRoot = !visited.size && treeNodes !== null;
       
       try {
         const parts = recipeString.split('=>');
@@ -2321,63 +2442,139 @@
         const inputs = inputPart.split('-');
         
         let totalCost = 0;
+        const childNodes = [];
+        
         for (const inputStr of inputs) {
           const match = inputStr.match(/(\d+)x([A-Z]+)/);
           if (match) {
             const amount = parseFloat(match[1]);
             const inputTicker = match[2];
             
+            // Check if this input should use self-production
+            let useSelfProduction = true;
+            
+            // If consumables-only mode, only produce consumables
+            if (consumablesOnly && !CONSUMABLES.has(inputTicker)) {
+              useSelfProduction = false;
+            }
+            
+            // Check per-input override
+            if (inputOverrides.hasOwnProperty(inputTicker)) {
+              useSelfProduction = inputOverrides[inputTicker];
+            }
+            
             // Prevent infinite recursion for circular dependencies
             const visitKey = `${inputTicker}_${exchange}`;
             if (visited.has(visitKey)) {
-              // If circular, fall back to market price
+              useSelfProduction = false; // Force market price for circular deps
+            }
+            
+            let inputCost = 0;
+            let inputSource = 'Market';
+            let inputSubtree = null;
+            
+            if (useSelfProduction && !visited.has(visitKey)) {
+              // Find the best (cheapest) recipe for this input material
+              let bestInputRow = null;
+              let lowestInputCost = Infinity;
+              
+              for (const row of allData) {
+                if (row.ticker === inputTicker && row.exchange === exchange && row.recipe) {
+                  // Recursively calculate production cost for this input's recipe
+                  const newVisited = new Set(visited);
+                  newVisited.add(visitKey);
+                  
+                  const result = calculateSelfProductionCostClientSide(
+                    row.recipe, 
+                    exchange, 
+                    consumablesOnly, 
+                    newVisited, 
+                    treeNodes ? [] : null
+                  );
+                  const inputProductionCost = result.cost + row.workforceCostAsk;
+                  
+                  if (inputProductionCost < lowestInputCost) {
+                    lowestInputCost = inputProductionCost;
+                    bestInputRow = row;
+                    inputSubtree = result.tree;
+                  }
+                }
+              }
+              
+              // If recipe found, use production cost
+              if (bestInputRow) {
+                inputCost = lowestInputCost;
+                inputSource = 'Produced';
+              }
+            }
+            
+            // If not using self-production or no recipe found, use market price
+            if (inputCost === 0) {
               for (const row of allData) {
                 if (row.ticker === inputTicker && row.exchange === exchange) {
-                  totalCost += amount * row.askPrice;
+                  inputCost = row.askPrice;
+                  inputSource = 'Market';
                   break;
                 }
               }
-              continue;
             }
             
-            // Find the best (cheapest) recipe for this input material
-            let bestInputRow = null;
-            let lowestInputCost = Infinity;
+            const lineCost = amount * inputCost;
+            totalCost += lineCost;
             
-            for (const row of allData) {
-              if (row.ticker === inputTicker && row.exchange === exchange && row.recipe) {
-                // Recursively calculate production cost for this input's recipe
-                const newVisited = new Set(visited);
-                newVisited.add(visitKey);
-                
-                const recursiveCost = calculateSelfProductionCostClientSide(row.recipe, exchange, newVisited);
-                const inputProductionCost = recursiveCost + row.workforceCostAsk;
-                
-                if (inputProductionCost < lowestInputCost) {
-                  lowestInputCost = inputProductionCost;
-                  bestInputRow = row;
-                }
-              }
-            }
-            
-            // If no recipe found (tier-0 material), use market price
-            if (!bestInputRow) {
-              for (const row of allData) {
-                if (row.ticker === inputTicker && row.exchange === exchange) {
-                  totalCost += amount * row.askPrice;
-                  break;
-                }
-              }
-            } else {
-              totalCost += amount * lowestInputCost;
+            // Build tree node if tracking
+            if (treeNodes !== null) {
+              childNodes.push({
+                ticker: inputTicker,
+                amount: amount,
+                unitCost: inputCost,
+                totalCost: lineCost,
+                source: inputSource,
+                children: inputSubtree
+              });
             }
           }
         }
-        return totalCost;
+        
+        return { 
+          cost: totalCost,
+          tree: treeNodes !== null ? childNodes : null
+        };
       } catch (e) {
         console.error('Error calculating self-production cost:', e);
-        return 0;
+        return { cost: 0, tree: null };
       }
+    }
+    
+    // Render cost breakdown tree
+    function renderCostTree(nodes, indent = 0) {
+      if (!nodes || nodes.length === 0) return '';
+      
+      let html = '';
+      const prefix = '  '.repeat(indent);
+      const branch = indent > 0 ? '├─ ' : '';
+      
+      nodes.forEach((node, index) => {
+        const isLast = index === nodes.length - 1;
+        const connector = indent > 0 ? (isLast ? '└─ ' : '├─ ') : '';
+        
+        const sourceColor = node.source === 'Produced' ? '#16a34a' : '#3b82f6';
+        const sourceIcon = node.source === 'Produced' ? '🏭' : '🛒';
+        
+        html += `<div style="margin-bottom: 4px; padding-left: ${indent * 20}px;">`;
+        html += `<span style="color: #6b7280;">${connector}</span>`;
+        html += `<span style="font-weight: 600;">${node.amount}× ${node.ticker}</span> `;
+        html += `<span style="color: ${sourceColor};">${sourceIcon} ${node.source}</span> `;
+        html += `<span style="color: #6b7280;">@ ${formatCurrency(node.unitCost)}/unit</span> `;
+        html += `<span style="color: #374151; font-weight: 600;">= ${formatCurrency(node.totalCost)}</span>`;
+        html += `</div>`;
+        
+        if (node.children && node.children.length > 0) {
+          html += renderCostTree(node.children, indent + 1);
+        }
+      });
+      
+      return html;
     }
     
     // Calculate breakeven units based on order book depth
@@ -2444,6 +2641,16 @@
       setValueRaw('supply', data.supply);
       setValueRaw('demand', data.demand);
       setValueRaw('traded', data.traded);
+      
+      // Cost breakdown tree
+      const treeSection = document.getElementById('costBreakdownTreeSection');
+      const treeDiv = document.getElementById('costTree');
+      if (data.costTree && data.costTree.length > 0) {
+        treeDiv.innerHTML = renderCostTree(data.costTree);
+        treeSection.style.display = 'block';
+      } else {
+        treeSection.style.display = 'none';
+      }
       
       document.getElementById('results').style.display = 'block';
     }
