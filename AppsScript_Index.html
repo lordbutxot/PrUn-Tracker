@@ -2504,7 +2504,18 @@
         return null;
       }
       
-      const building = currentRecipe.split(':')[0];
+      // Extract building from recipe - handle both formats:
+      // Manufacturing: "BMP:1xC-2xH=>200xPE" -> "BMP"
+      // Extraction: "EXT=>100xSIO" -> "EXT"
+      let building;
+      if (currentRecipe.includes(':')) {
+        building = currentRecipe.split(':')[0];
+      } else if (currentRecipe.includes('=>')) {
+        building = currentRecipe.split('=>')[0];
+      } else {
+        return null;
+      }
+      
       const buildingRecipes = [];
       const seenMaterials = new Set();
       
@@ -2520,6 +2531,7 @@
             planetMaterials.add(planet.ticker);
           }
         });
+        console.log('Planet materials for ' + selectedPlanet + ':', Array.from(planetMaterials));
       }
       
       // Find all recipes for this building at the specified exchange
@@ -2528,10 +2540,18 @@
         const material = row.ticker;
         const exch = row.exchange;
         
+        // Check if this recipe is for the same building (handle both formats)
+        let recipeBuildingMatch = false;
+        if (recipeString.includes(':')) {
+          recipeBuildingMatch = recipeString.startsWith(building + ':');
+        } else if (recipeString.includes('=>')) {
+          recipeBuildingMatch = recipeString.startsWith(building + '=>');
+        }
+        
         // For extraction buildings, only include materials available on the selected planet
         const materialMatchesPlanet = !isExtractionBuilding || !selectedPlanet || planetMaterials.has(material);
         
-        if (recipeString.startsWith(building + ':') && exch === exchange && !seenMaterials.has(material) && materialMatchesPlanet) {
+        if (recipeBuildingMatch && exch === exchange && !seenMaterials.has(material) && materialMatchesPlanet) {
           seenMaterials.add(material);
           
           const askPrice = row.askPrice;
