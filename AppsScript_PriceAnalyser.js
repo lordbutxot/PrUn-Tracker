@@ -39,6 +39,13 @@ function getAllData() {
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     
+    // DEBUG: Log headers to verify column structure
+    Logger.log('Price Analyser Data headers: ' + JSON.stringify(headers));
+    Logger.log('Column O (index 14) header: ' + headers[14]);
+    if (data.length > 1) {
+      Logger.log('Sample row 1 column O value: ' + data[1][14]);
+    }
+    
     // Convert to array of objects for easier client-side processing
     const rows = [];
     for (let i = 1; i < data.length; i++) {
