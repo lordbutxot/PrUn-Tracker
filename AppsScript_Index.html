@@ -1256,39 +1256,59 @@
     // Check if building/recipe matches HQ bonus category
     function checkHqCategoryMatch(recipe, building) {
       const factionBonusText = document.getElementById('hqFactionBonus').selectedOptions[0].text;
-      
-      // If no HQ bonus selected, return false
       if (!factionBonusText || factionBonusText.includes('No HQ')) {
         return false;
       }
-      
+
       // Extract building code from recipe (e.g., "CHP:" from "CHP:1xC=>1xBAC")
       const buildingCode = recipe ? recipe.split(':')[0] : (building || '');
-      
-      // Define building categories based on game mechanics
-      const categories = {
-        electronics: ['ELP', 'EEP', 'AAP'],  // Electronics Plant, Electronics Factory, etc.
-        manufacturing: ['CHP', 'PPF', 'BMP', 'APF', 'ASM', 'WEL', 'SMP', 'POL', 'CHP'],  // Chemical Plants, Assembly, Welding, etc.
-        agriculture: ['FRM', 'ORC', 'VIN', 'INC'],  // Farms, Orchards, Vineyards, Incubators
-        foodIndustries: ['FP', 'BWY', 'WPL'],  // Food Processor, Brewery, etc.
-        metallurgy: ['SME', 'BLF', 'AMP'],  // Smelter, Blast Furnace, etc.
-        construction: ['CHP', 'PPF', 'BMP'],  // Construction materials
-        chemistry: ['CHP', 'REF', 'LAB'],  // Chemical Plant, Refinery, Lab
-        fuel: ['REF', 'INC'],  // Refinery, Incubator
-        extraction: ['COL', 'EXT', 'RIG', 'DRL']  // Collector, Extractor, Rig, Drill
+
+      // Use all categories from materials.csv and categories.json
+      // These will be loaded once and cached for performance
+      if (!window._prunCategoryMap) {
+        window._prunCategoryMap = {};
+        if (window.allData) {
+          window.allData.forEach(row => {
+            if (row.recipe && row.recipe.includes(':')) {
+              const code = row.recipe.split(':')[0];
+              if (row.category) {
+                window._prunCategoryMap[code] = row.category.toLowerCase();
+              }
+            }
+          });
+        }
+      }
+
+      // Fallback for known building codes if not found in map
+      const fallbackCategories = {
+        'ELP': 'electronics', 'EEP': 'electronics', 'AAP': 'electronics', 'EDM': 'electronics',
+        'CHP': 'manufacturing', 'PPF': 'manufacturing', 'BMP': 'manufacturing', 'APF': 'manufacturing', 'ASM': 'manufacturing', 'WEL': 'manufacturing', 'POL': 'manufacturing',
+        'FRM': 'agriculture', 'ORC': 'agriculture', 'VIN': 'agriculture', 'INC': 'agriculture',
+        'FP': 'food industries', 'BWY': 'food industries', 'WPL': 'food industries',
+        'SME': 'metallurgy', 'BLF': 'metallurgy', 'AMP': 'metallurgy',
+        'REF': 'chemistry', 'LAB': 'chemistry',
+        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction', 'DRL': 'extraction'
       };
-      
-      // Match faction bonus text to category
-      if (factionBonusText.includes('Electronics') && categories.electronics.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Manufacturing') && categories.manufacturing.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Agriculture') && !factionBonusText.includes('Food') && categories.agriculture.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Food Industries') && categories.foodIndustries.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Metallurgy') && categories.metallurgy.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Construction') && categories.construction.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Chemistry') && categories.chemistry.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Fuel') && categories.fuel.includes(buildingCode)) return true;
-      if (factionBonusText.includes('Extraction') && categories.extraction.includes(buildingCode)) return true;
-      
+
+      let category = window._prunCategoryMap[buildingCode];
+      if (!category && fallbackCategories[buildingCode]) {
+        category = fallbackCategories[buildingCode];
+      }
+      if (!category) {
+        return false;
+      }
+
+      // Normalize category and match
+      const cat = category.toLowerCase();
+      if (factionBonusText.toLowerCase().includes('electronics') && cat.includes('electronic')) return true;
+      if (factionBonusText.toLowerCase().includes('manufacturing') && cat.includes('manufactur')) return true;
+      if (factionBonusText.toLowerCase().includes('agriculture') && !factionBonusText.toLowerCase().includes('food') && cat.includes('agricultur')) return true;
+      if (factionBonusText.toLowerCase().includes('food industries') && cat.includes('food')) return true;
+      if (factionBonusText.toLowerCase().includes('metallurgy') && cat.includes('metallurg')) return true;
+      if (factionBonusText.toLowerCase().includes('construction') && cat.includes('construct')) return true;
+      if (factionBonusText.toLowerCase().includes('chemistry') && cat.includes('chemistr')) return true;
+      if (factionBonusText.toLowerCase().includes('fuel') && cat.includes('fuel')) return true;
+      if (factionBonusText.toLowerCase().includes('extraction') && cat.includes('extract')) return true;
       return false;
     }
     
