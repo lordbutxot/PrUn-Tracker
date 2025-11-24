@@ -807,6 +807,31 @@
         </div>
         <div class="option-item">
           <label class="checkbox-label">
+            <input type="checkbox" id="cogcBonus">
+            <span>CoGC Program Active (+25% Efficiency)</span>
+          </label>
+          <div class="option-hint">Chamber of Global Commerce program provides +25% production efficiency bonus</div>
+        </div>
+        <div class="option-item">
+          <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
+            Experts Assigned (Cumulative Bonus)
+          </label>
+          <div style="display: flex; align-items: center; gap: 12px; padding-left: 24px;">
+            <input type="number" id="expertCount" min="0" max="5" value="0" step="1" 
+                   style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 70px; font-size: 1rem;">
+            <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
+          </div>
+          <div class="option-hint" style="margin-top: 5px;">Each expert provides cumulative bonus with synergy effects (1-5 experts)</div>
+        </div>
+        <div class="option-item">
+          <label class="checkbox-label">
+            <input type="checkbox" id="corpHqBonus">
+            <span>Corp HQ on Planet (+10% Multiplicative)</span>
+          </label>
+          <div class="option-hint">Corporate Headquarters provides +10% efficiency for production on that specific planet</div>
+        </div>
+        <div class="option-item">
+          <label class="checkbox-label">
             <input type="checkbox" id="selfProducedInputs">
             <span>Use Self-Production Costs for Inputs</span>
           </label>
@@ -831,31 +856,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="option-item">
-          <label class="checkbox-label">
-            <input type="checkbox" id="cogcBonus">
-            <span>CoGC Program Active (+25% Efficiency)</span>
-          </label>
-          <div class="option-hint">Chamber of Global Commerce program provides +25% production efficiency bonus</div>
-        </div>
-        <div class="option-item">
-          <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
-            Experts Assigned (Cumulative Bonus)
-          </label>
-          <div style="display: flex; align-items: center; gap: 12px; padding-left: 24px;">
-            <input type="number" id="expertCount" min="0" max="5" value="0" step="1" 
-                   style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 70px; font-size: 1rem;">
-            <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
-          </div>
-          <div class="option-hint" style="margin-top: 5px;">Each expert provides cumulative bonus with synergy effects (1-5 experts)</div>
-        </div>
-        <div class="option-item">
-          <label class="checkbox-label">
-            <input type="checkbox" id="corpHqBonus">
-            <span>Corp HQ on Planet (+10% Multiplicative)</span>
-          </label>
-          <div class="option-hint">Corporate Headquarters provides +10% efficiency for production on that specific planet</div>
         </div>
         <div class="option-item">
           <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
