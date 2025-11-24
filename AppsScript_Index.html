@@ -1670,7 +1670,13 @@
           const buildingComparisonData = getBuildingComparisonFromCache(calculationData.recipe, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
           if (buildingComparisonData) {
             displayBuildingComparison(buildingComparisonData);
+          } else {
+            // Hide building comparison if no data or only one recipe
+            document.getElementById('buildingComparisonSection').style.display = 'none';
           }
+        } else {
+          // Hide building comparison if no recipe selected
+          document.getElementById('buildingComparisonSection').style.display = 'none';
         }
       } catch (error) {
         document.getElementById('loading').style.display = 'none';
@@ -1876,7 +1882,8 @@
         breakevenBidAsk: breakevenBidAsk,
         breakevenBidBid: breakevenBidBid,
         supply: bestRow.supply,
-        demand: bestRow.demand
+        demand: bestRow.demand,
+        traded: bestRow.traded
       };
     }
     
