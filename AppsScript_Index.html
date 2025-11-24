@@ -2614,7 +2614,14 @@
         }
       }
       
+      console.log('Building comparison for ' + building + ' at ' + exchange + ':');
+      console.log('  Found ' + buildingRecipes.length + ' recipes');
+      console.log('  Materials: ' + buildingRecipes.map(r => r.material).join(', '));
+      console.log('  Is extraction building: ' + isExtractionBuilding);
+      console.log('  Selected planet: ' + selectedPlanet);
+      
       if (buildingRecipes.length <= 1) {
+        console.log('  Hiding comparison (only ' + buildingRecipes.length + ' recipe found)');
         return null; // Don't show if only one recipe
       }
       
