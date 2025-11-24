@@ -859,25 +859,39 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
       const recipeStr = data[i][2] || '';
       const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
       
-      // Apply planet-specific extraction time adjustment for extraction recipes
+      // Apply planet-specific extraction calculation for extraction recipes (Official PCT Formula)
       if (isExtraction && planetName) {
         const planetFactor = getPlanetFactor(material, planetName);
         if (planetFactor > 0) {
-          // Workforce costs in data are based on BASE extraction time (24h or 48h)
-          // Now adjust for the specific planet's concentration factor
           const building = recipeStr.split('=>')[0];
-          const baseHours = building === 'RIG' ? 48 : 24;
           
-          // Calculate planet-specific extraction time
-          const adjustedHours = Math.max(6, Math.min(240, baseHours / planetFactor));
-          const timeFactor = adjustedHours / baseHours;
+          // Step 1: Calculate daily extraction
+          const multiplier = (building === 'COL') ? 0.6 : 0.7;
+          const dailyExtraction = (planetFactor * 100) * multiplier;
           
-          // Adjust workforce costs based on planet-specific extraction time
+          // Step 2: Base cycle time (in hours)
+          const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
+          
+          // Step 3: Units per cycle
+          const cyclesPerDay = 24 / baseCycleTime;
+          const unitsPerCycle = dailyExtraction / cyclesPerDay;
+          
+          // Step 4: Round up and adjust time
+          const roundedUnits = Math.ceil(unitsPerCycle);
+          const remainder = roundedUnits - unitsPerCycle;
+          const adjustedTime = baseCycleTime + (baseCycleTime * (remainder / unitsPerCycle));
+          
+          // Note: Efficiency will be applied separately below
+          // The data has workforce costs for BASE cycle time, we need to adjust
+          const dataBaseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
+          const timeFactor = adjustedTime / dataBaseCycleTime;
+          
+          // Adjust workforce costs based on actual extraction time
           workforceCostAsk *= timeFactor;
           workforceCostBid *= timeFactor;
         }
       }
-      // If no planet selected for extraction, use base costs (24h or 48h)
+      // If no planet selected for extraction, use base costs
       
       // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
       if (!includeLuxury) {

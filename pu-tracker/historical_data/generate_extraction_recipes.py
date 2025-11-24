@@ -5,10 +5,12 @@ Extraction buildings (COL, EXT, RIG) extract raw materials but have no
 traditional recipes in buildingrecipes.csv. This script creates synthetic
 recipe data for them so workforce costs can be calculated.
 
-Standard extraction rates (approximate, based on game mechanics):
-- COL (Collector): ~24 hours per 100 units (gases, liquids)
-- EXT (Extractor): ~24 hours per 100 units (ores, minerals)  
-- RIG (Rig): ~48 hours per 100 units (rare ores, H2O)
+Official extraction formula (from PCT):
+- Base cycle times: RIG=4.8h, COL=6h, EXT=12h
+- Daily extraction: Gaseous(COL)=(Conc×100)×0.6, Other(RIG/EXT)=(Conc×100)×0.7
+- Output per cycle: ceil(DailyExtraction / CyclesPerDay)
+- Time adjustment: BaseCycleTime + (BaseCycleTime × (Remainder / UnitsPerCycle))
+- Efficiency modifier applied to time only (not output)
 """
 
 import pandas as pd
@@ -17,11 +19,11 @@ from pathlib import Path
 
 CACHE_DIR = Path(__file__).parent.parent / "cache"
 
-# Extraction building data (base times for average concentration)
+# Extraction building data (base cycle times from PCT official formula)
 EXTRACTION_BUILDINGS = {
-    'COL': {'workforce': 'PIONEER', 'capacity': 50, 'base_hours_per_100': 24},
-    'EXT': {'workforce': 'PIONEER', 'capacity': 60, 'base_hours_per_100': 24},
-    'RIG': {'workforce': 'PIONEER', 'capacity': 30, 'base_hours_per_100': 48}
+    'COL': {'workforce': 'PIONEER', 'capacity': 50, 'base_hours': 6},     # 6 hours per cycle
+    'EXT': {'workforce': 'PIONEER', 'capacity': 60, 'base_hours': 12},    # 12 hours per cycle
+    'RIG': {'workforce': 'PIONEER', 'capacity': 30, 'base_hours': 4.8}    # 4.8 hours (4h48m) per cycle
 }
 
 # Material types extracted by each building (based on category/type)
@@ -175,12 +177,13 @@ def generate_extraction_recipes():
         # Create synthetic recipe key (format: BUILDING=>100xTICKER)
         recipe_key = f"{building}=>100x{ticker}"
         
-        # Get building data - USE BASE HOURS (no planet adjustment)
+        # Get building data - USE BASE CYCLE HOURS (no planet adjustment)
         building_data = EXTRACTION_BUILDINGS[building]
-        base_hours = building_data['base_hours_per_100']
+        base_hours = building_data['base_hours']
         workforce_capacity = building_data['capacity']
         
-        # Use base extraction time directly (no planet factor adjustment)
+        # Use base cycle time directly (no planet factor adjustment)
+        # Planet-specific output and time calculated in frontend using PCT formula
         duration_seconds = int(base_hours * 3600)
         time_minutes = base_hours * 60  # Convert to minutes for Time column
         
@@ -203,7 +206,7 @@ def generate_extraction_recipes():
         })
         
         # Show extraction info
-        print(f"[INFO] {ticker:4} -> {building} (Pioneer x{building_data['capacity']}, {base_hours}h/100 units - BASE TIME)")
+        print(f"[INFO] {ticker:4} -> {building} (Pioneer x{building_data['capacity']}, {base_hours}h base cycle time)")
     
     # Save extraction recipes
     extraction_recipes_df = pd.DataFrame(extraction_recipes)
