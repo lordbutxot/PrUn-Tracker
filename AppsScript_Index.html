@@ -909,7 +909,11 @@
     
     <div id="results" class="results">
       <div class="section">
-        <h3>Recipe Details</h3>
+        <h3 class="collapsible-header" onclick="toggleCollapse('recipeDetailsContent')">
+          <span class="collapse-icon" id="recipeDetailsContent-icon">▼</span>
+          Recipe Details
+        </h3>
+        <div id="recipeDetailsContent" class="collapsible-content">
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Inputs Required</div>
@@ -920,10 +924,15 @@
             <div class="data-value" id="recipeOutputs" style="font-size: 1rem; color: #16a34a;">-</div>
           </div>
         </div>
+        </div>
       </div>
       
       <div class="section">
-        <h3>Pricing</h3>
+        <h3 class="collapsible-header" onclick="toggleCollapse('pricingContent')">
+          <span class="collapse-icon" id="pricingContent-icon">▼</span>
+          Pricing
+        </h3>
+        <div id="pricingContent" class="collapsible-content">
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Ask Price</div>
@@ -934,10 +943,15 @@
             <div class="data-value currency" id="bidPrice">-</div>
           </div>
         </div>
+        </div>
       </div>
       
       <div class="section">
-        <h3>Cost Breakdown</h3>
+        <h3 class="collapsible-header" onclick="toggleCollapse('costBreakdownContent')">
+          <span class="collapse-icon" id="costBreakdownContent-icon">▼</span>
+          Cost Breakdown
+        </h3>
+        <div id="costBreakdownContent" class="collapsible-content">
         <div style="display: grid; gap: 12px;">
           <!-- Top Row: 4 columns for Input and Workforce costs -->
           <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
@@ -971,10 +985,15 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
       
       <div class="section">
-        <h3>Profitability - All Scenarios</h3>
+        <h3 class="collapsible-header" onclick="toggleCollapse('profitabilityContent')">
+          <span class="collapse-icon" id="profitabilityContent-icon">▼</span>
+          Profitability - All Scenarios
+        </h3>
+        <div id="profitabilityContent" class="collapsible-content">
         <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
           <!-- Profit Row -->
           <div class="data-item">
@@ -1012,10 +1031,15 @@
             <div class="data-value percentage" id="roiBidBid">-</div>
           </div>
         </div>
+        </div>
       </div>
       
       <div class="section">
-        <h3>Market Indicators</h3>
+        <h3 class="collapsible-header" onclick="toggleCollapse('marketIndicatorsContent')">
+          <span class="collapse-icon" id="marketIndicatorsContent-icon">▼</span>
+          Market Indicators
+        </h3>
+        <div id="marketIndicatorsContent" class="collapsible-content">
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Supply</div>
