@@ -2723,8 +2723,8 @@
         html += `<span style="color: #6b7280;">${connector}</span>`;
         html += `<span style="font-weight: 600;">${node.amount}× ${node.ticker}</span> `;
         html += `<span style="color: ${sourceColor};">${sourceIcon} ${node.source}</span> `;
-        html += `<span style="color: #6b7280;">@ ${formatCurrency(node.unitCost)}/unit</span> `;
-        html += `<span style="color: #374151; font-weight: 600;">= ${formatCurrency(node.totalCost)}</span>`;
+        html += `<span style="color: #6b7280;">@ ${node.unitCost.toFixed(2)}/unit</span> `;
+        html += `<span style="color: #374151; font-weight: 600;">= ${node.totalCost.toFixed(2)}</span>`;
         html += `</div>`;
         
         if (node.children && node.children.length > 0) {
