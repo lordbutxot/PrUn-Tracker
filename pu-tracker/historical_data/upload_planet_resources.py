@@ -52,10 +52,36 @@ def upload_planet_resources():
         # Left join to keep all resources, add fertility where available
         df = df.merge(fertility_df, left_on='Planet', right_on='Planet', how='left')
         
+        # Find planets with fertility but NO resources (like Demeter KI-466b)
+        planets_in_resources = set(df['Planet'].unique())
+        planets_with_fertility = set(fertility_df['Planet'].unique())
+        fertility_only_planets = planets_with_fertility - planets_in_resources
+        
+        if fertility_only_planets:
+            print(f"[INFO] Found {len(fertility_only_planets)} planets with fertility but no extractable resources")
+            print(f"[INFO] Fertility-only planets: {', '.join(sorted(fertility_only_planets))}")
+            
+            # Add fertility-only planets to the dataframe
+            # Create rows with placeholder data for farming-only planets
+            fertility_only_rows = []
+            for planet in fertility_only_planets:
+                fertility_val = fertility_df[fertility_df['Planet'] == planet]['Fertility'].iloc[0]
+                fertility_only_rows.append({
+                    'Key': f'{planet}-FARMING',
+                    'Planet': planet,
+                    'Ticker': 'FARMING',  # Placeholder to indicate farming capability
+                    'Type': 'FARMING',
+                    'Factor': 1.0,  # Not used for farming
+                    'Fertility': fertility_val
+                })
+            
+            fertility_only_df = pd.DataFrame(fertility_only_rows)
+            df = pd.concat([df, fertility_only_df], ignore_index=True)
+            print(f"[INFO] Added {len(fertility_only_rows)} placeholder rows for fertility-only planets")
+        
         # Count unique planets with fertility (not just rows)
         planets_with_fertility = df[df['Fertility'].notna()]['Planet'].unique()
-        print(f"[INFO] Merged fertility data - {len(planets_with_fertility)} unique planets have fertility values")
-        print(f"[INFO] Planets with fertility: {', '.join(sorted(planets_with_fertility))}")
+        print(f"[INFO] Total planets with fertility: {len(planets_with_fertility)}")
     else:
         print(f"\n[INFO] No fertility data found at {fertility_path}, skipping fertility merge")
         df['Fertility'] = None

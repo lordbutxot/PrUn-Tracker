@@ -2160,15 +2160,39 @@
       if (!planetData) return 0;
       
       const planetInfo = planetData.find(p => p.ticker === ticker && p.planet === planetName);
-      return planetInfo ? planetInfo.factor : 0;
+      const rawConcentration = planetInfo ? planetInfo.factor : 0;
+      
+      // Note: Official extraction formula from https://pct.fnar.net/planet/index.html:
+      // Gaseous (COL): DailyExtraction = (RawConcentration × 100) × 0.6
+      // Other (RIG/EXT): DailyExtraction = (RawConcentration × 100) × 0.7
+      // 
+      // The RawConcentration value directly affects production time and workforce costs.
+      // Higher concentration = faster extraction = less workforce cost per unit
+      // Our system uses the raw concentration factor as an efficiency multiplier.
+      
+      return rawConcentration;
     }
     
     // Get planet fertility factor client-side (for farming)
     function getPlanetFertilityClientSide(planetName) {
-      if (!fertilityData || fertilityData.length === 0) return 1.0;
+      if (!fertilityData || fertilityData.length === 0) return 0;
       
       const planetInfo = fertilityData.find(p => p.planet === planetName);
-      return planetInfo ? planetInfo.fertility : 1.0;
+      if (!planetInfo) return 0;
+      
+      const rawFertility = planetInfo.fertility;
+      
+      // Official formula from https://pct.fnar.net/planet/index.html
+      // Fertility = RawFertility × (10/33)
+      // This converts raw values to actual efficiency modifier:
+      // - Raw -0.34 → -0.103 (-10.3% penalty) → 89.7% efficiency
+      // - Raw -0.20 → -0.061 (-6.1% penalty) → 93.9% efficiency
+      // - Raw -0.50 → -0.152 (-15.2% penalty) → 84.8% efficiency
+      const fertilityModifier = rawFertility * (10 / 33);
+      
+      // Return as efficiency modifier to be added to total efficiency
+      // e.g., -0.103 means 10.3% slower production
+      return fertilityModifier;
     }
     
     function calculateSelfProductionCostClientSide(recipeString, exchange, visited = new Set()) {
