@@ -1922,10 +1922,43 @@
           return match ? match[1] + ' ' + match[2] : item;
         }).join(', ');
         
-        recipeOutputs = outputPart.split('-').map(item => {
-          const match = item.match(/(\d+)x([A-Z0-9]+)/);
-          return match ? match[1] + ' ' + match[2] : item;
-        }).join(', ');
+        // For extraction recipes with a selected planet, calculate actual output using PCT formula
+        if (isExtraction && planet) {
+          const building = recipeString.split('=>')[0];
+          const planetFactor = getPlanetFactorClientSide(material, planet);
+          
+          if (planetFactor > 0) {
+            // Official PCT Extraction Formula
+            // Step 1: Daily extraction = (Concentration × 100) × Multiplier
+            const multiplier = (building === 'COL') ? 0.6 : 0.7;
+            const dailyExtraction = (planetFactor * 100) * multiplier;
+            
+            // Step 2: Base cycle time (hours)
+            const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
+            
+            // Step 3: Units per cycle
+            const cyclesPerDay = 24 / baseCycleTime;
+            const unitsPerCycle = dailyExtraction / cyclesPerDay;
+            
+            // Step 4: Round up to get actual output
+            const actualOutput = Math.ceil(unitsPerCycle);
+            
+            // Display the calculated output instead of the base "100" from recipe
+            recipeOutputs = actualOutput + ' ' + material;
+          } else {
+            // No concentration data, fall back to parsing recipe string
+            recipeOutputs = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z0-9]+)/);
+              return match ? match[1] + ' ' + match[2] : item;
+            }).join(', ');
+          }
+        } else {
+          // Normal production recipe or extraction without planet selection
+          recipeOutputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z0-9]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+        }
       }
       
       // Calculate totals and profitability
