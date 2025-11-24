@@ -738,8 +738,12 @@
     </div>
     
     <div class="options-panel">
-      <h3>Cost Calculation Options</h3>
-      <div class="options-grid">
+      <div class="collapsible-header" onclick="toggleCollapse('costOptionsContentWrapper')">
+        <h3>Cost Calculation Options</h3>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="collapsible-content" id="costOptionsContentWrapper">
+        <div class="options-grid">
         <div class="option-item">
           <label class="checkbox-label">
             <input type="checkbox" id="includeLuxury" checked>
@@ -854,6 +858,7 @@
           </div>
           <div class="option-hint" style="margin-top: 5px;">HQ grants faction-specific bonuses (empire-wide). Specialization rewards focused empires (fewer bases = higher multiplier). Bonus only applies to matching building types.</div>
         </div>
+      </div>
       </div>
     </div>
     
