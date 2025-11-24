@@ -1496,36 +1496,29 @@
     // Populate materials dropdown from cached data, filtered by selected category
     function populateMaterials() {
       const selectedCategory = document.getElementById('categorySelect').value.trim().toLowerCase();
-      // Map broad dropdown categories to all possible real data categories
+      // Map broad dropdown categories to building categories
       const categoryMap = {
-        "manufacturing": [
-          "manufacturing", "construction materials", "construction parts", "construction prefabs", "unit prefabs", "alloys", "elements", "minerals", "consumables (basic)", "consumables (luxury)", "ship engines", "ship parts", "ship shields", "ship kits", "plastics", "textiles", "medical equipment", "utility"
-        ],
-        "agriculture": [
-          "agriculture", "agricultural products"
-        ],
-        "electronics": [
-          "electronics", "electronic pieces", "software components", "software systems", "software tools"
-        ],
-        "food industries": [
-          "food industries", "consumables (basic)", "consumables (luxury)"
-        ],
-        "metallurgy": [
-          "metallurgy", "alloys", "metals", "minerals", "elements"
-        ],
-        "construction": [
-          "construction", "construction materials", "construction parts", "construction prefabs", "unit prefabs"
-        ],
-        "chemistry": [
-          "chemistry", "chemicals", "liquids", "gases"
-        ],
-        "fuel": [
-          "fuel", "liquids", "gases"
-        ],
-        "extraction": [
-          "extraction", "ores", "minerals", "elements", "gases"
-        ],
+        "manufacturing": ["manufacturing"],
+        "agriculture": ["agriculture"],
+        "electronics": ["electronics"],
+        "food industries": ["food industries"],
+        "metallurgy": ["metallurgy"],
+        "construction": ["construction"],
+        "chemistry": ["chemistry"],
+        "fuel": ["fuel"],
+        "extraction": ["extraction"],
         // Add more mappings as needed
+      };
+
+      // Building to category mapping
+      const buildingCategories = {
+        'ELP': 'electronics', 'EEP': 'electronics', 'AAP': 'electronics', 'EDM': 'electronics',
+        'CHP': 'manufacturing', 'PPF': 'manufacturing', 'BMP': 'manufacturing', 'APF': 'manufacturing', 'ASM': 'manufacturing', 'WEL': 'manufacturing', 'POL': 'manufacturing',
+        'FRM': 'agriculture', 'ORC': 'agriculture', 'VIN': 'agriculture',
+        'FP': 'food industries', 'BWY': 'food industries', 'WPL': 'food industries',
+        'SME': 'metallurgy', 'BLF': 'metallurgy', 'AMP': 'metallurgy',
+        'REF': 'chemistry', 'LAB': 'chemistry',
+        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction', 'DRL': 'extraction'
       };
 
       const materialsSet = new Set();
@@ -1533,18 +1526,11 @@
         if (row.ticker) {
           if (!selectedCategory) {
             materialsSet.add(row.ticker);
-          } else if (row.category) {
-            const cat = row.category.trim().toLowerCase();
-            // If selectedCategory is mapped, match any mapped real category
-            if (categoryMap[selectedCategory]) {
-              if (categoryMap[selectedCategory].some(mappedCat => cat === mappedCat)) {
-                materialsSet.add(row.ticker);
-              }
-            } else {
-              // Fallback: substring match
-              if (cat.includes(selectedCategory)) {
-                materialsSet.add(row.ticker);
-              }
+          } else if (row.recipe) {
+            const buildingCode = row.recipe.split(':')[0];
+            const buildingCategory = buildingCategories[buildingCode];
+            if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
+              materialsSet.add(row.ticker);
             }
           }
         }
