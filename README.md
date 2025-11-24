@@ -13,7 +13,7 @@ PrUn-Tracker automates the entire workflow of collecting, processing, analyzing,
 - ✅ **True Production Costs** - Complete workforce consumable calculations (RAT, DW, OVE, etc.)
 - ✅ **Planet Optimization** - Extraction concentration & farming fertility factors
 - ✅ **Advanced Efficiency** - Worker luxury, CoGC programs, experts (cumulative bonuses)
-- ✅ **Real-Time Market Data** - Automated fetching every 2 hours via GitHub Actions
+- ✅ **Real-Time Market Data** - Automated fetching every hour via GitHub Actions
 - ✅ **Interactive Web Tool** - Price Analyser with profit calculations & scenario comparisons
 - ✅ **Google Sheets Integration** - Auto-updated spreadsheets with analytics
 
@@ -62,7 +62,7 @@ python main.py
 - Processes 15,000+ market records
 - Calculates workforce costs with real market prices
 - Uploads to Google Sheets (DATA tabs, Planet Resources, Reports)
-- Runs every 2 hours via GitHub Actions
+- Runs every hour via GitHub Actions
 
 ### Advanced Calculations
 - **Hybrid Efficiency System** - Additive (Worker + Planet + CoGC + Experts) then Multiplicative (HQ × Corp HQ)

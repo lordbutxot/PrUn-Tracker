@@ -34,7 +34,7 @@
 - **Efficiency Modeling:** Full efficiency system including worker luxury, CoGC programs, experts, and planet bonuses
 - **Real-Time Market Data:** Automated fetching from Prosperous Universe FIO API
 - **Web-Based Interface:** Interactive Price Analyser tool with recipe selection and profit calculations
-- **Automated Deployment:** GitHub Actions pipeline runs every 2 hours to update data
+- **Automated Deployment:** GitHub Actions pipeline runs every hour to update data
 
 ---
 
@@ -667,7 +667,7 @@ Effective Cost: 52.8% of base (47.2% savings)
 
 **Automated (GitHub Actions):**
 ```bash
-# Runs every 2 hours via .github/workflows/update-tracker.yml
+# Runs every hour via .github/workflows/update-tracker.yml
 1. Checkout repository
 2. Set up Python 3.13
 3. Install dependencies (requirements.txt)
@@ -821,7 +821,7 @@ cache/
 **File:** `.github/workflows/update-tracker.yml`
 
 **Trigger:**
-- **Schedule:** Every 2 hours (`cron: '0 */2 * * *'`)
+- **Schedule:** Every hour (`cron: '0 */1 * * *'`)
 - **Manual:** Via GitHub UI (workflow_dispatch)
 
 **Environment:**
