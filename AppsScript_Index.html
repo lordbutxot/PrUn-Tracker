@@ -1446,8 +1446,8 @@
     function populateCategories() {
       // Get unique categories from materials data
       const categoriesSet = new Set();
-      if (window.allData && window.allData.length > 0) {
-        window.allData.forEach(row => {
+      if (allData && allData.length > 0) {
+        allData.forEach(row => {
           if (row.category) {
             categoriesSet.add(row.category.trim());
           }
