@@ -26,6 +26,43 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // Allow embedding
 }
 
+// TEST FUNCTION - Run this manually to check column structure
+function testColumnStructure() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Price Analyser Data');
+  
+  if (!sheet) {
+    Logger.log('ERROR: Price Analyser Data sheet not found');
+    return;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  Logger.log('=== COLUMN STRUCTURE TEST ===');
+  Logger.log('Total columns: ' + headers.length);
+  Logger.log('\nAll headers:');
+  for (let i = 0; i < headers.length; i++) {
+    Logger.log('Column ' + String.fromCharCode(65 + i) + ' (index ' + i + '): ' + headers[i]);
+  }
+  
+  Logger.log('\n=== CHECKING TRADED VOLUME ===');
+  Logger.log('Column M (index 12): ' + headers[12]);
+  Logger.log('Column N (index 13): ' + headers[13]);
+  Logger.log('Column O (index 14): ' + headers[14]);
+  Logger.log('Column P (index 15): ' + headers[15]);
+  
+  if (data.length > 1) {
+    Logger.log('\n=== SAMPLE DATA (Row 2) ===');
+    Logger.log('Ticker (Column B): ' + data[1][1]);
+    Logger.log('Exchange (Column E): ' + data[1][4]);
+    Logger.log('Column M value: ' + data[1][12]);
+    Logger.log('Column N value: ' + data[1][13]);
+    Logger.log('Column O value: ' + data[1][14]);
+    Logger.log('Column P value: ' + data[1][15]);
+  }
+}
+
 // NEW: Load all data at once to avoid multiple API calls
 function getAllData() {
   try {
