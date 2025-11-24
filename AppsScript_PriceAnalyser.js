@@ -117,7 +117,10 @@ function getAllData() {
       }
       Logger.log('Loaded ' + planets.length + ' planet resources and ' + fertility.length + ' planets with fertility data');
       if (fertility.length > 0) {
-        Logger.log('Sample fertility data: ' + JSON.stringify(fertility.slice(0, 3)));
+        Logger.log('Sample fertility data: ' + JSON.stringify(fertility.slice(0, 5)));
+        Logger.log('Fertility range: Min=' + Math.min(...fertility.map(f => f.fertility)).toFixed(3) + 
+                   ', Max=' + Math.max(...fertility.map(f => f.fertility)).toFixed(3));
+        Logger.log('Planets with negative fertility: ' + fertility.filter(f => f.fertility < 0).length);
       } else {
         Logger.log('WARNING: No fertility data found! Check if Fertility column exists and has data.');
       }
