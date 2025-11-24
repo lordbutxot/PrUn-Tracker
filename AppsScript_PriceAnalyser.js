@@ -32,35 +32,41 @@ function testColumnStructure() {
   const sheet = ss.getSheetByName('Price Analyser Data');
   
   if (!sheet) {
-    Logger.log('ERROR: Price Analyser Data sheet not found');
-    return;
+    console.log('ERROR: Price Analyser Data sheet not found');
+    return 'ERROR: Price Analyser Data sheet not found';
   }
   
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   
-  Logger.log('=== COLUMN STRUCTURE TEST ===');
-  Logger.log('Total columns: ' + headers.length);
-  Logger.log('\nAll headers:');
+  let output = '=== COLUMN STRUCTURE TEST ===\n';
+  output += 'Total columns: ' + headers.length + '\n\n';
+  output += 'All headers:\n';
   for (let i = 0; i < headers.length; i++) {
-    Logger.log('Column ' + String.fromCharCode(65 + i) + ' (index ' + i + '): ' + headers[i]);
+    output += 'Column ' + String.fromCharCode(65 + i) + ' (index ' + i + '): ' + headers[i] + '\n';
   }
   
-  Logger.log('\n=== CHECKING TRADED VOLUME ===');
-  Logger.log('Column M (index 12): ' + headers[12]);
-  Logger.log('Column N (index 13): ' + headers[13]);
-  Logger.log('Column O (index 14): ' + headers[14]);
-  Logger.log('Column P (index 15): ' + headers[15]);
+  output += '\n=== CHECKING TRADED VOLUME ===\n';
+  output += 'Column M (index 12): ' + headers[12] + '\n';
+  output += 'Column N (index 13): ' + headers[13] + '\n';
+  output += 'Column O (index 14): ' + headers[14] + '\n';
+  output += 'Column P (index 15): ' + headers[15] + '\n';
   
   if (data.length > 1) {
-    Logger.log('\n=== SAMPLE DATA (Row 2) ===');
-    Logger.log('Ticker (Column B): ' + data[1][1]);
-    Logger.log('Exchange (Column E): ' + data[1][4]);
-    Logger.log('Column M value: ' + data[1][12]);
-    Logger.log('Column N value: ' + data[1][13]);
-    Logger.log('Column O value: ' + data[1][14]);
-    Logger.log('Column P value: ' + data[1][15]);
+    output += '\n=== SAMPLE DATA (Row 2) ===\n';
+    output += 'Ticker (Column B): ' + data[1][1] + '\n';
+    output += 'Exchange (Column E): ' + data[1][4] + '\n';
+    output += 'Column M value: ' + data[1][12] + '\n';
+    output += 'Column N value: ' + data[1][13] + '\n';
+    output += 'Column O value: ' + data[1][14] + '\n';
+    output += 'Column P value: ' + data[1][15] + '\n';
   }
+  
+  // Also log to console
+  console.log(output);
+  
+  // Return the output so it appears in execution log
+  return output;
 }
 
 // NEW: Load all data at once to avoid multiple API calls
