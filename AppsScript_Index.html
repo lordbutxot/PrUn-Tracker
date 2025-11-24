@@ -429,6 +429,74 @@
       font-size: 1rem;
     }
     
+    .building-recipe-card {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+    
+    .building-recipe-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    
+    .building-recipe-card.best {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+    
+    .building-recipe-card.current {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .building-recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .building-recipe-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #1e3a8a;
+    }
+    
+    .building-recipe-badges {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .badge-best-profit {
+      background: #f59e0b;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
+    .badge-selected {
+      background: #3b82f6;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
+    .building-recipe-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    
     .arbitrage-card:hover {
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       transform: translateX(4px);
@@ -949,6 +1017,19 @@
         </div>
         <div class="collapsible-content" id="recommendationContentWrapper">
           <div id="recommendationContent" style="margin-top: 15px; max-height: 600px; overflow-y: auto;"></div>
+        </div>
+      </div>
+      
+      <div class="section" id="buildingComparisonSection" style="display: none;">
+        <div class="collapsible-header" onclick="toggleCollapse('buildingComparisonContentWrapper')">
+          <h3>Building Recipe Comparison</h3>
+          <span class="collapse-icon" id="buildingComparisonContentWrapper-icon">▼</span>
+        </div>
+        <div class="collapsible-content" id="buildingComparisonContentWrapper">
+          <div style="margin: 15px 0; padding: 10px; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b; font-size: 0.9rem;">
+            Compare all recipes for the same building to optimize production
+          </div>
+          <div id="buildingComparisonContent" style="max-height: 600px; overflow-y: auto;"></div>
         </div>
       </div>
     </div>
@@ -1526,6 +1607,14 @@
         
         if (recommendationData) {
           displayRecommendation(recommendationData);
+        }
+        
+        // Get building comparison if a recipe is selected
+        if (calculationData && calculationData.recipe) {
+          const buildingComparisonData = getBuildingComparisonFromCache(calculationData.recipe, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
+          if (buildingComparisonData) {
+            displayBuildingComparison(buildingComparisonData);
+          }
         }
       } catch (error) {
         document.getElementById('loading').style.display = 'none';
@@ -2328,6 +2417,168 @@
           </div>
         </div>
       `;
+    }
+    
+    // Get building comparison from cached data
+    function getBuildingComparisonFromCache(currentRecipe, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) {
+      if (!currentRecipe || !currentRecipe.includes(':')) {
+        return null;
+      }
+      
+      const building = currentRecipe.split(':')[0];
+      const buildingRecipes = [];
+      const seenMaterials = new Set();
+      
+      // Find all recipes for this building at the specified exchange
+      for (const row of allData) {
+        const recipeString = row.recipe || '';
+        const material = row.ticker;
+        const exch = row.exchange;
+        
+        if (recipeString.startsWith(building + ':') && exch === exchange && !seenMaterials.has(material)) {
+          seenMaterials.add(material);
+          
+          const askPrice = row.askPrice;
+          const bidPrice = row.bidPrice;
+          let inputCostAsk = row.inputCostAsk;
+          let workforceCostAsk = row.workforceCostAsk;
+          
+          // Apply efficiency modifiers
+          let totalEfficiency = 1.0;
+          if (customEfficiencyEnabled) {
+            totalEfficiency = customEfficiency / 100;
+          } else if (!includeLuxury) {
+            totalEfficiency = 0.79;
+          }
+          
+          if (cogcBonus) totalEfficiency += 0.25;
+          if (expertCount > 0) totalEfficiency += calculateExpertBonus(expertCount);
+          
+          // Apply HQ bonuses
+          if (hqBonus > 0 || corpHqBonus) {
+            const corpMultiplier = corpHqBonus ? 1.1 : 1.0;
+            const finalMultiplier = (1 + hqBonus) * corpMultiplier;
+            totalEfficiency *= finalMultiplier;
+          }
+          
+          // Apply efficiency to workforce cost
+          workforceCostAsk = workforceCostAsk / totalEfficiency;
+          
+          const totalCostAsk = inputCostAsk + workforceCostAsk;
+          const profitAsk = askPrice - totalCostAsk;
+          const roiAsk = totalCostAsk > 0 ? (profitAsk / totalCostAsk) * 100 : 0;
+          
+          // Parse recipe outputs
+          let outputDisplay = '';
+          if (recipeString.includes('=>')) {
+            const outputPart = recipeString.split('=>')[1];
+            outputDisplay = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[1] + ' ' + match[2] : item;
+            }).join(', ');
+          }
+          
+          buildingRecipes.push({
+            material: material,
+            materialName: row.materialName || material,
+            recipe: recipeString,
+            output: outputDisplay,
+            askPrice: askPrice,
+            bidPrice: bidPrice,
+            inputCost: inputCostAsk,
+            workforceCost: workforceCostAsk,
+            totalCost: totalCostAsk,
+            profit: profitAsk,
+            roi: roiAsk,
+            isCurrent: recipeString === currentRecipe
+          });
+        }
+      }
+      
+      if (buildingRecipes.length <= 1) {
+        return null; // Don't show if only one recipe
+      }
+      
+      // Sort by profit descending
+      buildingRecipes.sort((a, b) => b.profit - a.profit);
+      
+      return {
+        success: true,
+        building: building,
+        recipes: buildingRecipes,
+        count: buildingRecipes.length,
+        bestRecipe: buildingRecipes[0]
+      };
+    }
+    
+    // Display building comparison
+    function displayBuildingComparison(data) {
+      const section = document.getElementById('buildingComparisonSection');
+      const content = document.getElementById('buildingComparisonContent');
+      
+      if (!data || !data.success || data.count <= 1) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      let html = `<div style="margin-bottom: 15px; font-weight: 600; color: #1e3a8a; font-size: 1rem;">
+        🏭 ${data.building} Building - ${data.count} Recipe${data.count > 1 ? 's' : ''} Available
+      </div>`;
+      
+      data.recipes.forEach(function(recipe) {
+        const isBest = recipe.material === data.bestRecipe.material;
+        const isCurrent = recipe.isCurrent;
+        let cardClass = 'building-recipe-card';
+        if (isBest) cardClass += ' best';
+        else if (isCurrent) cardClass += ' current';
+        
+        const profitClass = recipe.profit >= 0 ? 'positive' : 'negative';
+        const roiClass = recipe.roi >= 0 ? 'positive' : 'negative';
+        
+        html += `
+          <div class="${cardClass}">
+            <div class="building-recipe-header">
+              <div class="building-recipe-name">${recipe.materialName} (${recipe.material})</div>
+              <div class="building-recipe-badges">
+                ${isBest ? '<span class="badge-best-profit">🏆 BEST PROFIT</span>' : ''}
+                ${isCurrent ? '<span class="badge-selected">SELECTED</span>' : ''}
+              </div>
+            </div>
+            <div style="margin-bottom: 10px; font-size: 0.85rem; color: #666;">
+              <strong>Output:</strong> ${recipe.output}
+            </div>
+            <div class="building-recipe-stats">
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Ask Price</div>
+                <div class="recipe-detail-value">₡ ${recipe.askPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Input Cost</div>
+                <div class="recipe-detail-value">₡ ${recipe.inputCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Workforce Cost</div>
+                <div class="recipe-detail-value">₡ ${recipe.workforceCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Total Cost</div>
+                <div class="recipe-detail-value">₡ ${recipe.totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">Profit (Ask)</div>
+                <div class="recipe-detail-value ${profitClass}">₡ ${recipe.profit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              </div>
+              <div class="recipe-detail-item">
+                <div class="recipe-detail-label">ROI</div>
+                <div class="recipe-detail-value ${roiClass}">${recipe.roi.toFixed(2)}%</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      content.innerHTML = html;
+      section.style.display = 'block';
     }
     
     // Helper to set formatted value with color coding

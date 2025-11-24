@@ -605,6 +605,101 @@ function getArbitrageOpportunities(material) {
   }
 }
 
+// Get building comparison - compare all recipes for the same building
+function getBuildingComparison(currentRecipe, exchange, includeLuxury) {
+  try {
+    includeLuxury = includeLuxury !== false; // Default true
+    
+    if (!currentRecipe || !currentRecipe.includes(':')) {
+      return { error: 'Invalid recipe format' };
+    }
+    
+    // Extract building from current recipe (e.g., "BMP:1xC-2xH=>200xPE" -> "BMP")
+    const building = currentRecipe.split(':')[0];
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return { error: 'Price Analyser Data sheet not found' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const buildingRecipes = [];
+    const seenMaterials = new Set();
+    
+    // Find all recipes for this building at the specified exchange
+    for (let i = 1; i < data.length; i++) {
+      const recipeString = data[i][2] || ''; // Column C: Recipe
+      const material = data[i][1]; // Column B: Ticker
+      const exch = data[i][4]; // Column E: Exchange
+      
+      // Check if recipe is for the same building and exchange
+      if (recipeString.startsWith(building + ':') && exch === exchange && !seenMaterials.has(material)) {
+        seenMaterials.add(material);
+        
+        const askPrice = parseFloat(data[i][5]) || 0;
+        const bidPrice = parseFloat(data[i][6]) || 0;
+        let inputCostAsk = parseFloat(data[i][7]) || 0;
+        let workforceCostAsk = parseFloat(data[i][9]) || 0;
+        
+        // Apply efficiency penalty if no luxury
+        if (!includeLuxury) {
+          workforceCostAsk *= (1 / 0.79);
+        }
+        
+        const totalCostAsk = inputCostAsk + workforceCostAsk;
+        const profitAsk = askPrice - totalCostAsk;
+        const roiAsk = totalCostAsk > 0 ? (profitAsk / totalCostAsk) * 100 : 0;
+        
+        // Parse recipe outputs for display
+        let outputDisplay = '';
+        if (recipeString.includes('=>')) {
+          const outputPart = recipeString.split('=>')[1];
+          outputDisplay = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+        }
+        
+        buildingRecipes.push({
+          material: material,
+          materialName: data[i][3] || material, // Column D: Material Name
+          recipe: recipeString,
+          output: outputDisplay,
+          askPrice: askPrice,
+          bidPrice: bidPrice,
+          inputCost: inputCostAsk,
+          workforceCost: workforceCostAsk,
+          totalCost: totalCostAsk,
+          profit: profitAsk,
+          roi: roiAsk,
+          isCurrent: recipeString === currentRecipe
+        });
+      }
+    }
+    
+    if (buildingRecipes.length === 0) {
+      return { error: 'No recipes found for building ' + building };
+    }
+    
+    // Sort by profit descending
+    buildingRecipes.sort((a, b) => b.profit - a.profit);
+    
+    return {
+      success: true,
+      building: building,
+      recipes: buildingRecipes,
+      count: buildingRecipes.length,
+      bestRecipe: buildingRecipes[0]
+    };
+    
+  } catch (error) {
+    Logger.log('Error in getBuildingComparison: ' + error.toString());
+    return { error: error.toString() };
+  }
+}
+
 // Get calculation data for selected material, exchange, and optionally specific recipe
 function getCalculationData(material, exchange, recipe, includeLuxury, selfProduced, planetName) {
   includeLuxury = includeLuxury !== false; // Default true
