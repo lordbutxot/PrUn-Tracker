@@ -1182,6 +1182,8 @@
     let fertilityData = [];
     let inputOverrides = {}; // Track per-input production/market overrides
     let currentRecipeInputs = []; // Track inputs of current recipe for customization
+    let selfProductionCache = {}; // Cache for self-production calculations
+    let bestRecipeCache = {}; // Cache for best recipe lookups per material/exchange
     
     // Consumables list (basic + luxury)
     const CONSUMABLES = new Set([
@@ -1696,10 +1698,14 @@
     document.getElementById('selfProducedInputs').addEventListener('change', function() {
       const submenu = document.getElementById('selfProductionSubmenu');
       submenu.style.display = this.checked ? 'block' : 'none';
+      selfProductionCache = {}; // Clear cache when toggling self-production
       calculate();
     });
     
-    document.getElementById('consumablesOnly').addEventListener('change', calculate);
+    document.getElementById('consumablesOnly').addEventListener('change', function() {
+      selfProductionCache = {}; // Clear cache when changing consumables mode
+      calculate();
+    });
     
     // Customize inputs button
     document.getElementById('customizeInputsBtn').addEventListener('click', function() {
@@ -1759,6 +1765,11 @@
     
     // Calculate and display results using cached data
     function calculate() {
+      const startTime = performance.now();
+      const loadingDiv = document.getElementById('loading');
+      const resultsDiv = document.getElementById('results');
+      const errorDiv = document.getElementById('error');
+      
       const material = document.getElementById('materialSelect').value;
       const recipe = document.getElementById('recipeSelect').value;
       const exchange = document.getElementById('exchangeSelect').value;
@@ -1787,6 +1798,14 @@
         const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, selfProduced, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
+        
+        const endTime = performance.now();
+        const calcTime = (endTime - startTime).toFixed(1);
+        
+        // Log performance info for debugging
+        if (selfProduced && calcTime > 100) {
+          console.log(`⚡ Calculation took ${calcTime}ms (cache size: ${Object.keys(selfProductionCache).length} entries)`);
+        }
         
         document.getElementById('loading').style.display = 'none';
         
@@ -2424,7 +2443,7 @@
         checkbox.style.fontSize = '0.85rem';
         checkbox.innerHTML = `
           <input type="checkbox" id="input_${input.ticker}" ${isChecked ? 'checked' : ''} 
-                 onchange="inputOverrides['${input.ticker}'] = this.checked; calculate();">
+                 onchange="inputOverrides['${input.ticker}'] = this.checked; selfProductionCache = {}; calculate();">
           <span>${input.amount}× ${input.ticker}</span>
         `;
         customDiv.appendChild(checkbox);
@@ -2435,6 +2454,15 @@
       if (!recipeString || !recipeString.includes('=>')) return { cost: 0, tree: null };
       
       const isTreeRoot = !visited.size && treeNodes !== null;
+      
+      // Generate cache key based on recipe, exchange, consumables mode, and input overrides
+      const overridesKey = Object.keys(inputOverrides).sort().map(k => `${k}:${inputOverrides[k]}`).join('|');
+      const cacheKey = `${recipeString}|${exchange}|${consumablesOnly}|${overridesKey}`;
+      
+      // Check cache (only for non-root calls to avoid caching partial trees)
+      if (!isTreeRoot && !treeNodes && selfProductionCache[cacheKey]) {
+        return selfProductionCache[cacheKey];
+      }
       
       try {
         const parts = recipeString.split('=>');
@@ -2474,30 +2502,40 @@
             let inputSubtree = null;
             
             if (useSelfProduction && !visited.has(visitKey)) {
+              // Check cache for best recipe for this material+exchange
+              const bestRecipeCacheKey = `${inputTicker}_${exchange}`;
+              let candidateRows = bestRecipeCache[bestRecipeCacheKey];
+              
+              // Build cache if not exists
+              if (!candidateRows) {
+                candidateRows = allData.filter(row => 
+                  row.ticker === inputTicker && row.exchange === exchange && row.recipe
+                );
+                bestRecipeCache[bestRecipeCacheKey] = candidateRows;
+              }
+              
               // Find the best (cheapest) recipe for this input material
               let bestInputRow = null;
               let lowestInputCost = Infinity;
               
-              for (const row of allData) {
-                if (row.ticker === inputTicker && row.exchange === exchange && row.recipe) {
-                  // Recursively calculate production cost for this input's recipe
-                  const newVisited = new Set(visited);
-                  newVisited.add(visitKey);
-                  
-                  const result = calculateSelfProductionCostClientSide(
-                    row.recipe, 
-                    exchange, 
-                    consumablesOnly, 
-                    newVisited, 
-                    treeNodes ? [] : null
-                  );
-                  const inputProductionCost = result.cost + row.workforceCostAsk;
-                  
-                  if (inputProductionCost < lowestInputCost) {
-                    lowestInputCost = inputProductionCost;
-                    bestInputRow = row;
-                    inputSubtree = result.tree;
-                  }
+              for (const row of candidateRows) {
+                // Recursively calculate production cost for this input's recipe
+                const newVisited = new Set(visited);
+                newVisited.add(visitKey);
+                
+                const result = calculateSelfProductionCostClientSide(
+                  row.recipe, 
+                  exchange, 
+                  consumablesOnly, 
+                  newVisited, 
+                  treeNodes ? [] : null
+                );
+                const inputProductionCost = result.cost + row.workforceCostAsk;
+                
+                if (inputProductionCost < lowestInputCost) {
+                  lowestInputCost = inputProductionCost;
+                  bestInputRow = row;
+                  inputSubtree = result.tree;
                 }
               }
               
@@ -2536,10 +2574,17 @@
           }
         }
         
-        return { 
+        const result = { 
           cost: totalCost,
           tree: treeNodes !== null ? childNodes : null
         };
+        
+        // Cache the result (only if not building tree to keep cache lightweight)
+        if (!isTreeRoot && !treeNodes) {
+          selfProductionCache[cacheKey] = result;
+        }
+        
+        return result;
       } catch (e) {
         console.error('Error calculating self-production cost:', e);
         return { cost: 0, tree: null };
