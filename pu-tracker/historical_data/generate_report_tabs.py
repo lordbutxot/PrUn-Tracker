@@ -164,7 +164,16 @@ def top_invest_section(df, exch, top_n=20):
     # --- FILL 'Investment Score' IF MISSING ---
     if "Investment Score" not in df.columns and "Investment_Score" in df.columns:
         df["Investment Score"] = df["Investment_Score"]
-    top_invest = df.sort_values("Investment Score", ascending=False).head(top_n)
+    
+    # Sort by Investment Score descending
+    df_sorted = df.sort_values("Investment Score", ascending=False)
+    
+    # Deduplicate by Ticker - keep only the best recipe (highest Investment Score) per material
+    df_deduplicated = df_sorted.drop_duplicates(subset=['Ticker'], keep='first')
+    
+    # Take top N unique materials
+    top_invest = df_deduplicated.head(top_n)
+    
     subheader = ["Ticker", "Name", "Product", "Buy Price", "Sell Price", "Profit", "Investment Score"]
     rows = []
     for _, row in top_invest.iterrows():
