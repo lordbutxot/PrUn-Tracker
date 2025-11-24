@@ -2508,13 +2508,30 @@
       const buildingRecipes = [];
       const seenMaterials = new Set();
       
+      // Check if this is an extraction building (COL, EXT, RIG)
+      const isExtractionBuilding = ['COL', 'EXT', 'RIG'].includes(building);
+      const selectedPlanet = document.getElementById('planetSelect').value;
+      
+      // For extraction buildings, get list of materials available on selected planet
+      let planetMaterials = new Set();
+      if (isExtractionBuilding && selectedPlanet) {
+        planetData.forEach(planet => {
+          if (planet.planet === selectedPlanet) {
+            planetMaterials.add(planet.ticker);
+          }
+        });
+      }
+      
       // Find all recipes for this building at the specified exchange
       for (const row of allData) {
         const recipeString = row.recipe || '';
         const material = row.ticker;
         const exch = row.exchange;
         
-        if (recipeString.startsWith(building + ':') && exch === exchange && !seenMaterials.has(material)) {
+        // For extraction buildings, only include materials available on the selected planet
+        const materialMatchesPlanet = !isExtractionBuilding || !selectedPlanet || planetMaterials.has(material);
+        
+        if (recipeString.startsWith(building + ':') && exch === exchange && !seenMaterials.has(material) && materialMatchesPlanet) {
           seenMaterials.add(material);
           
           const askPrice = row.askPrice;
