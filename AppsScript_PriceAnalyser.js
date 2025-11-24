@@ -104,9 +104,10 @@ function getAllData() {
           Logger.log('Row ' + i + ': Planet=' + planetName + ', Column[5]=' + planetData[i][5] + ', Parsed=' + fertilityValue);
         }
         
-        // Include ALL fertility values >= -1 (with efficiency bonuses, even -1 fertility can be viable)
-        // Negative fertility = slower farming, but still possible with efficiency factors
-        if (!isNaN(fertilityValue) && fertilityValue >= -1 && !fertilityMap[planetName]) {
+        // Include ALL planets with valid fertility values (even highly negative ones)
+        // With efficiency bonuses, farming is theoretically possible on any planet with fertility data
+        // Negative fertility = slower farming, but user can decide viability based on their bonuses
+        if (!isNaN(fertilityValue) && !fertilityMap[planetName]) {
           fertilityMap[planetName] = fertilityValue;
           fertility.push({
             planet: planetName,
