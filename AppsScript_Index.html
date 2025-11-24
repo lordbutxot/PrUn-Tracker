@@ -1500,7 +1500,13 @@
       const selectedCategory = document.getElementById('categorySelect').value;
       const materialsSet = new Set();
       allData.forEach(row => {
-        if (row.ticker && (!selectedCategory || row.category === selectedCategory)) {
+        if (
+          row.ticker &&
+          (
+            !selectedCategory ||
+            (row.category && row.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase())
+          )
+        ) {
           materialsSet.add(row.ticker);
         }
       });
