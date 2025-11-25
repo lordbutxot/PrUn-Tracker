@@ -14,14 +14,17 @@ def fetch_csv(url):
 def upload_csv_to_google_sheets(csv_path, fieldnames):
     """Upload the generated CSV to Google Sheets 'Price Analyser Data' sheet."""
     try:
+        print("Starting Google Sheets upload...")
         # Get spreadsheet ID from environment
         spreadsheet_id = os.environ.get('PRUN_SPREADSHEET_ID')
         if not spreadsheet_id:
             print("Warning: PRUN_SPREADSHEET_ID not set, skipping Google Sheets upload")
             return
         
+        print(f"Spreadsheet ID: {spreadsheet_id}")
         # Load service account credentials (assuming prun-profit-*.json is in the same dir)
         creds_path = os.path.join(os.path.dirname(__file__), 'prun-profit-42c5889f620d.json')
+        print(f"Loading creds from: {creds_path}")
         creds = Credentials.from_service_account_file(creds_path, scopes=['https://www.googleapis.com/auth/spreadsheets'])
         service = build('sheets', 'v4', credentials=creds)
         
@@ -34,8 +37,10 @@ def upload_csv_to_google_sheets(csv_path, fieldnames):
         header = list(fieldnames)
         data.insert(0, header)
         
+        print(f"Data to upload: {len(data)} rows")
         # Clear and update the sheet
         range_name = 'Price Analyser Data!A:Z'  # Adjust range as needed
+        print(f"Clearing and updating range: {range_name}")
         body = {'values': data}
         service.spreadsheets().values().clear(spreadsheetId=spreadsheet_id, range=range_name).execute()
         service.spreadsheets().values().update(
@@ -46,6 +51,8 @@ def upload_csv_to_google_sheets(csv_path, fieldnames):
         print(f"Successfully uploaded {len(data)} rows to Google Sheets 'Price Analyser Data'")
     except Exception as e:
         print(f"Error uploading to Google Sheets: {e}")
+        import traceback
+        traceback.print_exc()
 
 def main():
     """Main function to generate chain dictionary."""
