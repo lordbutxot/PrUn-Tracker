@@ -31,13 +31,22 @@ def calculate_workforce_consumable_cost(wf_type, hours, workforce_amount, market
     if wf_type not in wf_consumables:
         return 0.0
     
-    consumables = wf_consumables[wf_type]
+    workforce_data = wf_consumables[wf_type]
     total = 0.0
     
-    for ticker, amt_per_hour_per_worker in consumables.items():
-        qty = amt_per_hour_per_worker * workforce_amount * hours
-        price = get_market_price(ticker, market_prices, exchange)
-        total += qty * price
+    # Calculate necessary consumables cost
+    if "necessary" in workforce_data:
+        for ticker, amt_per_hour_per_worker in workforce_data["necessary"].items():
+            qty = amt_per_hour_per_worker * workforce_amount * hours
+            price = get_market_price(ticker, market_prices, exchange)
+            total += qty * price
+    
+    # Calculate luxury consumables cost
+    if "luxury" in workforce_data:
+        for ticker, amt_per_hour_per_worker in workforce_data["luxury"].items():
+            qty = amt_per_hour_per_worker * workforce_amount * hours
+            price = get_market_price(ticker, market_prices, exchange)
+            total += qty * price
     
     return total
 
@@ -64,6 +73,21 @@ def calculate_workforce_cost_for_recipe(recipe_key, buildingrecipes_df, workforc
     try:
         time_minutes = float(recipe_info.get("Time", 0))
         time_hours = time_minutes / 60
+        
+        # Check for new WorkforceRequirements structure (dict of all workforce types)
+        workforce_requirements = recipe_info.get("WorkforceRequirements", {})
+        if workforce_requirements:
+            total_cost = 0.0
+            for wf_type, wf_amount in workforce_requirements.items():
+                if wf_amount > 0:
+                    cost = calculate_workforce_consumable_cost(
+                        wf_type, time_hours, wf_amount,
+                        market_prices, workforceneeds, exchange
+                    )
+                    total_cost += cost
+            return total_cost
+        
+        # Fallback to old single-workforce structure for backward compatibility
         workforce_type = recipe_info.get("Workforce", None)
         workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
         
@@ -113,6 +137,7 @@ def calculate_input_cost(ticker, recipe_inputs_df, recipe_outputs_df, buildingre
     """
     Calculate the minimum input cost for producing a material (best recipe).
     Includes both material inputs and workforce consumables.
+    For byproduct recipes, returns the allocated cost for the specific material.
     
     Args:
         ticker: Material ticker to calculate cost for
@@ -135,24 +160,50 @@ def calculate_input_cost(ticker, recipe_inputs_df, recipe_outputs_df, buildingre
     for _, recipe_row in recipes.iterrows():
         recipe_key = recipe_row['Key']
         
-        # Material input cost
-        material_cost = calculate_material_input_cost(recipe_key, recipe_inputs_df, market_prices, exchange)
+        # Check if this is a byproduct recipe
+        byproduct_recipes = load_byproduct_recipes()
+        if recipe_key in byproduct_recipes:
+            # For byproduct recipes, calculate allocated cost for this specific material
+            material_cost = calculate_material_input_cost(recipe_key, recipe_inputs_df, market_prices, exchange)
+            workforce_cost = calculate_workforce_cost_for_recipe(
+                recipe_key, buildingrecipes_df, workforceneeds, market_prices, exchange
+            )
+            total_input_cost = material_cost + workforce_cost
+            
+            # Allocate costs across outputs
+            allocated_costs = allocate_byproduct_costs(recipe_key, total_input_cost, market_prices, exchange)
+            
+            # Get the allocated cost for this specific material
+            if ticker in allocated_costs:
+                cost = allocated_costs[ticker]
+            else:
+                # Fallback: if allocation fails, use proportional share
+                recipe_info = byproduct_recipes[recipe_key]
+                outputs = recipe_info.get("outputs", [])
+                if outputs:
+                    cost = total_input_cost / len(outputs)
+                else:
+                    cost = total_input_cost
+        else:
+            # Regular single-output recipe
+            material_cost = calculate_material_input_cost(recipe_key, recipe_inputs_df, market_prices, exchange)
+            workforce_cost = calculate_workforce_cost_for_recipe(
+                recipe_key, buildingrecipes_df, workforceneeds, market_prices, exchange
+            )
+            cost = material_cost + workforce_cost
+            
+            # Divide by units produced for per-unit cost
+            units_produced = float(recipe_row.get('Amount', 1))
+            cost = cost / units_produced if units_produced > 0 else cost
         
-        # Workforce cost
-        workforce_cost = calculate_workforce_cost_for_recipe(
-            recipe_key, buildingrecipes_df, workforceneeds, market_prices, exchange
-        )
-        
-        total_cost = material_cost + workforce_cost
-        
-        if min_cost is None or total_cost < min_cost:
-            min_cost = total_cost
+        if min_cost is None or cost < min_cost:
+            min_cost = cost
     
     return min_cost if min_cost is not None else 0
 
 
 def calculate_detailed_costs(ticker, recipe_inputs_df, recipe_outputs_df, buildingrecipes_df,
-                            workforceneeds, ask_prices, bid_prices, specific_recipe=None):
+                            workforceneeds, ask_prices, bid_prices, exchange="AI1", specific_recipe=None):
     """
     Calculate separate costs for Ask and Bid price scenarios.
     Returns per-unit costs for the specified recipe, or best (cheapest) recipe if not specified.
@@ -165,6 +216,7 @@ def calculate_detailed_costs(ticker, recipe_inputs_df, recipe_outputs_df, buildi
         workforceneeds: Dict from load_workforceneeds()
         ask_prices: DataFrame with Ask_Price column
         bid_prices: DataFrame with Bid_Price column
+        exchange: Exchange code (default: "AI1")
         specific_recipe: Optional - specific recipe string to calculate (e.g., "FP:1xALG-1xGRN-1xNUT=>10xRAT")
     
     Returns:
@@ -192,86 +244,238 @@ def calculate_detailed_costs(ticker, recipe_inputs_df, recipe_outputs_df, buildi
     for _, recipe_row in recipes.iterrows():
         recipe_key = recipe_row['Key']
         
-        # Material input costs (Ask and Bid)
-        inputs = recipe_inputs_df[recipe_inputs_df['Key'] == recipe_key]
-        material_input_cost_ask = 0
-        material_input_cost_bid = 0
-        
-        for _, inp in inputs.iterrows():
-            input_ticker = inp['Material']
-            try:
-                amount = float(inp['Amount'])
-            except Exception:
-                amount = 0
-            ask_price = float(ask_prices.get(input_ticker, 0))
-            bid_price = float(bid_prices.get(input_ticker, 0))
-            material_input_cost_ask += amount * ask_price
-            material_input_cost_bid += amount * bid_price
+        # Check if this is a byproduct recipe
+        byproduct_recipes = load_byproduct_recipes()
+        if recipe_key in byproduct_recipes:
+            # For byproduct recipes, calculate allocated costs for this specific material
+            # Material input costs (Ask and Bid) - same for all outputs
+            inputs = recipe_inputs_df[recipe_inputs_df['Key'] == recipe_key]
+            material_input_cost_ask = 0
+            material_input_cost_bid = 0
+            
+            for _, inp in inputs.iterrows():
+                input_ticker = inp['Material']
+                try:
+                    amount = float(inp['Amount'])
+                except Exception:
+                    amount = 0
+                ask_price = float(ask_prices.get(input_ticker, 0))
+                bid_price = float(bid_prices.get(input_ticker, 0))
+                material_input_cost_ask += amount * ask_price
+                material_input_cost_bid += amount * bid_price
 
-        # Workforce costs (Ask and Bid)
-        workforce_cost_ask = 0
-        workforce_cost_bid = 0
-        
-        if buildingrecipes_df is not None and recipe_key in buildingrecipes_df.index:
-            recipe_info = buildingrecipes_df.loc[recipe_key]
-            try:
-                time_minutes = float(recipe_info.get("Time", 0))
-                time_hours = time_minutes / 60
-                workforce_type = recipe_info.get("Workforce", None)
-                workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
-                
-                if workforce_type and workforce_type in workforceneeds:
-                    workforce_data = workforceneeds[workforce_type]
+            # Workforce costs (Ask and Bid) - same for all outputs
+            workforce_cost_ask = 0
+            workforce_cost_bid = 0
+            
+            if buildingrecipes_df is not None and recipe_key in buildingrecipes_df.index:
+                recipe_info = buildingrecipes_df.loc[recipe_key]
+                try:
+                    time_minutes = float(recipe_info.get("Time", 0))
+                    time_hours = time_minutes / 60
                     
-                    # Calculate necessary consumables cost
-                    if "necessary" in workforce_data:
-                        for item, per_hour in workforce_data["necessary"].items():
-                            try:
-                                total_needed = float(per_hour) * workforce_amount * time_hours
-                            except Exception:
-                                total_needed = 0
-                            ask_price = float(ask_prices.get(item, 0))
-                            bid_price = float(bid_prices.get(item, 0))
-                            workforce_cost_ask += total_needed * ask_price
-                            workforce_cost_bid += total_needed * bid_price
-                    
-                    # Calculate luxury consumables cost
-                    if "luxury" in workforce_data:
-                        for item, per_hour in workforce_data["luxury"].items():
-                            try:
-                                total_needed = float(per_hour) * workforce_amount * time_hours
-                            except Exception:
-                                total_needed = 0
-                            ask_price = float(ask_prices.get(item, 0))
-                            bid_price = float(bid_prices.get(item, 0))
-                            workforce_cost_ask += total_needed * ask_price
-                            workforce_cost_bid += total_needed * bid_price
-            except Exception as e:
-                print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
-                import traceback
-                traceback.print_exc()
-        elif buildingrecipes_df is not None:
-            # Recipe not found in index - this is the extraction recipe issue
-            print(f"[WARN] Recipe '{recipe_key}' not found in buildingrecipes index.")
-            print(f"[DEBUG] Available recipe keys sample: {list(buildingrecipes_df.index[:5])}")
-            print(f"[DEBUG] Checking if similar keys exist...")
-            # Try to find recipes with similar keys (case-insensitive or partial match)
-            matching_keys = [k for k in buildingrecipes_df.index if recipe_key.lower() in k.lower() or k.lower() in recipe_key.lower()]
-            if matching_keys:
-                print(f"[DEBUG] Found similar keys: {matching_keys[:3]}")
+                    # Check for new WorkforceRequirements structure (dict of all workforce types)
+                    workforce_requirements = recipe_info.get("WorkforceRequirements", {})
+                    if workforce_requirements:
+                        for wf_type, wf_amount in workforce_requirements.items():
+                            if wf_type in workforceneeds:
+                                workforce_data = workforceneeds[wf_type]
+                                
+                                # Calculate necessary consumables cost
+                                if "necessary" in workforce_data:
+                                    for item, per_hour in workforce_data["necessary"].items():
+                                        try:
+                                            total_needed = float(per_hour) * wf_amount * time_hours
+                                        except Exception:
+                                            total_needed = 0
+                                        ask_price_val = float(ask_prices.get(item, 0))
+                                        bid_price_val = float(bid_prices.get(item, 0))
+                                        workforce_cost_ask += total_needed * ask_price_val
+                                        workforce_cost_bid += total_needed * bid_price_val
+                                
+                                # Calculate luxury consumables cost
+                                if "luxury" in workforce_data:
+                                    for item, per_hour in workforce_data["luxury"].items():
+                                        try:
+                                            total_needed = float(per_hour) * wf_amount * time_hours
+                                        except Exception:
+                                            total_needed = 0
+                                        ask_price_val = float(ask_prices.get(item, 0))
+                                        bid_price_val = float(bid_prices.get(item, 0))
+                                        workforce_cost_ask += total_needed * ask_price_val
+                                        workforce_cost_bid += total_needed * bid_price_val
+                    else:
+                        # Fallback to old single-workforce structure for backward compatibility
+                        workforce_type = recipe_info.get("Workforce", None)
+                        workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
+                        
+                        if workforce_type and workforce_type in workforceneeds:
+                            workforce_data = workforceneeds[workforce_type]
+                            
+                            # Calculate necessary consumables cost
+                            if "necessary" in workforce_data:
+                                for item, per_hour in workforce_data["necessary"].items():
+                                    try:
+                                        total_needed = float(per_hour) * workforce_amount * time_hours
+                                    except Exception:
+                                        total_needed = 0
+                                    ask_price_val = float(ask_prices.get(item, 0))
+                                    bid_price_val = float(bid_prices.get(item, 0))
+                                    workforce_cost_ask += total_needed * ask_price_val
+                                    workforce_cost_bid += total_needed * bid_price_val
+                            
+                            # Calculate luxury consumables cost
+                            if "luxury" in workforce_data:
+                                for item, per_hour in workforce_data["luxury"].items():
+                                    try:
+                                        total_needed = float(per_hour) * workforce_amount * time_hours
+                                    except Exception:
+                                        total_needed = 0
+                                    ask_price_val = float(ask_prices.get(item, 0))
+                                    bid_price_val = float(bid_prices.get(item, 0))
+                                    workforce_cost_ask += total_needed * ask_price_val
+                                    workforce_cost_bid += total_needed * bid_price_val
+                except Exception as e:
+                    print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
+            # Total input costs (same for all outputs)
+            total_input_cost_ask = material_input_cost_ask + workforce_cost_ask
+            total_input_cost_bid = material_input_cost_bid + workforce_cost_bid
+            
+            # Allocate costs across outputs based on market value
+            allocated_costs_ask = allocate_byproduct_costs(recipe_key, total_input_cost_ask, ask_prices, exchange)
+            allocated_costs_bid = allocate_byproduct_costs(recipe_key, total_input_cost_bid, bid_prices, exchange)
+            
+            # Get allocated cost for this specific material
+            if ticker in allocated_costs_ask and ticker in allocated_costs_bid:
+                input_cost_ask_per_unit = allocated_costs_ask[ticker]
+                input_cost_bid_per_unit = allocated_costs_bid[ticker]
+                workforce_cost_ask_per_unit = workforce_cost_ask / len(byproduct_recipes[recipe_key].get("outputs", [ticker]))  # Proportional
+                workforce_cost_bid_per_unit = workforce_cost_bid / len(byproduct_recipes[recipe_key].get("outputs", [ticker]))  # Proportional
+            else:
+                # Fallback: split costs evenly
+                num_outputs = len(byproduct_recipes[recipe_key].get("outputs", [ticker]))
+                input_cost_ask_per_unit = total_input_cost_ask / num_outputs
+                input_cost_bid_per_unit = total_input_cost_bid / num_outputs
+                workforce_cost_ask_per_unit = workforce_cost_ask / num_outputs
+                workforce_cost_bid_per_unit = workforce_cost_bid / num_outputs
+        else:
+            # Regular single-output recipe calculation (existing code)
+            # Material input costs (Ask and Bid)
+            inputs = recipe_inputs_df[recipe_inputs_df['Key'] == recipe_key]
+            material_input_cost_ask = 0
+            material_input_cost_bid = 0
+            
+            for _, inp in inputs.iterrows():
+                input_ticker = inp['Material']
+                try:
+                    amount = float(inp['Amount'])
+                except Exception:
+                    amount = 0
+                ask_price = float(ask_prices.get(input_ticker, 0))
+                bid_price = float(bid_prices.get(input_ticker, 0))
+                material_input_cost_ask += amount * ask_price
+                material_input_cost_bid += amount * bid_price
 
-        # Get units produced per recipe
-        units_per_recipe = 1
-        try:
-            units_per_recipe = float(recipe_row.get('Amount', 1))
-        except Exception:
+            # Workforce costs (Ask and Bid)
+            workforce_cost_ask = 0
+            workforce_cost_bid = 0
+            
+            if buildingrecipes_df is not None and recipe_key in buildingrecipes_df.index:
+                recipe_info = buildingrecipes_df.loc[recipe_key]
+                try:
+                    time_minutes = float(recipe_info.get("Time", 0))
+                    time_hours = time_minutes / 60
+                    
+                    # Check for new WorkforceRequirements structure (dict of all workforce types)
+                    workforce_requirements = recipe_info.get("WorkforceRequirements", {})
+                    if workforce_requirements:
+                        for wf_type, wf_amount in workforce_requirements.items():
+                            if wf_type in workforceneeds:
+                                workforce_data = workforceneeds[wf_type]
+                                
+                                # Calculate necessary consumables cost
+                                if "necessary" in workforce_data:
+                                    for item, per_hour in workforce_data["necessary"].items():
+                                        try:
+                                            total_needed = float(per_hour) * wf_amount * time_hours
+                                        except Exception:
+                                            total_needed = 0
+                                        ask_price_val = float(ask_prices.get(item, 0))
+                                        bid_price_val = float(bid_prices.get(item, 0))
+                                        workforce_cost_ask += total_needed * ask_price_val
+                                        workforce_cost_bid += total_needed * bid_price_val
+                                
+                                # Calculate luxury consumables cost
+                                if "luxury" in workforce_data:
+                                    for item, per_hour in workforce_data["luxury"].items():
+                                        try:
+                                            total_needed = float(per_hour) * wf_amount * time_hours
+                                        except Exception:
+                                            total_needed = 0
+                                        ask_price_val = float(ask_prices.get(item, 0))
+                                        bid_price_val = float(bid_prices.get(item, 0))
+                                        workforce_cost_ask += total_needed * ask_price_val
+                                        workforce_cost_bid += total_needed * bid_price_val
+                    else:
+                        # Fallback to old single-workforce structure for backward compatibility
+                        workforce_type = recipe_info.get("Workforce", None)
+                        workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
+                        
+                        if workforce_type and workforce_type in workforceneeds:
+                            workforce_data = workforceneeds[workforce_type]
+                            
+                            # Calculate necessary consumables cost
+                            if "necessary" in workforce_data:
+                                for item, per_hour in workforce_data["necessary"].items():
+                                    try:
+                                        total_needed = float(per_hour) * workforce_amount * time_hours
+                                    except Exception:
+                                        total_needed = 0
+                                    ask_price_val = float(ask_prices.get(item, 0))
+                                    bid_price_val = float(bid_prices.get(item, 0))
+                                    workforce_cost_ask += total_needed * ask_price_val
+                                    workforce_cost_bid += total_needed * bid_price_val
+                            
+                            # Calculate luxury consumables cost
+                            if "luxury" in workforce_data:
+                                for item, per_hour in workforce_data["luxury"].items():
+                                    try:
+                                        total_needed = float(per_hour) * workforce_amount * time_hours
+                                    except Exception:
+                                        total_needed = 0
+                                    ask_price_val = float(ask_prices.get(item, 0))
+                                    bid_price_val = float(bid_prices.get(item, 0))
+                                    workforce_cost_ask += total_needed * ask_price_val
+                                    workforce_cost_bid += total_needed * bid_price_val
+                except Exception as e:
+                    print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
+                    import traceback
+                    traceback.print_exc()
+            elif buildingrecipes_df is not None:
+                # Recipe not found in index - this is the extraction recipe issue
+                print(f"[WARN] Recipe '{recipe_key}' not found in buildingrecipes index.")
+                print(f"[DEBUG] Available recipe keys sample: {list(buildingrecipes_df.index[:5])}")
+                print(f"[DEBUG] Checking if similar keys exist...")
+                # Try to find recipes with similar keys (case-insensitive or partial match)
+                matching_keys = [k for k in buildingrecipes_df.index if recipe_key.lower() in k.lower() or k.lower() in recipe_key.lower()]
+                if matching_keys:
+                    print(f"[DEBUG] Found similar keys: {matching_keys[:3]}")
+
+            # Get units produced per recipe
             units_per_recipe = 1
-        
-        # Calculate per-unit costs
-        input_cost_ask_per_unit = material_input_cost_ask / units_per_recipe if units_per_recipe > 0 else 0
-        input_cost_bid_per_unit = material_input_cost_bid / units_per_recipe if units_per_recipe > 0 else 0
-        workforce_cost_ask_per_unit = workforce_cost_ask / units_per_recipe if units_per_recipe > 0 else 0
-        workforce_cost_bid_per_unit = workforce_cost_bid / units_per_recipe if units_per_recipe > 0 else 0
+            try:
+                units_per_recipe = float(recipe_row.get('Amount', 1))
+            except Exception:
+                units_per_recipe = 1
+            
+            # Calculate per-unit costs
+            input_cost_ask_per_unit = material_input_cost_ask / units_per_recipe if units_per_recipe > 0 else 0
+            input_cost_bid_per_unit = material_input_cost_bid / units_per_recipe if units_per_recipe > 0 else 0
+            workforce_cost_ask_per_unit = workforce_cost_ask / units_per_recipe if units_per_recipe > 0 else 0
+            workforce_cost_bid_per_unit = workforce_cost_bid / units_per_recipe if units_per_recipe > 0 else 0
         
         # Use average for comparison to find best recipe
         total_cost_avg = (input_cost_ask_per_unit + input_cost_bid_per_unit) / 2 + \
@@ -294,15 +498,15 @@ def calculate_detailed_costs(ticker, recipe_inputs_df, recipe_outputs_df, buildi
 
 # ==================== BYPRODUCT COST ALLOCATION ====================
 
-def allocate_byproduct_costs(recipe_id, total_input_cost, market_prices, exchange="AI1"):
+def allocate_byproduct_costs(recipe_id, total_input_cost, price_dict, exchange="AI1"):
     """
     Allocate costs for recipes with multiple outputs based on market value proportion.
     
     Args:
         recipe_id: Recipe identifier
         total_input_cost: Total cost of all inputs + workforce
-        market_prices: DataFrame from load_market_data()
-        exchange: Exchange code
+        price_dict: Dict of {ticker: price} for the relevant price type (ask or bid)
+        exchange: Exchange code (for compatibility, not used when price_dict is provided)
     
     Returns:
         Dict of {ticker: allocated_cost_per_unit}
@@ -323,7 +527,7 @@ def allocate_byproduct_costs(recipe_id, total_input_cost, market_prices, exchang
     total_value = 0.0
     
     for ticker in outputs:
-        price = get_market_price(ticker, market_prices, exchange)
+        price = price_dict.get(ticker, 0.0)
         output_values[ticker] = price
         total_value += price
     

@@ -387,7 +387,7 @@ class UnifiedAnalysisProcessor:
             base_df['Traded'] = 0.0
         
         # Apply byproduct cost allocation
-        base_df = self.allocate_byproduct_costs_in_df(base_df, data)
+        # base_df = self.allocate_byproduct_costs_in_df(base_df, data)
         
         # Load materials for info
         materials_df = self.load_materials()

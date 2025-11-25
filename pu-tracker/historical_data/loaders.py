@@ -136,7 +136,7 @@ def load_buildings():
 def load_buildingrecipes():
     """
     Load buildingrecipes.csv and enhance with workforce data from buildings.json.
-    Returns DataFrame indexed by 'Key' with columns including Workforce and WorkforceAmount.
+    Returns DataFrame indexed by 'Key' with columns including WorkforceRequirements (dict).
     """
     path = CACHE_DIR / CACHE_FILES['buildingrecipes']
     if not path.exists():
@@ -155,19 +155,33 @@ def load_buildingrecipes():
         with open(buildings_path, 'r', encoding='utf-8') as f:
             buildings_data = json.load(f)
         
-        def get_workforce_info(building_ticker):
-            """Extract workforce type and amount from buildings.json"""
+        def get_workforce_requirements(building_ticker):
+            """Extract all workforce types and amounts from buildings.json"""
+            requirements = {}
             if building_ticker in buildings_data:
                 building = buildings_data[building_ticker]
                 for wf_type in ['PIONEER', 'SETTLER', 'TECHNICIAN', 'ENGINEER', 'SCIENTIST']:
                     wf_key = wf_type.lower() + 's'  # pioneers, settlers, etc.
                     amount = building.get(wf_key, 0)
                     if amount > 0:
-                        return wf_type, amount
+                        requirements[wf_type] = amount
+            return requirements
+        
+        df['WorkforceRequirements'] = df['Building'].apply(get_workforce_requirements)
+        
+        # For backward compatibility, also set Workforce and WorkforceAmount for single-workforce buildings
+        def get_primary_workforce(req_dict):
+            """Get the primary workforce type for backward compatibility"""
+            if req_dict:
+                # Return the first workforce type found
+                for wf_type in ['PIONEER', 'SETTLER', 'TECHNICIAN', 'ENGINEER', 'SCIENTIST']:
+                    if wf_type in req_dict:
+                        return wf_type, req_dict[wf_type]
             return None, 0
         
-        df['Workforce'] = df['Building'].apply(lambda x: get_workforce_info(x)[0])
-        df['WorkforceAmount'] = df['Building'].apply(lambda x: get_workforce_info(x)[1])
+        primary_workforce = df['WorkforceRequirements'].apply(get_primary_workforce)
+        df['Workforce'] = primary_workforce.apply(lambda x: x[0])
+        df['WorkforceAmount'] = primary_workforce.apply(lambda x: x[1])
         
         # Convert Duration from seconds to minutes
         if 'Duration' in df.columns:

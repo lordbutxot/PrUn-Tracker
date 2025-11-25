@@ -41,47 +41,120 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // Allow embedding
 }
 
-// TEST FUNCTION - Run this manually to check column structure
-function testColumnStructure() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Price Analyser Data');
-  
-  if (!sheet) {
-    console.log('ERROR: Price Analyser Data sheet not found');
-    return 'ERROR: Price Analyser Data sheet not found';
+// TEST FUNCTION - Analyze byproduct recipes
+function analyzeByproductRecipes() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    
+    if (!sheet) {
+      return 'ERROR: Price Analyser Data sheet not found';
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    // Step 1: Identify materials that have recipes (producers)
+    const materialsWithRecipes = new Set();
+    const allMaterials = new Set();
+    const recipes = [];
+    
+    // Skip header row
+    for (let i = 1; i < data.length; i++) {
+      const ticker = data[i][1]; // Column B: ticker
+      const recipe = data[i][2]; // Column C: recipe
+      
+      if (ticker) {
+        allMaterials.add(ticker);
+        
+        if (recipe && recipe !== 'N/A' && recipe !== '') {
+          materialsWithRecipes.add(ticker);
+          recipes.push({
+            ticker: ticker,
+            recipe: recipe,
+            row: i
+          });
+        }
+      }
+    }
+    
+    // Step 2: Identify byproducts (materials that appear but have no recipes)
+    const byproducts = new Set();
+    for (const material of allMaterials) {
+      if (!materialsWithRecipes.has(material)) {
+        byproducts.add(material);
+      }
+    }
+    
+    // Step 3: Find recipes where ALL outputs are byproducts
+    const byproductRecipes = [];
+    
+    for (const recipeData of recipes) {
+      const recipe = recipeData.recipe;
+      
+      if (recipe.includes('=>')) {
+        const outputPart = recipe.split('=>')[1];
+        if (outputPart) {
+          const outputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[2] : item;
+          });
+          
+          // Check if ALL outputs are byproducts
+          const allOutputsAreByproducts = outputs.every(output => byproducts.has(output));
+          
+          if (allOutputsAreByproducts) {
+            byproductRecipes.push({
+              recipe: recipe,
+              building: recipe.split(':')[0],
+              outputs: outputs,
+              producer: recipeData.ticker
+            });
+          }
+        }
+      }
+    }
+    
+    // Step 4: Generate report
+    let report = '=== BYPRODUCT RECIPE ANALYSIS ===\n\n';
+    report += 'Total materials: ' + allMaterials.size + '\n';
+    report += 'Materials with recipes: ' + materialsWithRecipes.size + '\n';
+    report += 'Byproducts (no recipes): ' + byproducts.size + '\n\n';
+    
+    report += 'Byproducts: ' + Array.from(byproducts).sort().join(', ') + '\n\n';
+    
+    report += 'Recipes producing ONLY byproducts: ' + byproductRecipes.length + '\n\n';
+    
+    byproductRecipes.forEach((item, index) => {
+      report += (index + 1) + '. ' + item.recipe + '\n';
+      report += '   Building: ' + item.building + '\n';
+      report += '   Outputs (byproducts): ' + item.outputs.join(', ') + '\n';
+      report += '   Producer material: ' + item.producer + '\n\n';
+    });
+    
+    // Look for specific example: CHP => NA + CL
+    const chpRecipes = byproductRecipes.filter(item => item.building === 'CHP' && 
+                                                      item.outputs.includes('NA') && 
+                                                      item.outputs.includes('CL'));
+    
+    if (chpRecipes.length > 0) {
+      report += '=== SPECIFIC EXAMPLE: CHP => NA + CL ===\n';
+      report += 'Found ' + chpRecipes.length + ' CHP recipes producing NA and CL as byproducts\n';
+      chpRecipes.forEach(item => {
+        report += 'Recipe: ' + item.recipe + '\n';
+      });
+    } else {
+      report += '=== SPECIFIC EXAMPLE: CHP => NA + CL ===\n';
+      report += 'No CHP recipes found that produce NA and CL as byproducts\n';
+    }
+    
+    Logger.log(report);
+    return report;
+    
+  } catch (error) {
+    Logger.log('Error in analyzeByproductRecipes: ' + error.toString());
+    return 'Error: ' + error.toString();
   }
-  
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  
-  let output = '=== COLUMN STRUCTURE TEST ===\n';
-  output += 'Total columns: ' + headers.length + '\n\n';
-  output += 'All headers:\n';
-  for (let i = 0; i < headers.length; i++) {
-    output += 'Column ' + String.fromCharCode(65 + i) + ' (index ' + i + '): ' + headers[i] + '\n';
-  }
-  
-  output += '\n=== CHECKING TRADED VOLUME ===\n';
-  output += 'Column M (index 12): ' + headers[12] + '\n';
-  output += 'Column N (index 13): ' + headers[13] + '\n';
-  output += 'Column O (index 14): ' + headers[14] + '\n';
-  output += 'Column P (index 15): ' + headers[15] + '\n';
-  
-  if (data.length > 1) {
-    output += '\n=== SAMPLE DATA (Row 2) ===\n';
-    output += 'Ticker (Column B): ' + data[1][1] + '\n';
-    output += 'Exchange (Column E): ' + data[1][4] + '\n';
-    output += 'Column M value: ' + data[1][12] + '\n';
-    output += 'Column N value: ' + data[1][13] + '\n';
-    output += 'Column O value: ' + data[1][14] + '\n';
-    output += 'Column P value: ' + data[1][15] + '\n';
-  }
-  
-  // Also log to console
-  console.log(output);
-  
-  // Return the output so it appears in execution log
-  return output;
 }
 
 // NEW: Load all data at once to avoid multiple API calls
