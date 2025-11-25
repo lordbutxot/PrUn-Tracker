@@ -3,11 +3,49 @@ import csv
 from io import StringIO
 import json
 import os
+from googleapiclient.discovery import build
+from google.oauth2.service_account import Credentials
 
 def fetch_csv(url):
     response = requests.get(url)
     response.raise_for_status()
     return list(csv.DictReader(StringIO(response.text)))
+
+def upload_csv_to_google_sheets(csv_path, fieldnames):
+    """Upload the generated CSV to Google Sheets 'Price Analyser Data' sheet."""
+    try:
+        # Get spreadsheet ID from environment
+        spreadsheet_id = os.environ.get('PRUN_SPREADSHEET_ID')
+        if not spreadsheet_id:
+            print("Warning: PRUN_SPREADSHEET_ID not set, skipping Google Sheets upload")
+            return
+        
+        # Load service account credentials (assuming prun-profit-*.json is in the same dir)
+        creds_path = os.path.join(os.path.dirname(__file__), 'prun-profit-42c5889f620d.json')
+        creds = Credentials.from_service_account_file(creds_path, scopes=['https://www.googleapis.com/auth/spreadsheets'])
+        service = build('sheets', 'v4', credentials=creds)
+        
+        # Read CSV data
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            data = [list(row.values()) for row in reader]
+        
+        # Add header
+        header = list(fieldnames)
+        data.insert(0, header)
+        
+        # Clear and update the sheet
+        range_name = 'Price Analyser Data!A:Z'  # Adjust range as needed
+        body = {'values': data}
+        service.spreadsheets().values().clear(spreadsheetId=spreadsheet_id, range=range_name).execute()
+        service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id, range=range_name,
+            valueInputOption='RAW', body=body
+        ).execute()
+        
+        print(f"Successfully uploaded {len(data)} rows to Google Sheets 'Price Analyser Data'")
+    except Exception as e:
+        print(f"Error uploading to Google Sheets: {e}")
 
 def main():
     """Main function to generate chain dictionary."""
@@ -252,6 +290,10 @@ def main():
             writer.writerows(output_rows)
 
         print(f"price_analyser_data.csv generated with {len(output_rows)} rows in {cache_dir}")
+
+        # Upload to Google Sheets
+        upload_csv_to_google_sheets(csv_path, output_rows[0].keys())
+        
     except Exception as e:
         print(f"Error generating chain dictionary: {e}")
         raise
