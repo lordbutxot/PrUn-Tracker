@@ -460,25 +460,113 @@
         flex: none;
       }
 
-      .footer-links {
-        flex-direction: column;
-        gap: 15px;
+      .modal-content {
+        width: 98%;
+        max-height: 95vh;
+      }
+
+      .modal-header {
+        padding: 15px 20px;
+      }
+
+      .modal-title {
+        font-size: 1.25rem;
+      }
+
+      .modal-iframe {
+        height: 60vh;
+        min-height: 400px;
       }
     }
 
-    /* Loading Animation */
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 95%;
+      max-width: 1200px;
+      max-height: 90vh;
+      position: relative;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 30px;
+      border-bottom: 1px solid #e2e8f0;
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      border-radius: 16px 16px 0 0;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1e3a8a;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #64748b;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+    }
+
+    .modal-close:hover {
+      background: #e2e8f0;
+      color: #1e3a8a;
+    }
+
+    .modal-body {
+      padding: 0;
+      max-height: calc(90vh - 80px);
+      overflow: hidden;
+    }
+
+    .modal-iframe {
+      width: 100%;
+      height: 70vh;
+      min-height: 500px;
+      border: none;
+      background: #f8fafc;
     }
   </style>
 </head>
@@ -514,9 +602,9 @@
             <span class="feature-tag">Cost Analysis</span>
             <span class="feature-tag">ROI Calculator</span>
           </div>
-          <a href="https://script.google.com/macros/s/AKfycbxJ5L77_n42IHT8rKe-AgRjONOTSTUDA-U8yooB8UuzP_Lboit1MrxzBBuEP6id2hBCgw/exec" class="cta-button" target="_blank">
-            Open Calculator →
-          </a>
+          <button class="cta-button" onclick="openModal()">
+            Open Calculator
+          </button>
         </div>
 
         <!-- Arbitrage Opportunities -->
@@ -647,7 +735,50 @@
     </div>
   </footer>
 
+  <!-- Price Analyser Modal -->
+  <div id="price-analyser-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Interactive Price Analyser</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          class="modal-iframe"
+          src="https://script.google.com/macros/s/AKfycbxJ5L77_n42IHT8rKe-AgRjONOTSTUDA-U8yooB8UuzP_Lboit1MrxzBBuEP6id2hBCgw/exec"
+          allowfullscreen
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
+        </iframe>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // Modal functionality
+    function openModal() {
+      document.getElementById('price-analyser-modal').classList.add('active');
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function closeModal() {
+      document.getElementById('price-analyser-modal').classList.remove('active');
+      document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('price-analyser-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('price-analyser-modal').classList.contains('active')) {
+        closeModal();
+      }
+    });
+
     // Update timestamps
     function updateTimestamps() {
       const now = new Date();
