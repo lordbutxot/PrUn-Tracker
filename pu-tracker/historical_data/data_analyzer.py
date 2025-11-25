@@ -333,44 +333,51 @@ class UnifiedAnalysisProcessor:
         print(f"   Tiers: {len(tiers_dict)}")
         print(f"   Recipes: {len(recipes_dict)}")
         
-        # Get all tickers from processed data
+        # Use processed_data.csv as base, which has recipe-specific rows
         if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
-            all_tickers = sorted(data['processed_data.csv']['Ticker'].unique())
+            base_df = data['processed_data.csv'].copy()
+            print(f"   Base df from processed data: {len(base_df)} rows")
         else:
-            all_tickers = sorted(self.recipe_outputs['Material'].unique())
-        print(f"   All tickers from processed data: {len(all_tickers)}")
-        
-        # Get all exchanges
-        exchanges = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2']
-        print(f"   Exchanges: {exchanges}")
-        
-        # Create base df with all tickers x exchanges
-        import itertools
-        base_df = pd.DataFrame(list(itertools.product(all_tickers, exchanges)), columns=['Ticker', 'Exchange'])
-        print(f"   Base df: {len(base_df)} rows (all tickers x exchanges)")
+            print("   No processed data found")
+            return None
         
         # Merge market data if available
         if 'market_data.csv' in data and not data['market_data.csv'].empty:
             market_df = data['market_data.csv'].copy()
             print(f"   Merging market data: {len(market_df)} rows")
-            # Melt market_data.csv to long format
-            melted = market_df.melt(id_vars=['Ticker'], var_name='var', value_name='value')
-            melted['Exchange'] = melted['var'].str.split('-').str[0]
-            melted['Metric'] = melted['var'].str.split('-').str[1]
-            # Pivot to wide
-            pivoted = melted.pivot_table(index=['Ticker', 'Exchange'], columns='Metric', values='value', aggfunc='first').reset_index()
-            pivoted.columns.name = None
-            # Rename columns to match
-            pivoted.rename(columns={
-                'AskPrice': 'Ask_Price',
-                'BidPrice': 'Bid_Price',
-                'AskAvail': 'Supply',
-                'BidAvail': 'Demand',
-                'Average': 'Traded'
-            }, inplace=True)
-            # Merge with base_df
+            # Transform market_data.csv to long format if needed
+            if 'Exchange' not in market_df.columns:
+                # Wide format - transform
+                melted = market_df.melt(id_vars=['Ticker'], var_name='var', value_name='value')
+                melted = melted[melted['var'].str.contains('-')]
+                melted['Exchange'] = melted['var'].str.split('-').str[0]
+                melted['Metric'] = melted['var'].str.split('-').str[1]
+                # Pivot to wide
+                pivoted = melted.pivot_table(index=['Ticker', 'Exchange'], columns='Metric', values='value', aggfunc='first').reset_index()
+                pivoted.columns.name = None
+                # Rename columns to match
+                pivoted.rename(columns={
+                    'AskPrice': 'Ask_Price',
+                    'BidPrice': 'Bid_Price',
+                    'AskAvail': 'Supply',
+                    'BidAvail': 'Demand',
+                    'Average': 'Traded'
+                }, inplace=True)
+            else:
+                # Already long format
+                pivoted = market_df.copy()
+                pivoted.rename(columns={
+                    'AskPrice': 'Ask_Price',
+                    'BidPrice': 'Bid_Price',
+                    'AskAvail': 'Supply',
+                    'BidAvail': 'Demand',
+                    'Average': 'Traded'
+                }, inplace=True)
+            # Merge with base_df on Ticker and Exchange
+            # First, drop the columns to ensure they are updated
+            base_df = base_df.drop(columns=['Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded Volume'], errors='ignore')
             base_df = base_df.merge(pivoted[['Ticker', 'Exchange', 'Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded']], on=['Ticker', 'Exchange'], how='left')
-            print(f"   After merge: {len(base_df)} rows")
+            print(f"   After market merge: {len(base_df)} rows")
         else:
             print("   No market data to merge")
             base_df['Ask_Price'] = 0.0
@@ -378,32 +385,9 @@ class UnifiedAnalysisProcessor:
             base_df['Supply'] = 0
             base_df['Demand'] = 0
             base_df['Traded'] = 0.0
-
-        # Merge processed data for input costs
-        if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
-            processed_df = data['processed_data.csv'].copy()
-            print(f"   Merging processed data: {len(processed_df)} rows")
-            # Group by Ticker and Exchange, taking min input cost per unit (cheapest recipe)
-            cost_df = processed_df.groupby(['Ticker', 'Exchange']).agg({
-                'Input Cost per Unit': 'min',
-                'Input Cost per Stack': 'min',
-                'Input Cost per Hour': 'min',
-                'Recipe': lambda x: '; '.join(str(r) for r in x.dropna().unique() if str(r) != 'nan'),  # Join unique non-null recipes
-                'Building': lambda x: '; '.join(str(b) for b in x.dropna().unique() if str(b) != 'nan')  # Join unique non-null buildings
-            }).reset_index()
-            # Merge with base_df
-            base_df = base_df.merge(cost_df, on=['Ticker', 'Exchange'], how='left')
-            print(f"   After cost merge: {len(base_df)} rows")
-            
-            # Apply byproduct cost allocation
-            base_df = self.allocate_byproduct_costs_in_df(base_df, data)
-        else:
-            print("   No processed data to merge")
-            base_df['Input Cost per Unit'] = 0.0
-            base_df['Input Cost per Stack'] = 0.0
-            base_df['Input Cost per Hour'] = 0.0
-            base_df['Recipe'] = ''
-            base_df['Building'] = ''
+        
+        # Apply byproduct cost allocation
+        base_df = self.allocate_byproduct_costs_in_df(base_df, data)
         
         # Load materials for info
         materials_df = self.load_materials()

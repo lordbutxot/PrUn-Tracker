@@ -437,9 +437,8 @@ function getRecipesForMaterial(material) {
     
     const data = sheet.getDataRange().getValues();
     const recipes = [];
-    const seen = new Set();
     
-    // Find all unique recipes for this material (column B is Ticker or recipe, column C is Recipe)
+    // Find all recipes for this material (column B is Ticker or recipe, column C is Recipe)
     for (let i = 1; i < data.length; i++) {
       const tickerOrRecipe = data[i][1]; // Column B
       const recipeKey = data[i][2]; // Column C
@@ -464,9 +463,7 @@ function getRecipesForMaterial(material) {
         }
       }
       
-      if (matchesMaterial && recipeKey && !seen.has(recipeKey)) {
-        seen.add(recipeKey);
-        
+      if (matchesMaterial && recipeKey) {
         // Extract building prefix from recipe (e.g., "BMP:1xC-2xH=>200xPE" -> "BMP")
         const building = recipeKey.split(':')[0];
         
@@ -977,11 +974,49 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
       const bidPrice = parseFloat(data[i][6]) || 0;           // Column G: Bid_Price
       let inputCostAsk = parseFloat(data[i][7]) || 0;         // Column H: Input Cost Ask
       let inputCostBid = parseFloat(data[i][8]) || 0;         // Column I: Input Cost Bid
-      let workforceCostAsk = parseFloat(data[i][9]) || 0;     // Column J: Workforce Cost Ask
-      let workforceCostBid = parseFloat(data[i][10]) || 0;    // Column K: Workforce Cost Bid
       
       // Check if this is an extraction recipe
       const recipeStr = data[i][2] || '';
+      const amountPerRecipe = parseFloat(data[i][11]) || 1;   // Column L: Amount per Recipe
+      
+      // If input cost is 0, try to calculate it from recipe inputs
+      if (inputCostAsk === 0 && recipeStr && recipeStr.includes('=>')) {
+        try {
+          const parts = recipeStr.split('=>');
+          const inputPart = parts[0].split(':')[1] || parts[0];
+          const inputs = inputPart.split('-');
+          let totalInputCostAsk = 0;
+          let totalInputCostBid = 0;
+          
+          for (let inputStr of inputs) {
+            const match = inputStr.match(/(\d+)x([A-Z]+)/);
+            if (match) {
+              const amount = parseFloat(match[1]);
+              const inputTicker = match[2];
+              
+              // Find the ask/bid price for this input on the same exchange
+              for (let j = 1; j < data.length; j++) {
+                if (data[j][1] === inputTicker && data[j][4] === exchange) {
+                  const inputAskPrice = parseFloat(data[j][5]) || 0;
+                  const inputBidPrice = parseFloat(data[j][6]) || 0;
+                  totalInputCostAsk += amount * inputAskPrice;
+                  totalInputCostBid += amount * inputBidPrice;
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Divide by output amount per recipe
+          inputCostAsk = totalInputCostAsk / amountPerRecipe;
+          inputCostBid = totalInputCostBid / amountPerRecipe;
+        } catch (e) {
+          Logger.log('Error calculating input cost for ' + material + ': ' + e.toString());
+        }
+      }
+      let workforceCostAsk = parseFloat(data[i][9]) || 0;     // Column J: Workforce Cost Ask
+      let workforceCostBid = parseFloat(data[i][10]) || 0;    // Column K: Workforce Cost Bid
+      
       const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
       
       // Apply planet-specific extraction calculation for extraction recipes (Official PCT Formula)
@@ -1029,7 +1064,6 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
         inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
         inputCostBid = inputCostAsk; // Use same for both
       }
-      const amountPerRecipe = parseFloat(data[i][11]) || 1;   // Column L: Amount per Recipe
       const supply = parseFloat(data[i][12]) || 0;            // Column M: Supply
       const demand = parseFloat(data[i][13]) || 0;            // Column N: Demand
       const traded = parseFloat(data[i][14]) || 0;            // Column O: Traded Volume
