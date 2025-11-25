@@ -225,6 +225,33 @@ def main():
         print(f"byproduct_recipes.json generated with {len(byproduct_recipes)} items in {cache_dir}")
         print(f"tier0_resources.json generated with {len(tier0_resources)} items in {cache_dir}")
 
+        # --- Universal Material Export for Google Sheets ---
+        # Prepare rows for every output material of every recipe
+        output_rows = []
+        for recipe_id, outputs in outputs_by_recipe.items():
+            inputs = inputs_by_recipe.get(recipe_id, [])
+            building = building_by_recipe.get(recipe_id, "")
+            for output_material in outputs:
+                chain_data = chains.get(output_material, {})
+                output_rows.append({
+                    "Ticker": output_material,
+                    "Recipe": recipe_id,
+                    "Building": building,
+                    "Inputs": ",".join(inputs),
+                    "Outputs": ",".join(outputs),
+                    "Tier": chain_data.get("tier", ""),
+                    "Workforce": chain_data.get("workforce_tier", ""),
+                    # Add more columns as needed for your sheet
+                })
+
+        # Write to CSV for Google Sheet upload
+        csv_path = os.path.join(cache_dir, "price_analyser_data.csv")
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=output_rows[0].keys())
+            writer.writeheader()
+            writer.writerows(output_rows)
+
+        print(f"price_analyser_data.csv generated with {len(output_rows)} rows in {cache_dir}")
     except Exception as e:
         print(f"Error generating chain dictionary: {e}")
         raise
