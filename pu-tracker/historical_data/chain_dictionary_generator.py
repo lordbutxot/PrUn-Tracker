@@ -12,7 +12,7 @@ def fetch_csv(url):
     return list(csv.DictReader(StringIO(response.text)))
 
 def upload_csv_to_google_sheets(csv_path, fieldnames):
-    """Upload the generated CSV to Google Sheets 'Price Analyser Data' sheet."""
+    """Upload the generated CSV to Google Sheets 'Recipe Data' sheet."""
     try:
         print("Starting Google Sheets upload...")
         # Get spreadsheet ID from environment
@@ -39,7 +39,7 @@ def upload_csv_to_google_sheets(csv_path, fieldnames):
         
         print(f"Data to upload: {len(data)} rows")
         # Clear and update the sheet
-        range_name = 'Price Analyser Data!A:Z'  # Adjust range as needed
+        range_name = 'Recipe Data!A:Z'  # Changed from 'Price Analyser Data' to avoid conflicts
         print(f"Clearing and updating range: {range_name}")
         body = {'values': data}
         service.spreadsheets().values().clear(spreadsheetId=spreadsheet_id, range=range_name).execute()
@@ -48,7 +48,7 @@ def upload_csv_to_google_sheets(csv_path, fieldnames):
             valueInputOption='RAW', body=body
         ).execute()
         
-        print(f"Successfully uploaded {len(data)} rows to Google Sheets 'Price Analyser Data'")
+        print(f"Successfully uploaded {len(data)} rows to Google Sheets 'Recipe Data'")
     except Exception as e:
         print(f"Error uploading to Google Sheets: {e}")
         import traceback
