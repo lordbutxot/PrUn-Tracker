@@ -1529,10 +1529,15 @@
           if (!selectedCategory) {
             materialsSet.add(row.ticker);
           } else if (row.recipe) {
-            const buildingCode = row.recipe.split('=>')[0].split(':')[0];
-            const buildingCategory = buildingCategories[buildingCode];
-            if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
-              materialsSet.add(row.ticker);
+            if (row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>')) {
+              // Skip extraction recipes to avoid categorizing extracted materials under extraction
+              // They will still appear when no category is selected
+            } else {
+              const buildingCode = row.recipe.split('=>')[0].split(':')[0];
+              const buildingCategory = buildingCategories[buildingCode];
+              if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
+                materialsSet.add(row.ticker);
+              }
             }
           }
         }
