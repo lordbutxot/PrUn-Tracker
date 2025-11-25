@@ -461,21 +461,6 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
-        "building": "AML:2xBER=>1xAL-1xBE-1xSIO",
-        "inputs": [
-          "ber"
-        ],
-        "outputs": [
-          "al",
-          "be",
-          "sio"
-        ],
-        "tier": 4,
-        "workforce_tier": 4,
-        "is_byproduct": true
-      },
-      {
         "recipe_id": "SME:6xALO-1xC-1xO=>3xAL",
         "building": "SME:6xALO-1xC-1xO=>3xAL",
         "inputs": [
@@ -489,6 +474,21 @@
         "tier": 1,
         "workforce_tier": 1,
         "is_byproduct": false
+      },
+      {
+        "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
+        "building": "AML:2xBER=>1xAL-1xBE-1xSIO",
+        "inputs": [
+          "ber"
+        ],
+        "outputs": [
+          "al",
+          "be",
+          "sio"
+        ],
+        "tier": 4,
+        "workforce_tier": 4,
+        "is_byproduct": true
       }
     ],
     "has_byproduct_recipes": true
@@ -1146,17 +1146,17 @@
     "inputs": [
       "h2o"
     ],
-    "building": "frm:6xh2o=>4xbea",
+    "building": "frm:1xh2o=>2xbea",
     "workforce_tier": 1,
-    "recipe_id": "FRM:6xH2O=>4xBEA",
+    "recipe_id": "FRM:1xH2O=>2xBEA",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "FRM:6xH2O=>4xBEA",
-        "building": "FRM:6xH2O=>4xBEA",
+        "recipe_id": "FRM:1xH2O=>2xBEA",
+        "building": "FRM:1xH2O=>2xBEA",
         "inputs": [
           "h2o"
         ],
@@ -1168,8 +1168,8 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FRM:1xH2O=>2xBEA",
-        "building": "FRM:1xH2O=>2xBEA",
+        "recipe_id": "FRM:6xH2O=>4xBEA",
+        "building": "FRM:6xH2O=>4xBEA",
         "inputs": [
           "h2o"
         ],
@@ -1444,25 +1444,25 @@
   },
   "ble": {
     "inputs": [
-      "cl",
-      "na",
-      "o"
+      "nab",
+      "o",
+      "s"
     ],
-    "building": "lab:1xcl-1xna-1xo=>3xble",
+    "building": "lab:10xnab-2xo-3xs=>4xble",
     "workforce_tier": 3,
-    "recipe_id": "LAB:1xCL-1xNA-1xO=>3xBLE",
+    "recipe_id": "LAB:10xNAB-2xO-3xS=>4xBLE",
     "tier": 3,
     "min_tier": 3,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "LAB:1xCL-1xNA-1xO=>3xBLE",
-        "building": "LAB:1xCL-1xNA-1xO=>3xBLE",
+        "recipe_id": "LAB:10xNAB-2xO-3xS=>4xBLE",
+        "building": "LAB:10xNAB-2xO-3xS=>4xBLE",
         "inputs": [
-          "cl",
-          "na",
-          "o"
+          "nab",
+          "o",
+          "s"
         ],
         "outputs": [
           "ble"
@@ -1472,12 +1472,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "LAB:10xNAB-2xO-3xS=>4xBLE",
-        "building": "LAB:10xNAB-2xO-3xS=>4xBLE",
+        "recipe_id": "LAB:1xCL-1xNA-1xO=>3xBLE",
+        "building": "LAB:1xCL-1xNA-1xO=>3xBLE",
         "inputs": [
-          "nab",
-          "o",
-          "s"
+          "cl",
+          "na",
+          "o"
         ],
         "outputs": [
           "ble"
@@ -1855,20 +1855,6 @@
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "PP2:1xAL-2xLST=>1xBSE",
-        "building": "PP2:1xAL-2xLST=>1xBSE",
-        "inputs": [
-          "al",
-          "lst"
-        ],
-        "outputs": [
-          "bse"
-        ],
-        "tier": 2,
-        "workforce_tier": 2,
-        "is_byproduct": false
-      },
-      {
         "recipe_id": "PP1:1xFE-2xLST=>1xBSE",
         "building": "PP1:1xFE-2xLST=>1xBSE",
         "inputs": [
@@ -1880,6 +1866,20 @@
         ],
         "tier": 1,
         "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "PP2:1xAL-2xLST=>1xBSE",
+        "building": "PP2:1xAL-2xLST=>1xBSE",
+        "inputs": [
+          "al",
+          "lst"
+        ],
+        "outputs": [
+          "bse"
+        ],
+        "tier": 2,
+        "workforce_tier": 2,
         "is_byproduct": false
       }
     ],
@@ -1933,20 +1933,6 @@
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "PP2:1xAL-1xGL=>1xBTA",
-        "building": "PP2:1xAL-1xGL=>1xBTA",
-        "inputs": [
-          "al",
-          "gl"
-        ],
-        "outputs": [
-          "bta"
-        ],
-        "tier": 2,
-        "workforce_tier": 2,
-        "is_byproduct": false
-      },
-      {
         "recipe_id": "PP1:1xFE-50xPE=>1xBTA",
         "building": "PP1:1xFE-50xPE=>1xBTA",
         "inputs": [
@@ -1958,6 +1944,20 @@
         ],
         "tier": 1,
         "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "PP2:1xAL-1xGL=>1xBTA",
+        "building": "PP2:1xAL-1xGL=>1xBTA",
+        "inputs": [
+          "al",
+          "gl"
+        ],
+        "outputs": [
+          "bta"
+        ],
+        "tier": 2,
+        "workforce_tier": 2,
         "is_byproduct": false
       }
     ],
@@ -2042,21 +2042,21 @@
   },
   "c": {
     "inputs": [
-      "grn"
+      "hcp"
     ],
-    "building": "inc:4xgrn=>4xc",
+    "building": "inc:4xhcp=>4xc",
     "workforce_tier": 1,
-    "recipe_id": "INC:4xGRN=>4xC",
+    "recipe_id": "INC:4xHCP=>4xC",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 6,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "INC:4xGRN=>4xC",
-        "building": "INC:4xGRN=>4xC",
+        "recipe_id": "INC:4xHCP=>4xC",
+        "building": "INC:4xHCP=>4xC",
         "inputs": [
-          "grn"
+          "hcp"
         ],
         "outputs": [
           "c"
@@ -2066,10 +2066,10 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "INC:4xHCP=>4xC",
-        "building": "INC:4xHCP=>4xC",
+        "recipe_id": "INC:4xGRN=>4xC",
+        "building": "INC:4xGRN=>4xC",
         "inputs": [
-          "hcp"
+          "grn"
         ],
         "outputs": [
           "c"
@@ -2092,11 +2092,11 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "INC:2xGRN-4xHCP=>4xC",
-        "building": "INC:2xGRN-4xHCP=>4xC",
+        "recipe_id": "INC:4xHCP-2xMAI=>4xC",
+        "building": "INC:4xHCP-2xMAI=>4xC",
         "inputs": [
-          "grn",
-          "hcp"
+          "hcp",
+          "mai"
         ],
         "outputs": [
           "c"
@@ -2106,11 +2106,11 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "INC:4xHCP-2xMAI=>4xC",
-        "building": "INC:4xHCP-2xMAI=>4xC",
+        "recipe_id": "INC:2xGRN-4xHCP=>4xC",
+        "building": "INC:2xGRN-4xHCP=>4xC",
         "inputs": [
-          "hcp",
-          "mai"
+          "grn",
+          "hcp"
         ],
         "outputs": [
           "c"
@@ -3337,20 +3337,6 @@
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "WEL:6xAL-1xHE=>1xDRF",
-        "building": "WEL:6xAL-1xHE=>1xDRF",
-        "inputs": [
-          "al",
-          "he"
-        ],
-        "outputs": [
-          "drf"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
-      {
         "recipe_id": "DRS:1xDCS-50xNFI=>1xDRF",
         "building": "DRS:1xDCS-50xNFI=>1xDRF",
         "inputs": [
@@ -3362,6 +3348,20 @@
         ],
         "tier": 4,
         "workforce_tier": 4,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "WEL:6xAL-1xHE=>1xDRF",
+        "building": "WEL:6xAL-1xHE=>1xDRF",
+        "inputs": [
+          "al",
+          "he"
+        ],
+        "outputs": [
+          "drf"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
         "is_byproduct": false
       }
     ],
@@ -3393,23 +3393,21 @@
   },
   "dw": {
     "inputs": [
-      "h2o",
-      "pg"
+      "h2o"
     ],
-    "building": "fp:10xh2o-1xpg=>10xdw",
+    "building": "fp:10xh2o=>7xdw",
     "workforce_tier": 1,
-    "recipe_id": "FP:10xH2O-1xPG=>10xDW",
+    "recipe_id": "FP:10xH2O=>7xDW",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "FP:10xH2O-1xPG=>10xDW",
-        "building": "FP:10xH2O-1xPG=>10xDW",
+        "recipe_id": "FP:10xH2O=>7xDW",
+        "building": "FP:10xH2O=>7xDW",
         "inputs": [
-          "h2o",
-          "pg"
+          "h2o"
         ],
         "outputs": [
           "dw"
@@ -3419,10 +3417,11 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FP:10xH2O=>7xDW",
-        "building": "FP:10xH2O=>7xDW",
+        "recipe_id": "FP:10xH2O-1xPG=>10xDW",
+        "building": "FP:10xH2O-1xPG=>10xDW",
         "inputs": [
-          "h2o"
+          "h2o",
+          "pg"
         ],
         "outputs": [
           "dw"
@@ -3834,24 +3833,22 @@
     "inputs": [
       "c",
       "feo",
-      "flx",
       "o"
     ],
-    "building": "sme:1xc-6xfeo-1xflx-1xo=>4xfe",
+    "building": "sme:1xc-6xfeo-1xo=>3xfe",
     "workforce_tier": 1,
-    "recipe_id": "SME:1xC-6xFEO-1xFLX-1xO=>4xFE",
+    "recipe_id": "SME:1xC-6xFEO-1xO=>3xFE",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 3,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "SME:1xC-6xFEO-1xFLX-1xO=>4xFE",
-        "building": "SME:1xC-6xFEO-1xFLX-1xO=>4xFE",
+        "recipe_id": "SME:1xC-6xFEO-1xO=>3xFE",
+        "building": "SME:1xC-6xFEO-1xO=>3xFE",
         "inputs": [
           "c",
           "feo",
-          "flx",
           "o"
         ],
         "outputs": [
@@ -3862,11 +3859,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "SME:1xC-6xFEO-1xO=>3xFE",
-        "building": "SME:1xC-6xFEO-1xO=>3xFE",
+        "recipe_id": "SME:1xC-6xFEO-1xFLX-1xO=>4xFE",
+        "building": "SME:1xC-6xFEO-1xFLX-1xO=>4xFE",
         "inputs": [
           "c",
           "feo",
+          "flx",
           "o"
         ],
         "outputs": [
@@ -4403,33 +4401,18 @@
   },
   "gl": {
     "inputs": [
-      "flx",
       "na",
+      "sen",
       "sio"
     ],
-    "building": "gf:1xflx-1xna-2xsio=>12xgl",
+    "building": "gf:1xna-1xsen-2xsio=>10xgl",
     "workforce_tier": 2,
-    "recipe_id": "GF:1xFLX-1xNA-2xSIO=>12xGL",
+    "recipe_id": "GF:1xNA-1xSEN-2xSIO=>10xGL",
     "tier": 2,
     "min_tier": 2,
     "recipe_count": 3,
     "is_extractable": false,
     "all_recipes": [
-      {
-        "recipe_id": "GF:1xFLX-1xNA-2xSIO=>12xGL",
-        "building": "GF:1xFLX-1xNA-2xSIO=>12xGL",
-        "inputs": [
-          "flx",
-          "na",
-          "sio"
-        ],
-        "outputs": [
-          "gl"
-        ],
-        "tier": 2,
-        "workforce_tier": 2,
-        "is_byproduct": false
-      },
       {
         "recipe_id": "GF:1xNA-1xSEN-2xSIO=>10xGL",
         "building": "GF:1xNA-1xSEN-2xSIO=>10xGL",
@@ -4449,6 +4432,21 @@
         "recipe_id": "GF:1xNA-2xSIO=>10xGL",
         "building": "GF:1xNA-2xSIO=>10xGL",
         "inputs": [
+          "na",
+          "sio"
+        ],
+        "outputs": [
+          "gl"
+        ],
+        "tier": 2,
+        "workforce_tier": 2,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "GF:1xFLX-1xNA-2xSIO=>12xGL",
+        "building": "GF:1xFLX-1xNA-2xSIO=>12xGL",
+        "inputs": [
+          "flx",
           "na",
           "sio"
         ],
@@ -4497,24 +4495,22 @@
   "gra": {
     "inputs": [
       "ddt",
-      "h2o",
-      "soi"
+      "h2o"
     ],
-    "building": "orc:1xddt-30xh2o-3xsoi=>6xgra",
+    "building": "orc:1xddt-40xh2o=>5xgra",
     "workforce_tier": 3,
-    "recipe_id": "ORC:1xDDT-30xH2O-3xSOI=>6xGRA",
+    "recipe_id": "ORC:1xDDT-40xH2O=>5xGRA",
     "tier": 3,
     "min_tier": 3,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "ORC:1xDDT-30xH2O-3xSOI=>6xGRA",
-        "building": "ORC:1xDDT-30xH2O-3xSOI=>6xGRA",
+        "recipe_id": "ORC:1xDDT-40xH2O=>5xGRA",
+        "building": "ORC:1xDDT-40xH2O=>5xGRA",
         "inputs": [
           "ddt",
-          "h2o",
-          "soi"
+          "h2o"
         ],
         "outputs": [
           "gra"
@@ -4524,11 +4520,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "ORC:1xDDT-40xH2O=>5xGRA",
-        "building": "ORC:1xDDT-40xH2O=>5xGRA",
+        "recipe_id": "ORC:1xDDT-30xH2O-3xSOI=>6xGRA",
+        "building": "ORC:1xDDT-30xH2O-3xSOI=>6xGRA",
         "inputs": [
           "ddt",
-          "h2o"
+          "h2o",
+          "soi"
         ],
         "outputs": [
           "gra"
@@ -4544,17 +4541,17 @@
     "inputs": [
       "h2o"
     ],
-    "building": "frm:4xh2o=>4xgrn",
+    "building": "frm:1xh2o=>4xgrn",
     "workforce_tier": 1,
-    "recipe_id": "FRM:4xH2O=>4xGRN",
+    "recipe_id": "FRM:1xH2O=>4xGRN",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "FRM:4xH2O=>4xGRN",
-        "building": "FRM:4xH2O=>4xGRN",
+        "recipe_id": "FRM:1xH2O=>4xGRN",
+        "building": "FRM:1xH2O=>4xGRN",
         "inputs": [
           "h2o"
         ],
@@ -4566,8 +4563,8 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FRM:1xH2O=>4xGRN",
-        "building": "FRM:1xH2O=>4xGRN",
+        "recipe_id": "FRM:4xH2O=>4xGRN",
+        "building": "FRM:4xH2O=>4xGRN",
         "inputs": [
           "h2o"
         ],
@@ -4829,6 +4826,19 @@
     "is_extractable": false,
     "all_recipes": [
       {
+        "recipe_id": "FRM:2xH2O=>4xHCP",
+        "building": "FRM:2xH2O=>4xHCP",
+        "inputs": [
+          "h2o"
+        ],
+        "outputs": [
+          "hcp"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
         "recipe_id": "HYF:14xH2O-1xNS=>8xHCP",
         "building": "HYF:14xH2O-1xNS=>8xHCP",
         "inputs": [
@@ -4840,19 +4850,6 @@
         ],
         "tier": 2,
         "workforce_tier": 2,
-        "is_byproduct": false
-      },
-      {
-        "recipe_id": "FRM:2xH2O=>4xHCP",
-        "building": "FRM:2xH2O=>4xHCP",
-        "inputs": [
-          "h2o"
-        ],
-        "outputs": [
-          "hcp"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
         "is_byproduct": false
       }
     ],
@@ -6820,17 +6817,17 @@
     "inputs": [
       "ns"
     ],
-    "building": "hyf:4xns=>12xmus",
+    "building": "hyf:1xns=>4xmus",
     "workforce_tier": 2,
-    "recipe_id": "HYF:4xNS=>12xMUS",
+    "recipe_id": "HYF:1xNS=>4xMUS",
     "tier": 2,
     "min_tier": 2,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "HYF:4xNS=>12xMUS",
-        "building": "HYF:4xNS=>12xMUS",
+        "recipe_id": "HYF:1xNS=>4xMUS",
+        "building": "HYF:1xNS=>4xMUS",
         "inputs": [
           "ns"
         ],
@@ -6842,8 +6839,8 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "HYF:1xNS=>4xMUS",
-        "building": "HYF:1xNS=>4xMUS",
+        "recipe_id": "HYF:4xNS=>12xMUS",
+        "building": "HYF:4xNS=>12xMUS",
         "inputs": [
           "ns"
         ],
@@ -7766,24 +7763,22 @@
   "pib": {
     "inputs": [
       "ddt",
-      "h2o",
-      "soi"
+      "h2o"
     ],
-    "building": "orc:1xddt-20xh2o-2xsoi=>12xpib",
+    "building": "orc:1xddt-30xh2o=>10xpib",
     "workforce_tier": 3,
-    "recipe_id": "ORC:1xDDT-20xH2O-2xSOI=>12xPIB",
+    "recipe_id": "ORC:1xDDT-30xH2O=>10xPIB",
     "tier": 3,
     "min_tier": 3,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "ORC:1xDDT-20xH2O-2xSOI=>12xPIB",
-        "building": "ORC:1xDDT-20xH2O-2xSOI=>12xPIB",
+        "recipe_id": "ORC:1xDDT-30xH2O=>10xPIB",
+        "building": "ORC:1xDDT-30xH2O=>10xPIB",
         "inputs": [
           "ddt",
-          "h2o",
-          "soi"
+          "h2o"
         ],
         "outputs": [
           "pib"
@@ -7793,11 +7788,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "ORC:1xDDT-30xH2O=>10xPIB",
-        "building": "ORC:1xDDT-30xH2O=>10xPIB",
+        "recipe_id": "ORC:1xDDT-20xH2O-2xSOI=>12xPIB",
+        "building": "ORC:1xDDT-20xH2O-2xSOI=>12xPIB",
         "inputs": [
           "ddt",
-          "h2o"
+          "h2o",
+          "soi"
         ],
         "outputs": [
           "pib"
@@ -8048,16 +8044,30 @@
   "pt": {
     "inputs": [
       "stl",
-      "trn"
+      "w"
     ],
-    "building": "bmp:1xstl-1xtrn=>7xpt",
+    "building": "bmp:1xstl-1xw=>15xpt",
     "workforce_tier": 1,
-    "recipe_id": "BMP:1xSTL-1xTRN=>7xPT",
+    "recipe_id": "BMP:1xSTL-1xW=>15xPT",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 4,
     "is_extractable": false,
     "all_recipes": [
+      {
+        "recipe_id": "BMP:1xSTL-1xW=>15xPT",
+        "building": "BMP:1xSTL-1xW=>15xPT",
+        "inputs": [
+          "stl",
+          "w"
+        ],
+        "outputs": [
+          "pt"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
       {
         "recipe_id": "BMP:1xSTL-1xTRN=>7xPT",
         "building": "BMP:1xSTL-1xTRN=>7xPT",
@@ -8078,20 +8088,6 @@
         "inputs": [
           "sfk",
           "stl"
-        ],
-        "outputs": [
-          "pt"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
-      {
-        "recipe_id": "BMP:1xSTL-1xW=>15xPT",
-        "building": "BMP:1xSTL-1xW=>15xPT",
-        "inputs": [
-          "stl",
-          "w"
         ],
         "outputs": [
           "pt"
@@ -8283,24 +8279,24 @@
   "rat": {
     "inputs": [
       "bea",
-      "mai",
-      "nut"
+      "grn",
+      "veg"
     ],
-    "building": "fp:1xbea-1xmai-1xnut=>10xrat",
+    "building": "fp:1xbea-1xgrn-1xveg=>10xrat",
     "workforce_tier": 1,
-    "recipe_id": "FP:1xBEA-1xMAI-1xNUT=>10xRAT",
+    "recipe_id": "FP:1xBEA-1xGRN-1xVEG=>10xRAT",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 12,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "FP:1xBEA-1xMAI-1xNUT=>10xRAT",
-        "building": "FP:1xBEA-1xMAI-1xNUT=>10xRAT",
+        "recipe_id": "FP:1xBEA-1xGRN-1xVEG=>10xRAT",
+        "building": "FP:1xBEA-1xGRN-1xVEG=>10xRAT",
         "inputs": [
           "bea",
-          "mai",
-          "nut"
+          "grn",
+          "veg"
         ],
         "outputs": [
           "rat"
@@ -8310,12 +8306,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FP:1xALG-1xGRN-1xVEG=>10xRAT",
-        "building": "FP:1xALG-1xGRN-1xVEG=>10xRAT",
+        "recipe_id": "FP:1xALG-1xGRN-1xNUT=>10xRAT",
+        "building": "FP:1xALG-1xGRN-1xNUT=>10xRAT",
         "inputs": [
           "alg",
           "grn",
-          "veg"
+          "nut"
         ],
         "outputs": [
           "rat"
@@ -8340,21 +8336,6 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FP:1xGRN-1xMUS-1xVEG=>10xRAT",
-        "building": "FP:1xGRN-1xMUS-1xVEG=>10xRAT",
-        "inputs": [
-          "grn",
-          "mus",
-          "veg"
-        ],
-        "outputs": [
-          "rat"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
-      {
         "recipe_id": "FP:1xMAI-1xMUS-1xVEG=>10xRAT",
         "building": "FP:1xMAI-1xMUS-1xVEG=>10xRAT",
         "inputs": [
@@ -8370,10 +8351,55 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FP:1xBEA-1xGRN-1xVEG=>10xRAT",
-        "building": "FP:1xBEA-1xGRN-1xVEG=>10xRAT",
+        "recipe_id": "FP:1xBEA-1xGRN-1xNUT=>10xRAT",
+        "building": "FP:1xBEA-1xGRN-1xNUT=>10xRAT",
         "inputs": [
           "bea",
+          "grn",
+          "nut"
+        ],
+        "outputs": [
+          "rat"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "FP:1xBEA-1xMAI-1xNUT=>10xRAT",
+        "building": "FP:1xBEA-1xMAI-1xNUT=>10xRAT",
+        "inputs": [
+          "bea",
+          "mai",
+          "nut"
+        ],
+        "outputs": [
+          "rat"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "FP:1xBEA-1xMAI-1xVEG=>10xRAT",
+        "building": "FP:1xBEA-1xMAI-1xVEG=>10xRAT",
+        "inputs": [
+          "bea",
+          "mai",
+          "veg"
+        ],
+        "outputs": [
+          "rat"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "FP:1xALG-1xGRN-1xVEG=>10xRAT",
+        "building": "FP:1xALG-1xGRN-1xVEG=>10xRAT",
+        "inputs": [
+          "alg",
           "grn",
           "veg"
         ],
@@ -8400,42 +8426,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FP:1xBEA-1xGRN-1xNUT=>10xRAT",
-        "building": "FP:1xBEA-1xGRN-1xNUT=>10xRAT",
+        "recipe_id": "FP:1xGRN-1xMUS-1xVEG=>10xRAT",
+        "building": "FP:1xGRN-1xMUS-1xVEG=>10xRAT",
         "inputs": [
-          "bea",
           "grn",
-          "nut"
-        ],
-        "outputs": [
-          "rat"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
-      {
-        "recipe_id": "FP:1xALG-1xGRN-1xNUT=>10xRAT",
-        "building": "FP:1xALG-1xGRN-1xNUT=>10xRAT",
-        "inputs": [
-          "alg",
-          "grn",
-          "nut"
-        ],
-        "outputs": [
-          "rat"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
-      {
-        "recipe_id": "FP:1xALG-1xMAI-1xNUT=>10xRAT",
-        "building": "FP:1xALG-1xMAI-1xNUT=>10xRAT",
-        "inputs": [
-          "alg",
-          "mai",
-          "nut"
+          "mus",
+          "veg"
         ],
         "outputs": [
           "rat"
@@ -8460,12 +8456,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FP:1xBEA-1xMAI-1xVEG=>10xRAT",
-        "building": "FP:1xBEA-1xMAI-1xVEG=>10xRAT",
+        "recipe_id": "FP:1xALG-1xMAI-1xNUT=>10xRAT",
+        "building": "FP:1xALG-1xMAI-1xNUT=>10xRAT",
         "inputs": [
-          "bea",
+          "alg",
           "mai",
-          "veg"
+          "nut"
         ],
         "outputs": [
           "rat"
@@ -8511,23 +8507,21 @@
   },
   "rco": {
     "inputs": [
-      "h2o",
-      "ns"
+      "h2o"
     ],
-    "building": "frm:2xh2o-4xns=>2xrco",
+    "building": "frm:2xh2o=>1xrco",
     "workforce_tier": 1,
-    "recipe_id": "FRM:2xH2O-4xNS=>2xRCO",
+    "recipe_id": "FRM:2xH2O=>1xRCO",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 3,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "FRM:2xH2O-4xNS=>2xRCO",
-        "building": "FRM:2xH2O-4xNS=>2xRCO",
+        "recipe_id": "FRM:2xH2O=>1xRCO",
+        "building": "FRM:2xH2O=>1xRCO",
         "inputs": [
-          "h2o",
-          "ns"
+          "h2o"
         ],
         "outputs": [
           "rco"
@@ -8537,10 +8531,11 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "FRM:2xH2O=>1xRCO",
-        "building": "FRM:2xH2O=>1xRCO",
+        "recipe_id": "FRM:2xH2O-4xNS=>2xRCO",
+        "building": "FRM:2xH2O-4xNS=>2xRCO",
         "inputs": [
-          "h2o"
+          "h2o",
+          "ns"
         ],
         "outputs": [
           "rco"
@@ -8881,24 +8876,22 @@
   "rg": {
     "inputs": [
       "gl",
-      "pg",
-      "sen"
+      "pg"
     ],
-    "building": "gf:10xgl-15xpg-1xsen=>10xrg",
+    "building": "gf:10xgl-15xpg=>10xrg",
     "workforce_tier": 2,
-    "recipe_id": "GF:10xGL-15xPG-1xSEN=>10xRG",
+    "recipe_id": "GF:10xGL-15xPG=>10xRG",
     "tier": 2,
     "min_tier": 2,
     "recipe_count": 2,
     "is_extractable": false,
     "all_recipes": [
       {
-        "recipe_id": "GF:10xGL-15xPG-1xSEN=>10xRG",
-        "building": "GF:10xGL-15xPG-1xSEN=>10xRG",
+        "recipe_id": "GF:10xGL-15xPG=>10xRG",
+        "building": "GF:10xGL-15xPG=>10xRG",
         "inputs": [
           "gl",
-          "pg",
-          "sen"
+          "pg"
         ],
         "outputs": [
           "rg"
@@ -8908,11 +8901,12 @@
         "is_byproduct": false
       },
       {
-        "recipe_id": "GF:10xGL-15xPG=>10xRG",
-        "building": "GF:10xGL-15xPG=>10xRG",
+        "recipe_id": "GF:10xGL-15xPG-1xSEN=>10xRG",
+        "building": "GF:10xGL-15xPG-1xSEN=>10xRG",
         "inputs": [
           "gl",
-          "pg"
+          "pg",
+          "sen"
         ],
         "outputs": [
           "rg"
@@ -9689,46 +9683,18 @@
   "si": {
     "inputs": [
       "c",
+      "flx",
       "o",
       "sio"
     ],
-    "building": "sme:1xc-1xo-3xsio=>1xsi",
+    "building": "sme:1xc-1xflx-1xo-3xsio=>1xsi",
     "workforce_tier": 1,
-    "recipe_id": "SME:1xC-1xO-3xSIO=>1xSI",
+    "recipe_id": "SME:1xC-1xFLX-1xO-3xSIO=>1xSI",
     "tier": 1,
     "min_tier": 1,
     "recipe_count": 4,
     "is_extractable": false,
     "all_recipes": [
-      {
-        "recipe_id": "SME:1xC-1xO-3xSIO=>1xSI",
-        "building": "SME:1xC-1xO-3xSIO=>1xSI",
-        "inputs": [
-          "c",
-          "o",
-          "sio"
-        ],
-        "outputs": [
-          "si"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
-      {
-        "recipe_id": "SME:1xAL-3xSIO=>1xSI",
-        "building": "SME:1xAL-3xSIO=>1xSI",
-        "inputs": [
-          "al",
-          "sio"
-        ],
-        "outputs": [
-          "si"
-        ],
-        "tier": 1,
-        "workforce_tier": 1,
-        "is_byproduct": false
-      },
       {
         "recipe_id": "SME:1xC-1xFLX-1xO-3xSIO=>1xSI",
         "building": "SME:1xC-1xFLX-1xO-3xSIO=>1xSI",
@@ -9752,6 +9718,35 @@
           "al",
           "o",
           "ts"
+        ],
+        "outputs": [
+          "si"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "SME:1xC-1xO-3xSIO=>1xSI",
+        "building": "SME:1xC-1xO-3xSIO=>1xSI",
+        "inputs": [
+          "c",
+          "o",
+          "sio"
+        ],
+        "outputs": [
+          "si"
+        ],
+        "tier": 1,
+        "workforce_tier": 1,
+        "is_byproduct": false
+      },
+      {
+        "recipe_id": "SME:1xAL-3xSIO=>1xSI",
+        "building": "SME:1xAL-3xSIO=>1xSI",
+        "inputs": [
+          "al",
+          "sio"
         ],
         "outputs": [
           "si"
@@ -9793,30 +9788,16 @@
   },
   "sio": {
     "inputs": [
-      "zir"
+      "ber"
     ],
-    "building": "aml:2xzir=>2xsio-1xzr",
+    "building": "aml:2xber=>1xal-1xbe-1xsio",
     "workforce_tier": 4,
-    "recipe_id": "AML:2xZIR=>2xSIO-1xZR",
+    "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
     "tier": 0,
     "min_tier": 4,
     "recipe_count": 2,
     "is_extractable": true,
     "all_recipes": [
-      {
-        "recipe_id": "AML:2xZIR=>2xSIO-1xZR",
-        "building": "AML:2xZIR=>2xSIO-1xZR",
-        "inputs": [
-          "zir"
-        ],
-        "outputs": [
-          "sio",
-          "zr"
-        ],
-        "tier": 4,
-        "workforce_tier": 4,
-        "is_byproduct": true
-      },
       {
         "recipe_id": "AML:2xBER=>1xAL-1xBE-1xSIO",
         "building": "AML:2xBER=>1xAL-1xBE-1xSIO",
@@ -9827,6 +9808,20 @@
           "al",
           "be",
           "sio"
+        ],
+        "tier": 4,
+        "workforce_tier": 4,
+        "is_byproduct": true
+      },
+      {
+        "recipe_id": "AML:2xZIR=>2xSIO-1xZR",
+        "building": "AML:2xZIR=>2xSIO-1xZR",
+        "inputs": [
+          "zir"
+        ],
+        "outputs": [
+          "sio",
+          "zr"
         ],
         "tier": 4,
         "workforce_tier": 4,
