@@ -185,17 +185,17 @@ function getAllData() {
         ticker: data[i][1],          // Column B
         recipe: data[i][2],          // Column C
         materialName: data[i][3],    // Column D
-        exchange: data[i][4],        // Column E
-        askPrice: parseFloat(data[i][5]) || 0,       // Column F
-        bidPrice: parseFloat(data[i][6]) || 0,       // Column G
-        inputCostAsk: parseFloat(data[i][7]) || 0,   // Column H
-        inputCostBid: parseFloat(data[i][8]) || 0,   // Column I
-        workforceCostAsk: parseFloat(data[i][9]) || 0,  // Column J
-        workforceCostBid: parseFloat(data[i][10]) || 0, // Column K
-        amountPerRecipe: parseFloat(data[i][11]) || 1,  // Column L
-        supply: parseFloat(data[i][12]) || 0,    // Column M
-        demand: parseFloat(data[i][13]) || 0,    // Column N
-        traded: parseFloat(data[i][14]) || 0     // Column O
+        exchange: data[i][26],       // Column AA (Exchange column)
+        askPrice: parseFloat(data[i][8]) || 0,       // Column I (Ask_Price)
+        bidPrice: parseFloat(data[i][9]) || 0,       // Column J (Bid_Price)
+        inputCostAsk: parseFloat(data[i][10]) || 0,  // Column K (Input Cost per Unit)
+        inputCostBid: parseFloat(data[i][10]) || 0,  // Column K (Input Cost per Unit - using same for bid)
+        workforceCostAsk: parseFloat(data[i][11]) || 0,  // Column L (Input Cost per Stack - using as workforce proxy)
+        workforceCostBid: parseFloat(data[i][11]) || 0,   // Column L (Input Cost per Stack - using as workforce proxy)
+        amountPerRecipe: parseFloat(data[i][5]) || 1,     // Column F (Amount per Recipe)
+        supply: parseFloat(data[i][17]) || 0,             // Column R (Supply)
+        demand: parseFloat(data[i][18]) || 0,             // Column S (Demand)
+        traded: parseFloat(data[i][19]) || 0              // Column T (Traded Volume)
       });
     }
     
@@ -428,9 +428,9 @@ function getExchanges() {
   const data = sheet.getDataRange().getValues();
   const exchangesSet = new Set();
   
-  // Skip header row, get exchanges from column E
+  // Skip header row, get exchanges from column AA (26)
   for (let i = 1; i < data.length; i++) {
-    const exchange = data[i][4]; // Column E = Exchange
+    const exchange = data[i][26]; // Column AA = Exchange
     if (exchange && typeof exchange === 'string') {
       exchangesSet.add(exchange);
     }
@@ -604,11 +604,11 @@ function getRecommendedRecipe(material, exchange, includeLuxury, selfProduced) {
     // F=Ask_Price, G=Bid_Price, H=Input Cost Ask, I=Input Cost Bid,
     // J=Workforce Cost Ask, K=Workforce Cost Bid, L=Amount per Recipe, M=Supply, N=Demand
     for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === material && data[i][4] === exchange && data[i][2]) {
+      if (data[i][1] === material && data[i][26] === exchange && data[i][2]) {
         const recipeString = data[i][2];
-        const askPrice = parseFloat(data[i][5]) || 0;        // Column F
-        let inputCostAsk = parseFloat(data[i][7]) || 0;      // Column H
-        let workforceCostAsk = parseFloat(data[i][9]) || 0;  // Column J
+        const askPrice = parseFloat(data[i][8]) || 0;        // Column I (8)
+        let inputCostAsk = parseFloat(data[i][10]) || 0;     // Column K (10)
+        let workforceCostAsk = parseFloat(data[i][12]) || 0; // Column M (12)
         
         // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
         if (!includeLuxury) {
@@ -712,8 +712,8 @@ function calculateSelfProductionCost(recipeString, allData, exchange, visited) {
         if (visited[visitKey]) {
           // If circular, fall back to market price
           for (let i = 1; i < allData.length; i++) {
-            if (allData[i][1] === inputTicker && allData[i][4] === exchange) {
-              const askPrice = parseFloat(allData[i][5]) || 0;
+            if (allData[i][1] === inputTicker && allData[i][26] === exchange) {
+              const askPrice = parseFloat(allData[i][8]) || 0;
               totalCost += amount * askPrice;
               break;
             }
@@ -726,7 +726,7 @@ function calculateSelfProductionCost(recipeString, allData, exchange, visited) {
         let foundRecipe = false;
         
         for (let i = 1; i < allData.length; i++) {
-          if (allData[i][1] === inputTicker && allData[i][4] === exchange && allData[i][2]) {
+          if (allData[i][1] === inputTicker && allData[i][26] === exchange && allData[i][2]) {
             foundRecipe = true;
             
             // Create new visited object for this branch
@@ -735,7 +735,7 @@ function calculateSelfProductionCost(recipeString, allData, exchange, visited) {
             
             // Recursively calculate production cost for this input's recipe
             const recursiveCost = calculateSelfProductionCost(allData[i][2], allData, exchange, newVisited);
-            const workforceCost = parseFloat(allData[i][9]) || 0;
+            const workforceCost = parseFloat(allData[i][12]) || 0;
             const inputProductionCost = recursiveCost + workforceCost;
             
             if (inputProductionCost < bestInputCost) {
@@ -747,8 +747,8 @@ function calculateSelfProductionCost(recipeString, allData, exchange, visited) {
         // If no recipe found (tier-0 material), use market price
         if (!foundRecipe || bestInputCost === Infinity) {
           for (let i = 1; i < allData.length; i++) {
-            if (allData[i][1] === inputTicker && allData[i][4] === exchange) {
-              const askPrice = parseFloat(allData[i][5]) || 0;
+            if (allData[i][1] === inputTicker && allData[i][26] === exchange) {
+              const askPrice = parseFloat(allData[i][8]) || 0;
               totalCost += amount * askPrice;
               break;
             }
@@ -781,11 +781,11 @@ function getExchangeComparison(material, recipe, currentExchange) {
     // Find data for this material across all exchanges
     for (let i = 1; i < data.length; i++) {
       if (data[i][1] === material && (!recipe || data[i][2] === recipe)) {
-        const exch = data[i][4];  // Column E: Exchange
-        const askPrice = parseFloat(data[i][5]) || 0;
-        const bidPrice = parseFloat(data[i][6]) || 0;
-        const inputCostAsk = parseFloat(data[i][7]) || 0;
-        const workforceCostAsk = parseFloat(data[i][9]) || 0;
+        const exch = data[i][26];  // Column AA (26): Exchange
+        const askPrice = parseFloat(data[i][8]) || 0;
+        const bidPrice = parseFloat(data[i][9]) || 0;
+        const inputCostAsk = parseFloat(data[i][10]) || 0;
+        const workforceCostAsk = parseFloat(data[i][12]) || 0;
         const totalCost = inputCostAsk + workforceCostAsk;
         const profitAsk = askPrice - totalCost;
         const roiAsk = totalCost > 0 ? (profitAsk / totalCost) * 100 : 0;
@@ -832,9 +832,9 @@ function getArbitrageOpportunities(material) {
     // Collect prices for this material at each exchange
     for (let i = 1; i < data.length; i++) {
       if (data[i][1] === material) {
-        const exch = data[i][4];
-        const askPrice = parseFloat(data[i][5]) || 0;  // Buy at Ask
-        const bidPrice = parseFloat(data[i][6]) || 0;  // Sell at Bid
+        const exch = data[i][26];
+        const askPrice = parseFloat(data[i][8]) || 0;  // Buy at Ask
+        const bidPrice = parseFloat(data[i][9]) || 0;  // Sell at Bid
         
         if (!exchangePrices[exch]) {
           exchangePrices[exch] = { ask: askPrice, bid: bidPrice };
@@ -913,16 +913,16 @@ function getBuildingComparison(currentRecipe, exchange, includeLuxury) {
     for (let i = 1; i < data.length; i++) {
       const recipeString = data[i][2] || ''; // Column C: Recipe
       const material = data[i][1]; // Column B: Ticker
-      const exch = data[i][4]; // Column E: Exchange
+      const exch = data[i][26]; // Column AA (26): Exchange
       
       // Check if recipe is for the same building and exchange
       if (recipeString.startsWith(building + ':') && exch === exchange && !seenMaterials.has(material)) {
         seenMaterials.add(material);
         
-        const askPrice = parseFloat(data[i][5]) || 0;
-        const bidPrice = parseFloat(data[i][6]) || 0;
-        let inputCostAsk = parseFloat(data[i][7]) || 0;
-        let workforceCostAsk = parseFloat(data[i][9]) || 0;
+        const askPrice = parseFloat(data[i][8]) || 0;
+        const bidPrice = parseFloat(data[i][9]) || 0;
+        let inputCostAsk = parseFloat(data[i][10]) || 0;
+        let workforceCostAsk = parseFloat(data[i][12]) || 0;
         
         // Apply efficiency penalty if no luxury
         if (!includeLuxury) {
@@ -1000,9 +1000,9 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
   let bestRow = null;
   let lowestCost = Infinity;
   
-  // Find matching rows (Ticker in column B, Exchange in column E, Recipe in column C)
+  // Find matching rows (Ticker in column B, Exchange in column AA (26), Recipe in column C)
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === material && data[i][4] === exchange) {
+    if (data[i][1] === material && data[i][26] === exchange) {
       // If specific recipe requested, match it exactly
       if (recipe && data[i][2] === recipe) {
         bestRow = i;
@@ -1011,8 +1011,8 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
       
       // If no recipe specified, find the one with lowest total cost (Ask basis)
       if (!recipe) {
-        let inputCostAsk = parseFloat(data[i][7]) || 0;
-        let workforceCostAsk = parseFloat(data[i][9]) || 0;
+        let inputCostAsk = parseFloat(data[i][10]) || 0;
+        let workforceCostAsk = parseFloat(data[i][12]) || 0;
         
         // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
         if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
@@ -1043,14 +1043,14 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
       // J: Workforce Cost Ask, K: Workforce Cost Bid,
       // L: Amount per Recipe, M: Supply, N: Demand
       
-      const askPrice = parseFloat(data[i][5]) || 0;           // Column F: Ask_Price
-      const bidPrice = parseFloat(data[i][6]) || 0;           // Column G: Bid_Price
-      let inputCostAsk = parseFloat(data[i][7]) || 0;         // Column H: Input Cost Ask
-      let inputCostBid = parseFloat(data[i][8]) || 0;         // Column I: Input Cost Bid
+      const askPrice = parseFloat(data[i][8]) || 0;           // Column I (8): Ask_Price
+      const bidPrice = parseFloat(data[i][9]) || 0;           // Column J (9): Bid_Price
+      let inputCostAsk = parseFloat(data[i][10]) || 0;        // Column K (10): Input Cost Ask
+      let inputCostBid = parseFloat(data[i][11]) || 0;        // Column L (11): Input Cost Bid
       
       // Check if this is an extraction recipe
       const recipeStr = data[i][2] || '';
-      const amountPerRecipe = parseFloat(data[i][11]) || 1;   // Column L: Amount per Recipe
+      const amountPerRecipe = parseFloat(data[i][5]) || 1;    // Column F (5): Amount per Recipe
       
       // If input cost is 0, try to calculate it from recipe inputs
       if (inputCostAsk === 0 && recipeStr && recipeStr.includes('=>')) {
@@ -1069,9 +1069,9 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
               
               // Find the ask/bid price for this input on the same exchange
               for (let j = 1; j < data.length; j++) {
-                if (data[j][1] === inputTicker && data[j][4] === exchange) {
-                  const inputAskPrice = parseFloat(data[j][5]) || 0;
-                  const inputBidPrice = parseFloat(data[j][6]) || 0;
+                if (data[j][1] === inputTicker && data[j][26] === exchange) {
+                  const inputAskPrice = parseFloat(data[j][8]) || 0;
+                  const inputBidPrice = parseFloat(data[j][9]) || 0;
                   totalInputCostAsk += amount * inputAskPrice;
                   totalInputCostBid += amount * inputBidPrice;
                   break;
@@ -1087,8 +1087,8 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
           Logger.log('Error calculating input cost for ' + material + ': ' + e.toString());
         }
       }
-      let workforceCostAsk = parseFloat(data[i][9]) || 0;     // Column J: Workforce Cost Ask
-      let workforceCostBid = parseFloat(data[i][10]) || 0;    // Column K: Workforce Cost Bid
+      let workforceCostAsk = parseFloat(data[i][12]) || 0;    // Column M (12): Workforce Cost Ask
+      let workforceCostBid = parseFloat(data[i][13]) || 0;    // Column N (13): Workforce Cost Bid
       
       const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
       
@@ -1137,9 +1137,9 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
         inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
         inputCostBid = inputCostAsk; // Use same for both
       }
-      const supply = parseFloat(data[i][12]) || 0;            // Column M: Supply
-      const demand = parseFloat(data[i][13]) || 0;            // Column N: Demand
-      const traded = parseFloat(data[i][14]) || 0;            // Column O: Traded Volume
+      const supply = parseFloat(data[i][17]) || 0;            // Column R (17): Supply
+      const demand = parseFloat(data[i][18]) || 0;            // Column S (18): Demand
+      const traded = parseFloat(data[i][19]) || 0;            // Column T (19): Traded Volume
       
       // Parse recipe to extract inputs and outputs
       const recipeString = data[i][2] || 'N/A';
