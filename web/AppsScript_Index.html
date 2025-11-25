@@ -929,10 +929,10 @@
       
       <div class="section">
         <h3 class="collapsible-header" onclick="toggleCollapse('pricingContent')">
-          <span class="collapse-icon" id="pricingContent-icon">▼</span>
+          <span class="collapse-icon collapsed" id="pricingContent-icon">▶</span>
           Pricing
         </h3>
-        <div id="pricingContent" class="collapsible-content">
+        <div id="pricingContent" class="collapsible-content collapsed">
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Ask Price</div>
@@ -948,10 +948,10 @@
       
       <div class="section">
         <h3 class="collapsible-header" onclick="toggleCollapse('costBreakdownContent')">
-          <span class="collapse-icon" id="costBreakdownContent-icon">▼</span>
+          <span class="collapse-icon collapsed" id="costBreakdownContent-icon">▶</span>
           Cost Breakdown
         </h3>
-        <div id="costBreakdownContent" class="collapsible-content">
+        <div id="costBreakdownContent" class="collapsible-content collapsed">
         <div style="display: grid; gap: 12px;">
           <!-- Top Row: 4 columns for Input and Workforce costs -->
           <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
@@ -991,10 +991,10 @@
       <!-- Cost Breakdown Tree Section -->
       <div id="costBreakdownTreeSection" class="section" style="display: none;">
         <h3 class="collapsible-header" onclick="toggleCollapse('costBreakdownTreeContent')">
-          <span class="collapse-icon" id="costBreakdownTreeContent-icon">▼</span>
+          <span class="collapse-icon collapsed" id="costBreakdownTreeContent-icon">▶</span>
           Input Cost Breakdown Tree
         </h3>
-        <div id="costBreakdownTreeContent" class="collapsible-content">
+        <div id="costBreakdownTreeContent" class="collapsible-content collapsed">
           <div id="costTree" style="font-family: monospace; font-size: 0.85rem; padding: 10px; background: #f9fafb; border-radius: 4px; overflow-x: auto;">
             <!-- Cost tree will be rendered here -->
           </div>
@@ -1049,10 +1049,10 @@
       
       <div class="section">
         <h3 class="collapsible-header" onclick="toggleCollapse('marketIndicatorsContent')">
-          <span class="collapse-icon" id="marketIndicatorsContent-icon">▼</span>
+          <span class="collapse-icon collapsed" id="marketIndicatorsContent-icon">▶</span>
           Market Indicators
         </h3>
-        <div id="marketIndicatorsContent" class="collapsible-content">
+        <div id="marketIndicatorsContent" class="collapsible-content collapsed">
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Supply</div>
@@ -1072,10 +1072,10 @@
       
       <div class="section">
         <h3 class="collapsible-header" onclick="toggleCollapse('breakevenContent')">
-          <span class="collapse-icon" id="breakevenContent-icon">▼</span>
+          <span class="collapse-icon collapsed" id="breakevenContent-icon">▶</span>
           Breakeven Analysis - All Scenarios
         </h3>
-        <div class="collapsible-content" id="breakevenContent">
+        <div class="collapsible-content" id="breakevenContent" class="collapsible-content collapsed">
           <div class="data-grid">
             <div class="data-item">
               <div class="data-label">Breakeven Units (Ask + Ask)</div>
@@ -1099,10 +1099,10 @@
       
       <div class="section" id="exchangeComparisonSection" style="display: none;">
         <div class="collapsible-header" onclick="toggleCollapse('exchangeComparisonContentWrapper')">
-          <span class="collapse-icon" id="exchangeComparisonContentWrapper-icon">▼</span>
+          <span class="collapse-icon collapsed" id="exchangeComparisonContentWrapper-icon">▶</span>
           <h3>Exchange Comparison</h3>
         </div>
-        <div class="collapsible-content" id="exchangeComparisonContentWrapper">
+        <div class="collapsible-content collapsed" id="exchangeComparisonContentWrapper">
           <div style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
             Compare prices and profitability across all exchanges using your current production costs
           </div>
@@ -1112,10 +1112,10 @@
       
       <div class="section" id="arbitrageSection" style="display: none;">
         <div class="collapsible-header" onclick="toggleCollapse('arbitrageContentWrapper')">
-          <span class="collapse-icon" id="arbitrageContentWrapper-icon">▼</span>
+          <span class="collapse-icon collapsed" id="arbitrageContentWrapper-icon">▶</span>
           <h3>Arbitrage Opportunities</h3>
         </div>
-        <div class="collapsible-content" id="arbitrageContentWrapper">
+        <div class="collapsible-content collapsed" id="arbitrageContentWrapper">
           <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
             Profitable buy/sell opportunities between exchanges (showing profit > 5% after transfer costs)
           </div>
@@ -1125,20 +1125,20 @@
       
       <div class="section" id="recommendationSection" style="display: none;">
         <div class="collapsible-header" onclick="toggleCollapse('recommendationContentWrapper')">
-          <span class="collapse-icon" id="recommendationContentWrapper-icon">▼</span>
+          <span class="collapse-icon collapsed" id="recommendationContentWrapper-icon">▶</span>
           <h3>Recommended Recipe</h3>
         </div>
-        <div class="collapsible-content" id="recommendationContentWrapper">
+        <div class="collapsible-content collapsed" id="recommendationContentWrapper">
           <div id="recommendationContent" style="margin-top: 15px; max-height: 600px; overflow-y: auto;"></div>
         </div>
       </div>
       
       <div class="section" id="buildingComparisonSection" style="display: none;">
         <div class="collapsible-header" onclick="toggleCollapse('buildingComparisonContentWrapper')">
-          <span class="collapse-icon" id="buildingComparisonContentWrapper-icon">▼</span>
+          <span class="collapse-icon collapsed" id="buildingComparisonContentWrapper-icon">▶</span>
           <h3>Building Recipe Comparison</h3>
         </div>
-        <div class="collapsible-content" id="buildingComparisonContentWrapper">
+        <div class="collapsible-content collapsed" id="buildingComparisonContentWrapper">
           <div style="margin: 15px 0; padding: 10px; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b; font-size: 0.9rem;">
             Compare all recipes for the same building to optimize production
           </div>
