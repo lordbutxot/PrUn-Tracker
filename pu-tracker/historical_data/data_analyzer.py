@@ -281,9 +281,14 @@ class UnifiedAnalysisProcessor:
     # Removed: load_buildingrecipes() - now using loaders.load_buildingrecipes()
     # Removed: load_workforceneeds() - now using loaders.load_workforceneeds()
 
-    # Removed: calculate_input_cost() - now delegating to calculators module
-
-    # Removed: calculate_detailed_costs() - now using calculators.calculate_detailed_costs()
+    def load_materials(self):
+        path = self.cache_dir / 'materials.csv'
+        mtime = os.path.getmtime(path)
+        if self._materials_cache is not None and self._materials_mtime == mtime:
+            return self._materials_cache
+        self._materials_cache = pd.read_csv(path)
+        self._materials_mtime = mtime
+        return self._materials_cache
 
     def get_all_tickers_from_recipes(self, recipes_dict):
         """Extract all unique tickers from recipes.json"""
@@ -345,10 +350,38 @@ class UnifiedAnalysisProcessor:
         if 'market_data.csv' in data and not data['market_data.csv'].empty:
             market_df = data['market_data.csv'].copy()
             print(f"   Merging market data: {len(market_df)} rows")
-            base_df = base_df.merge(market_df, on=['Ticker', 'Exchange'], how='left')
-            print(f"   After merge: {len(base_df)} rows")
+            # Add market data columns to base_df
+            base_df['Ask_Price'] = 0.0
+            base_df['Bid_Price'] = 0.0
+            base_df['Supply'] = 0
+            base_df['Demand'] = 0
+            base_df['Traded'] = 0
+            base_df['Saturation'] = 0.0
+            for idx, row in base_df.iterrows():
+                ticker = row['Ticker']
+                exchange = row['Exchange']
+                market_row = market_df[market_df['Ticker'] == ticker]
+                if not market_row.empty:
+                    mr = market_row.iloc[0]
+                    ask_col = f"{exchange}-AskPrice"
+                    bid_col = f"{exchange}-BidPrice"
+                    supply_col = f"{exchange}-AskAvail"  # or BidAvail?
+                    demand_col = f"{exchange}-BidAvail"
+                    traded_col = f"{exchange}-Average"  # not sure
+                    base_df.at[idx, 'Ask_Price'] = mr.get(ask_col, 0) or 0
+                    base_df.at[idx, 'Bid_Price'] = mr.get(bid_col, 0) or 0
+                    base_df.at[idx, 'Supply'] = mr.get(supply_col, 0) or 0
+                    base_df.at[idx, 'Demand'] = mr.get(demand_col, 0) or 0
+                    base_df.at[idx, 'Traded'] = mr.get(traded_col, 0) or 0
+            print(f"   After adding market data: {len(base_df)} rows")
         else:
             print("   No market data to merge")
+            base_df['Ask_Price'] = 0.0
+            base_df['Bid_Price'] = 0.0
+            base_df['Supply'] = 0
+            base_df['Demand'] = 0
+            base_df['Traded'] = 0
+            base_df['Saturation'] = 0.0
         
         # Load materials for info
         materials_df = self.load_materials()
