@@ -350,38 +350,57 @@ class UnifiedAnalysisProcessor:
         if 'market_data.csv' in data and not data['market_data.csv'].empty:
             market_df = data['market_data.csv'].copy()
             print(f"   Merging market data: {len(market_df)} rows")
-            # Add market data columns to base_df
-            base_df['Ask_Price'] = 0.0
-            base_df['Bid_Price'] = 0.0
-            base_df['Supply'] = 0
-            base_df['Demand'] = 0
-            base_df['Traded'] = 0
-            base_df['Saturation'] = 0.0
-            for idx, row in base_df.iterrows():
-                ticker = row['Ticker']
-                exchange = row['Exchange']
-                market_row = market_df[market_df['Ticker'] == ticker]
-                if not market_row.empty:
-                    mr = market_row.iloc[0]
-                    ask_col = f"{exchange}-AskPrice"
-                    bid_col = f"{exchange}-BidPrice"
-                    supply_col = f"{exchange}-AskAvail"  # or BidAvail?
-                    demand_col = f"{exchange}-BidAvail"
-                    traded_col = f"{exchange}-Average"  # not sure
-                    base_df.at[idx, 'Ask_Price'] = mr.get(ask_col, 0) or 0
-                    base_df.at[idx, 'Bid_Price'] = mr.get(bid_col, 0) or 0
-                    base_df.at[idx, 'Supply'] = mr.get(supply_col, 0) or 0
-                    base_df.at[idx, 'Demand'] = mr.get(demand_col, 0) or 0
-                    base_df.at[idx, 'Traded'] = mr.get(traded_col, 0) or 0
-            print(f"   After adding market data: {len(base_df)} rows")
+            # Melt market_data.csv to long format
+            melted = market_df.melt(id_vars=['Ticker'], var_name='var', value_name='value')
+            melted['Exchange'] = melted['var'].str.split('-').str[0]
+            melted['Metric'] = melted['var'].str.split('-').str[1]
+            # Pivot to wide
+            pivoted = melted.pivot_table(index=['Ticker', 'Exchange'], columns='Metric', values='value', aggfunc='first').reset_index()
+            pivoted.columns.name = None
+            # Rename columns to match
+            pivoted.rename(columns={
+                'AskPrice': 'Ask_Price',
+                'BidPrice': 'Bid_Price',
+                'AskAvail': 'Supply',
+                'BidAvail': 'Demand',
+                'Average': 'Traded'
+            }, inplace=True)
+            # Merge with base_df
+            base_df = base_df.merge(pivoted[['Ticker', 'Exchange', 'Ask_Price', 'Bid_Price', 'Supply', 'Demand', 'Traded']], on=['Ticker', 'Exchange'], how='left')
+            print(f"   After merge: {len(base_df)} rows")
         else:
             print("   No market data to merge")
             base_df['Ask_Price'] = 0.0
             base_df['Bid_Price'] = 0.0
             base_df['Supply'] = 0
             base_df['Demand'] = 0
-            base_df['Traded'] = 0
-            base_df['Saturation'] = 0.0
+            base_df['Traded'] = 0.0
+
+        # Merge processed data for input costs
+        if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
+            processed_df = data['processed_data.csv'].copy()
+            print(f"   Merging processed data: {len(processed_df)} rows")
+            # Group by Ticker and Exchange, taking min input cost per unit (cheapest recipe)
+            cost_df = processed_df.groupby(['Ticker', 'Exchange']).agg({
+                'Input Cost per Unit': 'min',
+                'Input Cost per Stack': 'min',
+                'Input Cost per Hour': 'min',
+                'Recipe': lambda x: '; '.join(str(r) for r in x.dropna().unique() if str(r) != 'nan'),  # Join unique non-null recipes
+                'Building': lambda x: '; '.join(str(b) for b in x.dropna().unique() if str(b) != 'nan')  # Join unique non-null buildings
+            }).reset_index()
+            # Merge with base_df
+            base_df = base_df.merge(cost_df, on=['Ticker', 'Exchange'], how='left')
+            print(f"   After cost merge: {len(base_df)} rows")
+            
+            # Apply byproduct cost allocation
+            base_df = self.allocate_byproduct_costs_in_df(base_df, data)
+        else:
+            print("   No processed data to merge")
+            base_df['Input Cost per Unit'] = 0.0
+            base_df['Input Cost per Stack'] = 0.0
+            base_df['Input Cost per Hour'] = 0.0
+            base_df['Recipe'] = ''
+            base_df['Building'] = ''
         
         # Load materials for info
         materials_df = self.load_materials()
@@ -393,8 +412,8 @@ class UnifiedAnalysisProcessor:
             ticker = row['Ticker']
             material_info = self.get_material_info(ticker)
             
-            # Get recipe
-            recipe = self.get_recipe(ticker)
+            # Use recipe from merged data, fallback to get_recipe
+            recipe = row.get('Recipe', '') or self.get_recipe(ticker)
             amount_per_recipe = self.get_amount_per_recipe(ticker)
             
             analysis_row = {
@@ -493,6 +512,98 @@ class UnifiedAnalysisProcessor:
         print(f"\n Generated analysis: {len(result_df)} rows, {len(result_df.columns)} columns")
         print(f" Saved to: {self.cache_dir / 'daily_analysis_enhanced.csv'}")
         return result_df
+        
+    def allocate_byproduct_costs_in_df(self, df, data):
+        """Allocate costs for byproduct materials based on their recipes"""
+        print("   Applying byproduct cost allocation...")
+        
+        # Load byproduct recipes
+        byproduct_recipes = {}
+        byproduct_file = self.cache_dir / 'byproduct_recipes.json'
+        if byproduct_file.exists():
+            try:
+                with open(byproduct_file, 'r') as f:
+                    byproduct_recipes = json.load(f)
+                print(f"   Loaded {len(byproduct_recipes)} byproduct recipes")
+            except Exception as e:
+                print(f"   Error loading byproduct recipes: {e}")
+                return df
+        
+        # Load market data for prices
+        market_prices = None
+        if 'market_data.csv' in data:
+            market_df = data['market_data.csv']
+            # Convert to long format if needed
+            if 'Exchange' not in market_df.columns:
+                # Wide format - convert
+                records = []
+                exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1']
+                for _, row in market_df.iterrows():
+                    ticker = str(row['Ticker']).strip()
+                    for exch in exchanges:
+                        ask_price = row.get(f"{exch}-AskPrice")
+                        if pd.notnull(ask_price):
+                            records.append({
+                                'Ticker': ticker.upper(),
+                                'Exchange': exch,
+                                'Ask_Price': float(ask_price)
+                            })
+                market_prices = pd.DataFrame(records)
+            else:
+                market_prices = market_df.copy()
+                market_prices['Ticker'] = market_prices['Ticker'].str.upper()
+        
+        # For each byproduct recipe, allocate costs
+        for recipe_id, recipe_info in byproduct_recipes.items():
+            outputs = recipe_info.get('outputs', [])
+            if len(outputs) <= 1:
+                continue
+            
+            # Find the main product row (first output) to get the total input cost
+            main_product = str(outputs[0]).upper()
+            
+            # Get total input cost from processed_data for this recipe
+            if 'processed_data.csv' in data:
+                processed_df = data['processed_data.csv']
+                recipe_rows = processed_df[processed_df['Recipe'] == recipe_id]
+                if not recipe_rows.empty:
+                    # Use the first row's input cost (they should be the same for the recipe)
+                    total_input_cost = recipe_rows.iloc[0]['Input Cost per Unit']
+                    units_produced = recipe_rows.iloc[0].get('Amount', 1)  # Assuming Amount column exists
+                    
+                    # Calculate total recipe cost
+                    total_recipe_cost = total_input_cost * units_produced
+                    
+                    # Get market values for allocation
+                    output_values = {}
+                    total_value = 0.0
+                    
+                    for ticker in outputs:
+                        ticker_upper = str(ticker).upper()
+                        if market_prices is not None:
+                            # Get average price across exchanges
+                            ticker_prices = market_prices[market_prices['Ticker'] == ticker_upper]
+                            if not ticker_prices.empty:
+                                avg_price = ticker_prices['Ask_Price'].mean()
+                                output_values[ticker_upper] = avg_price
+                                total_value += avg_price
+                    
+                    # Allocate costs proportionally
+                    if total_value > 0:
+                        for ticker in outputs:
+                            ticker_upper = str(ticker).upper()
+                            if ticker_upper in output_values:
+                                proportion = output_values[ticker_upper] / total_value
+                                allocated_cost_per_unit = (total_recipe_cost * proportion) / units_produced
+                                
+                                # Update the cost in df for this byproduct
+                                mask = (df['Ticker'] == ticker_upper)
+                                df.loc[mask, 'Input Cost per Unit'] = allocated_cost_per_unit
+                                # Note: Input Cost per Stack will be calculated later in the analysis
+                    
+                    print(f"   Allocated costs for recipe {recipe_id}: {outputs}")
+        
+        return df
         
     def get_ticker_from_row(self, row):
         """Extract ticker from row using various column names"""
