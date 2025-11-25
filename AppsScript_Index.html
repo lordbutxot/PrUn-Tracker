@@ -1700,10 +1700,17 @@
           } else {
             if (!recipesMap.has(row.recipe)) {
               const building = row.recipe.split(':')[0];
-              let label = row.recipe;
-              if (label.length > 50) {
-                label = label.substring(0, 47) + '...';
+              // Create a shortened input string for the label
+              let inputLabel = '';
+              if (row.recipe.includes('=>')) {
+                const inputPart = row.recipe.split('=>')[0].split(':')[1] || row.recipe.split('=>')[0];
+                const inputs = inputPart.split('-').map(item => {
+                  const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                  return match ? match[2] : item; // Just the ticker, not the amount
+                });
+                inputLabel = inputs.join('+');
               }
+              let label = material + (inputLabel ? ':' + inputLabel : ''); // Show material ticker with inputs
               recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
             }
           }
