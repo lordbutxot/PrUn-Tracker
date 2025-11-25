@@ -1270,37 +1270,31 @@
       // Extract building code from recipe (e.g., "CHP:" from "CHP:1xC=>1xBAC")
       const buildingCode = recipe ? recipe.split(':')[0] : (building || '');
 
-      // Use all categories from materials.csv and categories.json
-      // These will be loaded once and cached for performance
-      if (!window._prunCategoryMap) {
-        window._prunCategoryMap = {};
-        if (window.allData) {
-          window.allData.forEach(row => {
-            if (row.recipe && row.recipe.includes(':')) {
-              const code = row.recipe.split(':')[0];
-              if (row.category) {
-                window._prunCategoryMap[code] = row.category.toLowerCase();
-              }
-            }
-          });
-        }
-      }
-
-      // Fallback for known building codes if not found in map
-      const fallbackCategories = {
-        'ELP': 'electronics', 'EEP': 'electronics', 'AAP': 'electronics', 'EDM': 'electronics',
-        'CHP': 'manufacturing', 'PPF': 'manufacturing', 'BMP': 'manufacturing', 'APF': 'manufacturing', 'ASM': 'manufacturing', 'WEL': 'manufacturing', 'POL': 'manufacturing',
-        'FRM': 'agriculture', 'ORC': 'agriculture', 'VIN': 'agriculture', 'INC': 'agriculture',
-        'FP': 'food industries', 'BWY': 'food industries', 'WPL': 'food industries',
-        'SME': 'metallurgy', 'BLF': 'metallurgy', 'AMP': 'metallurgy',
-        'REF': 'chemistry', 'LAB': 'chemistry',
-        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction', 'DRL': 'extraction'
+      // Building to category mapping
+      const buildingCategories = {
+        // Manufacturing
+        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing', 'SPF': 'manufacturing',
+        // Electronics
+        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics', 'PHF': 'electronics',
+        // Chemistry
+        'AML': 'chemistry', 'CHP': 'chemistry', 'EEP': 'chemistry', 'LAB': 'chemistry', 'POL': 'chemistry', 'TNP': 'chemistry',
+        // Metallurgy
+        'ASM': 'metallurgy', 'FS': 'metallurgy', 'GF': 'metallurgy', 'HWP': 'metallurgy', 'SME': 'metallurgy',
+        // Construction
+        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction', 'PAC': 'construction',
+        // Food Industries
+        'FER': 'food industries', 'FP': 'food industries', 'HYF': 'food industries', 'IVP': 'food industries', 'ORC': 'food industries',
+        // Agriculture
+        'FRM': 'agriculture',
+        // Fuel Refining
+        'REF': 'fuel',
+        // Resource Extraction
+        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction',
+        // Chemistry (INC produces carbon)
+        'INC': 'chemistry'
       };
 
-      let category = window._prunCategoryMap[buildingCode];
-      if (!category && fallbackCategories[buildingCode]) {
-        category = fallbackCategories[buildingCode];
-      }
+      let category = buildingCategories[buildingCode];
       if (!category) {
         return false;
       }
@@ -1447,15 +1441,15 @@
       // Building to category mapping
       const buildingCategories = {
         // Manufacturing
-        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing',
+        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing', 'SPF': 'manufacturing',
         // Electronics
-        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics',
+        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics', 'PHF': 'electronics',
         // Chemistry
         'AML': 'chemistry', 'CHP': 'chemistry', 'EEP': 'chemistry', 'LAB': 'chemistry', 'POL': 'chemistry', 'TNP': 'chemistry',
         // Metallurgy
         'ASM': 'metallurgy', 'FS': 'metallurgy', 'GF': 'metallurgy', 'HWP': 'metallurgy', 'SME': 'metallurgy',
         // Construction
-        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction',
+        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction', 'PAC': 'construction',
         // Food Industries
         'FER': 'food industries', 'FP': 'food industries', 'HYF': 'food industries', 'IVP': 'food industries', 'ORC': 'food industries',
         // Agriculture
@@ -1502,15 +1496,15 @@
       // Building to category mapping
       const buildingCategories = {
         // Manufacturing
-        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing',
+        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing', 'SPF': 'manufacturing',
         // Electronics
-        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics',
+        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics', 'PHF': 'electronics',
         // Chemistry
         'AML': 'chemistry', 'CHP': 'chemistry', 'EEP': 'chemistry', 'LAB': 'chemistry', 'POL': 'chemistry', 'TNP': 'chemistry',
         // Metallurgy
         'ASM': 'metallurgy', 'FS': 'metallurgy', 'GF': 'metallurgy', 'HWP': 'metallurgy', 'SME': 'metallurgy',
         // Construction
-        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction',
+        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction', 'PAC': 'construction',
         // Food Industries
         'FER': 'food industries', 'FP': 'food industries', 'HYF': 'food industries', 'IVP': 'food industries', 'ORC': 'food industries',
         // Agriculture
