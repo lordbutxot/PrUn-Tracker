@@ -25,7 +25,7 @@ def main():
 
         # Build extractable materials set strictly from planetresources
         try:
-            extractable_materials = set(row['Material'].lower() for row in planet_resources)
+            extractable_materials = set(row['Ticker'].lower() for row in planet_resources)
         except Exception as e:
             raise RuntimeError(f"Failed to parse extractable materials from planetresources: {e}")
         if len(extractable_materials) == 0:
