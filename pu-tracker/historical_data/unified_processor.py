@@ -111,10 +111,20 @@ class UnifiedDataProcessor:
         recipe_outputs_df = pd.read_csv(self.cache_dir / "recipe_outputs.csv", na_filter=False)
         all_tickers_from_recipes = set(str(t).strip().upper() for t in recipe_outputs_df['Material'].unique() if pd.notna(t) and str(t).strip())
         
-        # Combine all unique tickers
-        all_tickers = sorted(list(all_tickers_from_materials | all_tickers_from_recipes))
+        # Also include tickers from byproduct_recipes.json
+        byproduct_tickers = set()
+        byproduct_recipes_path = self.cache_dir / "byproduct_recipes.json"
+        if byproduct_recipes_path.exists():
+            with open(byproduct_recipes_path, 'r', encoding='utf-8') as f:
+                byproduct_data = json.load(f)
+                for recipe_key, recipe_info in byproduct_data.items():
+                    for output_ticker in recipe_info.get('output_materials', []):
+                        byproduct_tickers.add(str(output_ticker).strip().upper())
         
-        print(f"[INFO] Processing {len(all_tickers)} total tickers ({len(all_tickers_from_materials)} from materials, {len(all_tickers_from_recipes)} from recipes)")
+        # Combine all unique tickers
+        all_tickers = sorted(list(all_tickers_from_materials | all_tickers_from_recipes | byproduct_tickers))
+        
+        print(f"[INFO] Processing {len(all_tickers)} total tickers ({len(all_tickers_from_materials)} from materials, {len(all_tickers_from_recipes)} from recipes, {len(byproduct_tickers)} from byproducts)")
         
         all_exchanges = VALID_EXCHANGES
 

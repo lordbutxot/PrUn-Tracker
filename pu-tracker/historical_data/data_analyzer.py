@@ -77,7 +77,7 @@ class UnifiedAnalysisProcessor:
             path = self.cache_dir / file
             if path.exists():
                 try:
-                    data[file] = pd.read_csv(path)
+                    data[file] = pd.read_csv(path, na_filter=False)
                     print(f"    {file}: {len(data[file])} rows")
                 except Exception as e:
                     print(f"    {file}: Error loading - {e}")
@@ -333,9 +333,12 @@ class UnifiedAnalysisProcessor:
         print(f"   Tiers: {len(tiers_dict)}")
         print(f"   Recipes: {len(recipes_dict)}")
         
-        # Get all tickers from recipes
-        all_tickers = self.get_all_tickers_from_recipes(recipes_dict)
-        print(f"   All tickers from recipes: {len(all_tickers)}")
+        # Get all tickers from processed data
+        if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
+            all_tickers = sorted(data['processed_data.csv']['Ticker'].unique())
+        else:
+            all_tickers = sorted(self.recipe_outputs['Material'].unique())
+        print(f"   All tickers from processed data: {len(all_tickers)}")
         
         # Get all exchanges
         exchanges = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2']
@@ -474,7 +477,7 @@ class UnifiedAnalysisProcessor:
 
         # Fill NaN with 0 for numeric columns
         numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Investment Score', 'Amount per Recipe', 'Weight', 'Volume', 'Tier']
-        result_df[numeric_cols] = result_df[numeric_cols].fillna(0)
+        result_df[numeric_cols] = result_df[numeric_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
 
         # Recalculate formulas
         result_df['Profit per Unit'] = pd.to_numeric(result_df['Ask_Price'], errors='coerce').fillna(0) - pd.to_numeric(result_df['Input Cost per Unit'], errors='coerce').fillna(0)
@@ -542,7 +545,7 @@ class UnifiedAnalysisProcessor:
                     ticker = str(row['Ticker']).strip()
                     for exch in exchanges:
                         ask_price = row.get(f"{exch}-AskPrice")
-                        if pd.notnull(ask_price):
+                        if pd.notnull(ask_price) and ask_price != '':
                             records.append({
                                 'Ticker': ticker.upper(),
                                 'Exchange': exch,
