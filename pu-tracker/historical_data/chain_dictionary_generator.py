@@ -28,23 +28,10 @@ def main():
             print(f"Warning: Could not fetch planet resources: {e}")
             extractable_materials = set()
         
-        # Manually add known extractable resources if API failed
-        # These are common resources that can be extracted from planets
-        known_extractables = {
-            'h2o', 'h', 'o', 'n', 'he', 'ar', 'ne', 'kr', 'f', 'amm',
-            'cuo', 'feo', 'alo', 'auo', 'lio', 'sio', 'tio', 'reo',
-            'gal', 'hal', 'ber', 'bor', 'brm', 'cli', 'lst', 'mag',
-            'mgs', 'scr', 'tai', 'tco', 'ts', 'zir', 'c', 's',
-            'hex', 'les', 'bts'
-        }
-        
+        # If API fetch failed, abort pipeline instead of using fallback
         if len(extractable_materials) == 0:
-            print(f"Warning: Using fallback list of {len(known_extractables)} known extractable materials")
-            extractable_materials = known_extractables
-        else:
-            # Merge API data with known extractables to ensure we have oxygen
-            extractable_materials.update(known_extractables)
-            print(f"Total extractable materials (API + known): {len(extractable_materials)}")
+            raise RuntimeError("Failed to fetch extractable materials from FIO API. Aborting pipeline.")
+        print(f"Total extractable materials fetched from API: {len(extractable_materials)}")
 
         print(buildingworkforces[0].keys())
 
