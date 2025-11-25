@@ -1529,9 +1529,10 @@
       // First, add materials with recipes (filtered by category)
       allData.forEach(row => {
         if (row.ticker) {
-          if (row.ticker.includes('=>')) {
-            // Parse outputs from recipe string in ticker
-            const outputPart = row.ticker.split('=>')[1];
+          // Check if this row has a recipe that produces materials
+          if (row.recipe && row.recipe.includes('=>')) {
+            // Parse outputs from recipe string
+            const outputPart = row.recipe.split('=>')[1];
             if (outputPart) {
               const outputs = outputPart.split('-').map(item => {
                 const match = item.match(/(\d+)x([A-Z]+)/);
@@ -1561,6 +1562,7 @@
               });
             }
           } else {
+            // No recipe, just add the ticker itself if it matches category
             if (!selectedCategory) {
               materialsSet.add(row.ticker);
             } else if (row.recipe) {
