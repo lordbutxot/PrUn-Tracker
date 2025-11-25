@@ -1701,9 +1701,8 @@
       allData.forEach(row => {
         if (row.ticker === material && row.recipe) {
           const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
-          const skipExtraction = selectedCategory !== 'extraction' || row.ticker === 'C';
-          if (isExtractionRecipe && skipExtraction) {
-            // Skip extraction recipes unless extraction category is selected and not C
+          if (isExtractionRecipe && row.ticker === 'C') {
+            // Skip extraction recipes for C
           } else {
             if (!recipesMap.has(row.recipe)) {
               const building = row.recipe.split(':')[0];
