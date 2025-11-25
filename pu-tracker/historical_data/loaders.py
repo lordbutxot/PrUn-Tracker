@@ -182,7 +182,7 @@ def load_recipe_inputs():
     """Load recipe_inputs.csv (materials required for each recipe)"""
     path = CACHE_DIR / CACHE_FILES['recipe_inputs']
     if path.exists():
-        return pd.read_csv(path)
+        return pd.read_csv(path, na_filter=False)
     return pd.DataFrame(columns=['Key', 'Material', 'Amount'])
 
 
@@ -190,7 +190,7 @@ def load_recipe_outputs():
     """Load recipe_outputs.csv (materials produced by each recipe)"""
     path = CACHE_DIR / CACHE_FILES['recipe_outputs']
     if path.exists():
-        return pd.read_csv(path)
+        return pd.read_csv(path, na_filter=False)
     return pd.DataFrame(columns=['Key', 'Material', 'Amount'])
 
 

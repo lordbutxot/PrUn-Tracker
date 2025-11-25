@@ -104,7 +104,18 @@ class UnifiedDataProcessor:
             print("[ERROR] No basic data to process")
             return pd.DataFrame()
 
-        all_tickers = basic_data['Ticker'].unique()
+        # Get all tickers from materials
+        all_tickers_from_materials = set(str(t).strip().upper() for t in basic_data['Ticker'].unique() if pd.notna(t) and str(t).strip())
+        
+        # Also include tickers from recipe_outputs that might not be in materials
+        recipe_outputs_df = pd.read_csv(self.cache_dir / "recipe_outputs.csv", na_filter=False)
+        all_tickers_from_recipes = set(str(t).strip().upper() for t in recipe_outputs_df['Material'].unique() if pd.notna(t) and str(t).strip())
+        
+        # Combine all unique tickers
+        all_tickers = sorted(list(all_tickers_from_materials | all_tickers_from_recipes))
+        
+        print(f"[INFO] Processing {len(all_tickers)} total tickers ({len(all_tickers_from_materials)} from materials, {len(all_tickers_from_recipes)} from recipes)")
+        
         all_exchanges = VALID_EXCHANGES
 
         # Cross join all tickers and all exchanges
@@ -228,8 +239,8 @@ class UnifiedDataProcessor:
         # For demonstration, let's assume you have them or fill with defaults
 
         # Preload all recipe/building/workforce info
-        recipe_outputs = pd.read_csv(self.cache_dir / "recipe_outputs.csv")
-        recipe_inputs = pd.read_csv(self.cache_dir / "recipe_inputs.csv")
+        recipe_outputs = pd.read_csv(self.cache_dir / "recipe_outputs.csv", na_filter=False)
+        recipe_inputs = pd.read_csv(self.cache_dir / "recipe_inputs.csv", na_filter=False)
         buildingrecipes = pd.read_csv(self.cache_dir / "buildingrecipes.csv")
         workforces = pd.read_csv(self.cache_dir / "workforces.csv")
         wf_consumables = load_workforce_needs()
@@ -526,7 +537,7 @@ def build_input_materials_dict():
     Builds a dictionary mapping recipe Key to a dict of {ticker: qty} using recipe_inputs.csv.
     """
     recipe_inputs_path = Path(__file__).parent.parent / "cache" / "recipe_inputs.csv"
-    recipe_inputs_df = pd.read_csv(recipe_inputs_path)
+    recipe_inputs_df = pd.read_csv(recipe_inputs_path, na_filter=False)
     inputs_by_recipe = {}
     recipe_id_col = "Key"
     for _, r in recipe_inputs_df.iterrows():
