@@ -214,7 +214,7 @@
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
 
-    /* Data Visualization Section */
+  /* Data Visualization Section */
     .data-section {
       background: white;
       border-radius: 16px;
@@ -237,13 +237,83 @@
       max-width: 600px;
     }
 
+    .data-content {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+    }
+
     .data-iframe {
-      width: 100%;
+      flex: 1;
       height: 70vh;
       min-height: 500px;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
       background: #f8fafc;
+    }
+
+    .data-legend {
+      flex: 0 0 300px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .legend-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e3a8a;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-item {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .legend-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .legend-item h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1e40af;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-item p {
+      font-size: 0.85rem;
+      color: #64748b;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .legend-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .legend-tag {
+      background: white;
+      color: #475569;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      border: 1px solid #e2e8f0;
     }
 
     /* Footer */
@@ -330,9 +400,18 @@
         margin-bottom: 40px;
       }
 
+      .data-content {
+        flex-direction: column;
+        gap: 20px;
+      }
+
       .data-iframe {
         height: 60vh;
         min-height: 400px;
+      }
+
+      .data-legend {
+        flex: none;
       }
 
       .footer-links {
@@ -447,12 +526,59 @@
     <div class="container">
       <h2>Complete Market Database</h2>
       <p>Access comprehensive datasets covering all materials, exchanges, and market indicators with real-time updates every hour.</p>
-      <iframe
-        class="data-iframe"
-        src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTulwbrNV63hML1yRWujuoeGtKTkSO7ctdoshLy-wEhAxzE2yMZspQBwpBISHRakHXiT9etIfQdVxwZ/pubhtml?widget=true&amp;headers=false&amp;chrome=false&amp;rm=minimal"
-        allowfullscreen
-        sandbox="allow-scripts allow-same-origin allow-popups">
-      </iframe>
+
+      <div class="data-content">
+        <iframe
+          class="data-iframe"
+          src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTulwbrNV63hML1yRWujuoeGtKTkSO7ctdoshLy-wEhAxzE2yMZspQBwpBISHRakHXiT9etIfQdVxwZ/pubhtml?widget=true&amp;headers=false&amp;chrome=false&amp;rm=minimal"
+          allowfullscreen
+          sandbox="allow-scripts allow-same-origin allow-popups">
+        </iframe>
+
+        <div class="data-legend">
+          <h3 class="legend-title">📋 Sheet Legend</h3>
+
+          <div class="legend-item">
+            <h4>📊 DATA Tabs</h4>
+            <p>Detailed per-material, per-recipe data fetched from FIO APIs. Contains pricing, costs, workforce requirements, and calculated market metrics for each production recipe.</p>
+            <div class="legend-tags">
+              <span class="legend-tag">Price Analyser Data</span>
+              <span class="legend-tag">Market Data</span>
+              <span class="legend-tag">Raw API Data</span>
+            </div>
+          </div>
+
+          <div class="legend-item">
+            <h4>📈 Report Tabs</h4>
+            <p>Analytical conclusions and trend extrapolations generated through cross-referencing multiple data sources. Provides actionable insights and recommendations.</p>
+            <div class="legend-tags">
+              <span class="legend-tag">Daily Analysis</span>
+              <span class="legend-tag">Trend Reports</span>
+              <span class="legend-tag">Material Insights</span>
+            </div>
+          </div>
+
+          <div class="legend-item">
+            <h4>🌍 Overall Report</h4>
+            <p>Comprehensive overview explaining market dynamics, comparing exchange performance metrics, and identifying inter-exchange opportunities and trends.</p>
+            <div class="legend-tags">
+              <span class="legend-tag">Exchange Comparison</span>
+              <span class="legend-tag">Market Dynamics</span>
+              <span class="legend-tag">Cross-Exchange Analysis</span>
+            </div>
+          </div>
+
+          <div class="legend-item">
+            <h4>💰 Financial Overview</h4>
+            <p>Economy-wide statistics including GDP per faction, transaction volumes, wealth distribution, and macroeconomic indicators.</p>
+            <div class="legend-tags">
+              <span class="legend-tag">Faction GDP</span>
+              <span class="legend-tag">Economic Indicators</span>
+              <span class="legend-tag">Wealth Metrics</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
