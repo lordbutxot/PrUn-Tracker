@@ -1117,7 +1117,7 @@
         </div>
         <div class="collapsible-content collapsed" id="arbitrageContentWrapper">
           <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
-            Profitable buy/sell opportunities between exchanges (showing profit > 5% after transfer costs)
+            Arbitrage opportunities involving the selected exchange (showing profit > 5% after transfer costs)
           </div>
           <div id="arbitrageContent"></div>
         </div>
@@ -1953,7 +1953,7 @@
       const hqBonus = calculateHqBonus();
       const corpHqBonus = document.getElementById('corpHqBonus').checked;
       
-      if (!material || !exchange || allData.length === 0) {
+      if (!exchange || allData.length === 0) {
         document.getElementById('results').style.display = 'none';
         return;
       }
@@ -1967,7 +1967,7 @@
         const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const recommendationData = recipe ? getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) : null;
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
-        const arbitrageData = getArbitrageOpportunitiesFromCache(material);
+        const arbitrageData = getArbitrageOpportunitiesFromCache(exchange);
         
         const endTime = performance.now();
         const calcTime = (endTime - startTime).toFixed(1);
@@ -2401,75 +2401,67 @@
       };
     }
     
-    // Get arbitrage opportunities from cached data
-    function getArbitrageOpportunitiesFromCache(material) {
-      const exchangePrices = {};
-      
-      // Collect prices for this material at each exchange
-      for (const row of allData) {
-        // Check if this row's recipe outputs the selected material
-        let rowMatchesMaterial = false;
-        if (row.recipe && row.recipe.includes('=>')) {
-          const outputPart = row.recipe.split('=>')[1];
-          if (outputPart) {
-            const outputs = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
-              return match ? match[2] : item;
-            });
-            if (outputs.includes(material)) {
-              rowMatchesMaterial = true;
-            }
-          }
-        }
-        
-        if (rowMatchesMaterial) {
-          const exch = row.exchange;
-          if (!exchangePrices[exch]) {
-            exchangePrices[exch] = { ask: row.askPrice, bid: row.bidPrice };
-          }
-        }
-      }
-      
-      // Find arbitrage opportunities
-      const opportunities = [];
-      const exchanges = Object.keys(exchangePrices);
-      
-      for (let i = 0; i < exchanges.length; i++) {
-        for (let j = 0; j < exchanges.length; j++) {
-          if (i !== j) {
-            const buyExch = exchanges[i];
-            const sellExch = exchanges[j];
-            const buyPrice = exchangePrices[buyExch].ask;
-            const sellPrice = exchangePrices[sellExch].bid;
-            
-            const profit = sellPrice - buyPrice;
-            const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
-            
-            // Only include profitable opportunities (> 5% to cover transfer costs)
-            if (profitPercent > 5) {
-              opportunities.push({
-                buyExchange: buyExch,
-                sellExchange: sellExch,
-                buyPrice: buyPrice,
-                sellPrice: sellPrice,
-                profit: profit,
-                profitPercent: profitPercent
-              });
-            }
-          }
-        }
-      }
-      
-      opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
-      
-      return {
-        success: true,
-        opportunities: opportunities,
-        count: opportunities.length
-      };
-    }
+// Get arbitrage opportunities from cached data
+function getArbitrageOpportunitiesFromCache(selectedExchange) {
+  const materialPrices = {}; // material -> {exchange: {ask, bid}}
+  
+  // Collect prices for all materials at all exchanges
+  for (const row of allData) {
+    const material = row.ticker;
+    const exch = row.exchange;
     
-    // Get recommendation from cached data
+    if (!materialPrices[material]) {
+      materialPrices[material] = {};
+    }
+    materialPrices[material][exch] = { ask: row.askPrice, bid: row.bidPrice };
+  }
+  
+  // Find arbitrage opportunities involving the selected exchange
+  const opportunities = [];
+  
+  for (const material in materialPrices) {
+    const exchanges = Object.keys(materialPrices[material]);
+    
+    for (let i = 0; i < exchanges.length; i++) {
+      for (let j = 0; j < exchanges.length; j++) {
+        if (i !== j) {
+          const buyExch = exchanges[i];
+          const sellExch = exchanges[j];
+          
+          // Only include opportunities where selectedExchange is involved
+          if (buyExch !== selectedExchange && sellExch !== selectedExchange) continue;
+          
+          const buyPrice = materialPrices[material][buyExch].ask;
+          const sellPrice = materialPrices[material][sellExch].bid;
+          
+          const profit = sellPrice - buyPrice;
+          const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
+          
+          // Only include profitable opportunities (> 5% to cover transfer costs)
+          if (profitPercent > 5) {
+            opportunities.push({
+              material: material,
+              buyExchange: buyExch,
+              sellExchange: sellExch,
+              buyPrice: buyPrice,
+              sellPrice: sellPrice,
+              profit: profit,
+              profitPercent: profitPercent
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
+  
+  return {
+    success: true,
+    opportunities: opportunities,
+    count: opportunities.length
+  };
+}    // Get recommendation from cached data
     function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const recipeComparisons = [];
       
@@ -2959,14 +2951,16 @@
       
       let html = '';
       
-      // Show top 5 opportunities
-      const topOpportunities = data.opportunities.slice(0, 5);
+      // Show top 10 opportunities
+      const topOpportunities = data.opportunities.slice(0, 10);
       
       topOpportunities.forEach(function(opp) {
         html += `
           <div class="arbitrage-card">
             <div class="arbitrage-header">
               <div class="arbitrage-route">
+                <span style="font-weight: 600; color: #1e3a8a;">${opp.material}</span>
+                <br>
                 <span style="color: #dc2626;">Buy at ${opp.buyExchange}</span>
                 <span style="margin: 0 8px;">→</span>
                 <span style="color: #16a34a;">Sell at ${opp.sellExchange}</span>
@@ -2991,9 +2985,9 @@
         `;
       });
       
-      if (data.count > 5) {
+      if (data.count > 10) {
         html += `<div style="text-align: center; margin-top: 10px; color: #666; font-size: 0.9rem;">
-          Showing top 5 of ${data.count} arbitrage opportunities
+          Showing top 10 of ${data.count} arbitrage opportunities
         </div>`;
       }
       
