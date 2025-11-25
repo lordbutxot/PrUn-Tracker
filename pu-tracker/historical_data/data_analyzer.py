@@ -285,14 +285,27 @@ class UnifiedAnalysisProcessor:
 
     # Removed: calculate_detailed_costs() - now using calculators.calculate_detailed_costs()
 
-    def load_materials(self):
-        path = self.cache_dir / 'materials.csv'
-        mtime = os.path.getmtime(path)
-        if self._materials_cache is not None and self._materials_mtime == mtime:
-            return self._materials_cache
-        self._materials_cache = pd.read_csv(path)
-        self._materials_mtime = mtime
-        return self._materials_cache
+    def get_all_tickers_from_recipes(self, recipes_dict):
+        """Extract all unique tickers from recipes.json"""
+        tickers = set()
+        for recipe_key, recipe_data in recipes_dict.items():
+            # Parse inputs and outputs from recipe_key
+            if ':' in recipe_key:
+                parts = recipe_key.split(':')[1].split('=>')
+                if len(parts) == 2:
+                    inputs = parts[0]
+                    outputs = parts[1]
+                    # Parse inputs
+                    for item in inputs.split('-'):
+                        if 'x' in item:
+                            ticker = item.split('x')[1].strip()
+                            tickers.add(ticker)
+                    # Parse outputs
+                    for item in outputs.split('-'):
+                        if 'x' in item:
+                            ticker = item.split('x')[1].strip()
+                            tickers.add(ticker)
+        return sorted(list(tickers))
 
     def generate_unified_analysis(self):
         print("\n\033[1;36m[STEP]\033[0m Generating unified analysis for Google Sheets...")
@@ -303,26 +316,6 @@ class UnifiedAnalysisProcessor:
         # Show data structure
         self.inspect_data_structure(data)
         
-        # Determine best data source
-        base_df = None
-        
-        # Priority: processed_data.csv > market_data.csv > materials.csv
-        if 'processed_data.csv' in data and not data['processed_data.csv'].empty:
-            base_df = data['processed_data.csv'].copy()
-            print(f"\n Using processed_data.csv as base ({len(base_df)} rows)")
-            # processed_data.csv already has recipe-specific rows with individual costs
-            # Each row represents one recipe for one material at one exchange
-            print(f"    Recipe expansion already done - preserving {len(base_df)} recipe-specific rows")
-        elif 'market_data.csv' in data and not data['market_data.csv'].empty:
-            base_df = data['market_data.csv'].copy()
-            print(f"\n Using market_data.csv as base ({len(base_df)} rows)")
-        elif 'materials.csv' in data and not data['materials.csv'].empty:
-            base_df = data['materials.csv'].copy()
-            print(f"\n Using materials.csv as base ({len(base_df)} rows)")
-        else:
-            print("\n No suitable base data found")
-            return None
-            
         # Get reference data
         materials_dict = data.get('materials.json', {})
         categories_dict = data.get('categories.json', {})
@@ -335,21 +328,30 @@ class UnifiedAnalysisProcessor:
         print(f"   Tiers: {len(tiers_dict)}")
         print(f"   Recipes: {len(recipes_dict)}")
         
-        # Show available columns for mapping
-        print(f"\n Available columns in base data:")
-        for i, col in enumerate(base_df.columns, 1):
-            print(f"   {i:2d}. {col}")
-            
-        # Build a market_prices dictionary for all tickers in materials.csv
-        market_prices = {}
-        for _, mat_row in self.materials.iterrows():
-            ticker = mat_row['Ticker']
-            # Try to find this ticker in base_df
-            base_row = base_df[base_df['Ticker'] == ticker]
-            if not base_row.empty:
-                price = self.get_price_data(base_row.iloc[0], 'ask')
-                if price:
-                    market_prices[ticker] = price
+        # Get all tickers from recipes
+        all_tickers = self.get_all_tickers_from_recipes(recipes_dict)
+        print(f"   All tickers from recipes: {len(all_tickers)}")
+        
+        # Get all exchanges
+        exchanges = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2']
+        print(f"   Exchanges: {exchanges}")
+        
+        # Create base df with all tickers x exchanges
+        import itertools
+        base_df = pd.DataFrame(list(itertools.product(all_tickers, exchanges)), columns=['Ticker', 'Exchange'])
+        print(f"   Base df: {len(base_df)} rows (all tickers x exchanges)")
+        
+        # Merge market data if available
+        if 'market_data.csv' in data and not data['market_data.csv'].empty:
+            market_df = data['market_data.csv'].copy()
+            print(f"   Merging market data: {len(market_df)} rows")
+            base_df = base_df.merge(market_df, on=['Ticker', 'Exchange'], how='left')
+            print(f"   After merge: {len(base_df)} rows")
+        else:
+            print("   No market data to merge")
+        
+        # Load materials for info
+        materials_df = self.load_materials()
         
         # Generate analysis data
         analysis_data = []
@@ -358,50 +360,38 @@ class UnifiedAnalysisProcessor:
             ticker = row['Ticker']
             material_info = self.get_material_info(ticker)
             
-            # Preserve Recipe and Building if already present (from processed_data.csv)
-            recipe_value = row.get('Recipe', self.get_recipe(ticker))
-            building_value = row.get('Building', '')
-            
-            # If Recipe column exists and is not empty/NaN, use it (it's recipe-specific)
-            if 'Recipe' in base_df.columns and pd.notna(recipe_value) and recipe_value != '':
-                recipe = recipe_value
-            else:
-                recipe = self.get_recipe(ticker)
-            
-            # Get amount per recipe - if it's already in the row, use it
-            if 'Amount per Recipe' in base_df.columns and pd.notna(row.get('Amount per Recipe')):
-                amount_per_recipe = row.get('Amount per Recipe')
-            else:
-                amount_per_recipe = self.get_amount_per_recipe(ticker)
+            # Get recipe
+            recipe = self.get_recipe(ticker)
+            amount_per_recipe = self.get_amount_per_recipe(ticker)
             
             analysis_row = {
                 'Material Name': material_info.get('Material Name', ''),
                 'Ticker': ticker,
                 'Category': material_info.get('Category', ''),
                 'Tier': material_info.get('Tier', ''),
-                'Recipe': recipe,  # Use preserved recipe-specific value
+                'Recipe': recipe,
                 'Amount per Recipe': amount_per_recipe,
                 'Weight': material_info.get('Weight', ''),
                 'Volume': material_info.get('Volume', ''),
-                'Ask_Price': row.get('Ask_Price', ''),
-                'Bid_Price': row.get('Bid_Price', ''),
-                'Input Cost per Unit': row.get('Input Cost per Unit', ''),
-                'Input Cost per Stack': row.get('Input Cost per Stack', ''),
-                'Input Cost per Hour': row.get('Input Cost per Hour', ''),
-                'Profit per Unit': row.get('Profit_Ask', ''),
-                'Profit per Stack': '',  # You can compute this if needed
-                'ROI Ask %': row.get('ROI_Ask', ''),
-                'ROI Bid %': row.get('ROI_Bid', ''),
+                'Ask_Price': row.get('Ask_Price', 0),
+                'Bid_Price': row.get('Bid_Price', 0),
+                'Input Cost per Unit': row.get('Input Cost per Unit', 0),
+                'Input Cost per Stack': row.get('Input Cost per Stack', 0),
+                'Input Cost per Hour': row.get('Input Cost per Hour', 0),
+                'Profit per Unit': row.get('Profit per Unit', 0),
+                'Profit per Stack': 0,  # Will be calculated
+                'ROI Ask %': row.get('ROI Ask %', 0),
+                'ROI Bid %': row.get('ROI Bid %', 0),
                 'Supply': pd.to_numeric(row.get('Supply', 0), errors='coerce') or 0,
                 'Demand': pd.to_numeric(row.get('Demand', 0), errors='coerce') or 0,
                 'Traded Volume': pd.to_numeric(row.get('Traded', row.get('Traded Volume', 0)), errors='coerce') or 0,
-                'Saturation': row.get('Saturation', ''),
-                'Market Cap': '',  # Compute if you have the data
-                'Liquidity Ratio': '',  # Compute if you have the data
-                'Investment Score': row.get('Investment_Score', ''),
-                'Risk Level': row.get('Risk', ''),
-                'Volatility': '',  # Compute if you have the data
-                'Exchange': row.get('Exchange', ''),
+                'Saturation': row.get('Saturation', 0),
+                'Market Cap': 0,  # Will be calculated
+                'Liquidity Ratio': 0,  # Will be calculated
+                'Investment Score': row.get('Investment_Score', 0),
+                'Risk Level': row.get('Risk', 'Low'),
+                'Volatility': 0,
+                'Exchange': row['Exchange'],
             }
             analysis_data.append(analysis_row)
 
@@ -430,9 +420,12 @@ class UnifiedAnalysisProcessor:
             if col not in result_df.columns:
                 result_df[col] = 0
 
-        # Add/correct formulas for missing columns
+        # Fill NaN with 0 for numeric columns
+        numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Investment Score', 'Amount per Recipe', 'Weight', 'Volume', 'Tier']
+        result_df[numeric_cols] = result_df[numeric_cols].fillna(0)
+
+        # Recalculate formulas
         result_df['Profit per Unit'] = pd.to_numeric(result_df['Ask_Price'], errors='coerce').fillna(0) - pd.to_numeric(result_df['Input Cost per Unit'], errors='coerce').fillna(0)
-        # FIX: Use Amount per Recipe for stack calculation
         result_df['Input Cost per Stack'] = result_df['Input Cost per Unit'] * result_df['Amount per Recipe']
         result_df['Profit per Stack'] = result_df['Profit per Unit'] * result_df['Amount per Recipe']
         result_df['ROI Ask %'] = result_df.apply(
