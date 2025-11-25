@@ -486,8 +486,6 @@ class UnifiedDataProcessor:
                     print(f"[DEBUG] Saving {filename} with 'Traded Volume' column (sample: {complete_df['Traded Volume'].iloc[0] if len(complete_df) > 0 else 'N/A'})")
                 complete_df.to_csv(file_path, index=False)
                 # Force flush to disk (especially important in GitHub Actions)
-                import os
-                os.sync() if hasattr(os, 'sync') else None
                 files_saved.append(filename)
             
             print(f"[SUCCESS] Saved {len(complete_df)} records to {len(files_saved)} files")

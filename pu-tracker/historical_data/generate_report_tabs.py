@@ -3581,8 +3581,8 @@ def build_overall_report(all_df):
         if not profits:
             continue
         
-        best_exch = max(profits, key=profits.get)
-        worst_exch = min(profits, key=profits.get)
+        best_exch = max(profits, key=lambda x: profits[x])
+        worst_exch = min(profits, key=lambda x: profits[x])
         best_profit = profits[best_exch]
         worst_profit = profits[worst_exch]
         profit_diff = best_profit - worst_profit
