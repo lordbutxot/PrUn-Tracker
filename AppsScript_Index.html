@@ -1529,9 +1529,9 @@
           if (!selectedCategory) {
             materialsSet.add(row.ticker);
           } else if (row.recipe) {
-            if (row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>')) {
-              // Skip extraction recipes to avoid categorizing extracted materials under extraction
-              // They will still appear when no category is selected
+            const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
+            if (isExtractionRecipe && (selectedCategory !== 'extraction' || row.ticker === 'C')) {
+              // Skip extraction recipes unless extraction category is selected and not C
             } else {
               const buildingCode = row.recipe.split('=>')[0].split(':')[0];
               const buildingCategory = buildingCategories[buildingCode];
@@ -1689,6 +1689,7 @@
     function loadRecipes() {
       const material = document.getElementById('materialSelect').value;
       const recipeSelect = document.getElementById('recipeSelect');
+      const selectedCategory = document.getElementById('categorySelect').value.trim().toLowerCase();
       
       if (!material) {
         recipeSelect.innerHTML = '<option value="">-- Select Material First --</option>';
@@ -1699,13 +1700,19 @@
       const recipesMap = new Map();
       allData.forEach(row => {
         if (row.ticker === material && row.recipe) {
-          if (!recipesMap.has(row.recipe)) {
-            const building = row.recipe.split(':')[0];
-            let label = row.recipe;
-            if (label.length > 50) {
-              label = label.substring(0, 47) + '...';
+          const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
+          const skipExtraction = selectedCategory !== 'extraction' || row.ticker === 'C';
+          if (isExtractionRecipe && skipExtraction) {
+            // Skip extraction recipes unless extraction category is selected and not C
+          } else {
+            if (!recipesMap.has(row.recipe)) {
+              const building = row.recipe.split(':')[0];
+              let label = row.recipe;
+              if (label.length > 50) {
+                label = label.substring(0, 47) + '...';
+              }
+              recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
             }
-            recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
           }
         }
       });
