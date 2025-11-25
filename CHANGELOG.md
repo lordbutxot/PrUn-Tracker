@@ -2,9 +2,17 @@
 
 All notable changes to PrUn-Tracker will be documented in this file.
 
-## [Recent Updates] - 2025-11-24
+## [Recent Updates] - November 25, 2025
 
-### 🎨 UI/UX Enhancements
+### 🧹 Code Cleanup
+- **Removed Unused Test Files**: Deleted `tests/` directory containing unused unit tests
+- **Removed Development Scripts**: Deleted test scripts from `cache/` directory:
+  - `test_multi_dimensional.py`
+  - `test_multi_output_integration.py` 
+  - `test_multi_workforce_costs.py`
+- **Removed Commented Script**: Deleted `# remove_emojis.py` utility script
+
+### 📊 UI/UX Enhancements
 
 #### ROI Badges & Color Coding
 - **💎 Best ROI Badge**: Automatically highlights the most profitable recipe option

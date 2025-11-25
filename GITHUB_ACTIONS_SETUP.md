@@ -213,4 +213,4 @@ If you encounter issues:
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: November 25, 2025

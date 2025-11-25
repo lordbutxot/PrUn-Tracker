@@ -1,7 +1,7 @@
 # PrUn-Tracker Complete Documentation
 
 **Version:** 2.0  
-**Last Updated:** November 2025  
+**Last Updated:** November 25, 2025  
 **Game:** [Prosperous Universe](https://prosperousuniverse.com/)
 
 ---
@@ -154,7 +154,18 @@ PrUn-Tracker/
 │   │   ├── sheets_manager.py           # Google Sheets uploader
 │   │   ├── upload_planet_resources.py  # Planet Resources uploader
 │   │   ├── fetch_planet_fertility.py   # Fertility data fetcher
-│   │   └── generate_report_tabs.py     # Report tab generator
+│   │   ├── generate_report_tabs.py     # Report tab generator
+│   │   ├── add_tier_to_materials.py    # Material tier assignment
+│   │   ├── generate_extraction_recipes.py # Extraction recipe generation
+│   │   ├── fetch_all_tickers.py        # Market data fetcher
+│   │   ├── fetch_orders_and_bids.py    # Orders/bids data fetcher
+│   │   ├── upload_enhanced_analysis.py # Enhanced analysis uploader
+│   │   ├── calculators.py              # Cost calculation utilities
+│   │   ├── loaders.py                  # Data loading utilities
+│   │   ├── config.py                   # Configuration settings
+│   │   ├── rate_limiter.py             # API rate limiting
+│   │   ├── smart_cache.py              # Intelligent caching
+│   │   └── various utility scripts     # Additional processing tools
 │   │
 │   └── logs/                           # Execution logs
 │
