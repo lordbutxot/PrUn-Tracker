@@ -40,14 +40,19 @@ def main():
             rid = row['Key']
             inputs_by_recipe.setdefault(rid, []).append(row['Material'].lower())
 
-        # Map each material to all recipe keys that produce it
+        # Map each material to all recipe keys that produce it (universal, multi-output safe)
         recipes_by_material = {}
         outputs_by_recipe = {}
         for row in recipe_outputs:
             rid = row['Key']
             mat = row['Material'].lower()
             outputs_by_recipe.setdefault(rid, []).append(mat)
-            recipes_by_material.setdefault(mat, set()).add(rid)
+            if mat not in recipes_by_material:
+                recipes_by_material[mat] = set()
+            recipes_by_material[mat].add(rid)
+
+        # Ensure every output material is present in the cache, even if only produced as a byproduct
+        # This will be handled in the main material loop below, so no hardcoding needed
 
         # ...existing code...
 
