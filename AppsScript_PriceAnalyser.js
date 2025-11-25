@@ -230,18 +230,18 @@ function getAllData() {
 function getMaterials() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Price Analyser Data');
-  
+
   if (!sheet) {
     return ['Error: Price Analyser Data sheet not found'];
   }
-  
+
   const data = sheet.getDataRange().getValues();
   const materialsSet = new Set();
-  
+
   // Skip header row, get materials from column B (tickers) or parse from recipes
   for (let i = 1; i < data.length; i++) {
     let material = data[i][1]; // Column B = Material ticker or recipe
-    
+
     if (material && typeof material === 'string') {
       // Check if it's a recipe format (contains =>)
       if (material.includes('=>')) {
@@ -261,7 +261,85 @@ function getMaterials() {
       }
     }
   }
-  
+
+  return Array.from(materialsSet).sort();
+}
+
+// Get materials filtered by category
+function getMaterialsByCategory(category) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Price Analyser Data');
+
+  if (!sheet) {
+    return ['Error: Price Analyser Data sheet not found'];
+  }
+
+  const data = sheet.getDataRange().getValues();
+  const materialsSet = new Set();
+
+  // Building to category mapping
+  const buildingCategories = {
+    // Manufacturing
+    'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing', 'SPF': 'manufacturing',
+    // Electronics
+    'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics', 'PHF': 'electronics',
+    // Chemistry
+    'AML': 'chemistry', 'CHP': 'chemistry', 'EEP': 'chemistry', 'LAB': 'chemistry', 'POL': 'chemistry', 'TNP': 'chemistry',
+    // Metallurgy
+    'ASM': 'metallurgy', 'FS': 'metallurgy', 'GF': 'metallurgy', 'HWP': 'metallurgy', 'SME': 'metallurgy',
+    // Construction
+    'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction', 'PAC': 'construction',
+    // Food Industries
+    'FER': 'food industries', 'FP': 'food industries', 'HYF': 'food industries', 'IVP': 'food industries', 'ORC': 'food industries',
+    // Agriculture
+    'FRM': 'agriculture',
+    // Fuel Refining
+    'REF': 'fuel',
+    // Resource Extraction
+    'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction',
+    // Chemistry (INC produces carbon)
+    'INC': 'chemistry'
+  };
+
+  // Skip header row, get materials from column B (tickers) or parse from recipes
+  for (let i = 1; i < data.length; i++) {
+    let material = data[i][1]; // Column B = Material ticker or recipe
+    const recipe = data[i][2] || ''; // Column C = Recipe
+
+    if (material && typeof material === 'string') {
+      let materialTicker = material;
+      let materialCategory = '';
+
+      // Check if it's a recipe format (contains =>)
+      if (material.includes('=>')) {
+        // Parse outputs from recipe: "CHP:1xH2O-3xHAL=>1xCL-2xNA" -> ["CL", "NA"]
+        const outputPart = material.split('=>')[1];
+        if (outputPart) {
+          const outputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[2] : item;
+          });
+          // For recipes, we add each output material
+          outputs.forEach(output => {
+            // Get category from building in recipe
+            const building = recipe.split(':')[0];
+            const cat = buildingCategories[building] || 'other';
+            if (category === 'all' || cat === category) {
+              materialsSet.add(output);
+            }
+          });
+        }
+      } else {
+        // Regular ticker - get category from recipe building
+        const building = recipe.split(':')[0];
+        const cat = buildingCategories[building] || 'other';
+        if (category === 'all' || cat === category) {
+          materialsSet.add(material);
+        }
+      }
+    }
+  }
+
   return Array.from(materialsSet).sort();
 }
 

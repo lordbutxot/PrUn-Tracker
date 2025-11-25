@@ -1517,7 +1517,16 @@
         'INC': 'chemistry'
       };
 
+      // Material-specific category overrides (for materials that don't follow building category)
+      const materialCategoryOverrides = {
+        'SIO': 'extraction',  // SIO is extracted resource, not byproduct
+        'NA': 'chemistry',    // NA is produced by CHP chemistry recipe
+        'CL': 'chemistry'     // CL is produced by CHP chemistry recipe
+      };
+
       const materialsSet = new Set();
+      
+      // First, add materials with recipes (filtered by category)
       allData.forEach(row => {
         if (row.ticker) {
           if (!selectedCategory) {
@@ -1528,7 +1537,13 @@
               // Skip extraction recipes unless extraction category is selected and not C
             } else {
               const buildingCode = row.recipe.split('=>')[0].split(':')[0];
-              const buildingCategory = buildingCategories[buildingCode];
+              let buildingCategory = buildingCategories[buildingCode];
+              
+              // Check for material-specific category overrides
+              if (materialCategoryOverrides[row.ticker]) {
+                buildingCategory = materialCategoryOverrides[row.ticker];
+              }
+              
               if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
                 materialsSet.add(row.ticker);
               }
@@ -1536,6 +1551,25 @@
           }
         }
       });
+      
+      // Second, add materials with market data but no recipes (byproducts) if they match category or no category selected
+      if (!selectedCategory) {
+        // If no category selected, include all materials with market data
+        allData.forEach(row => {
+          if (row.ticker && !materialsSet.has(row.ticker)) {
+            materialsSet.add(row.ticker);
+          }
+        });
+      } else {
+        // If category selected, include byproducts that might belong to this category
+        // For now, include all byproducts when a category is selected (they will be filtered later if needed)
+        allData.forEach(row => {
+          if (row.ticker && !materialsSet.has(row.ticker) && !row.recipe) {
+            materialsSet.add(row.ticker);
+          }
+        });
+      }
+      
       const select = document.getElementById('materialSelect');
       select.innerHTML = '<option value="">-- Select Material --</option>';
       Array.from(materialsSet).sort().forEach(function(material) {
@@ -1692,6 +1726,8 @@
       
       // Filter recipes from cached data
       const recipesMap = new Map();
+      let hasRecipes = false;
+      
       allData.forEach(row => {
         if (row.ticker === material && row.recipe && row.recipe !== 'N/A' && row.recipe !== '') {
           const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
@@ -1712,6 +1748,7 @@
               }
               let label = material + (inputLabel ? ':' + inputLabel : ''); // Show material ticker with inputs
               recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
+              hasRecipes = true;
             }
           }
         }
@@ -1720,12 +1757,21 @@
       const recipes = Array.from(recipesMap.values()).sort((a, b) => a.building.localeCompare(b.building));
       
       recipeSelect.innerHTML = '<option value="">-- All Recipes (Best Cost) --</option>';
-      recipes.forEach(function(recipe) {
+      
+      if (hasRecipes) {
+        recipes.forEach(function(recipe) {
+          const option = document.createElement('option');
+          option.value = recipe.key;
+          option.textContent = recipe.label + ' (' + recipe.building + ')';
+          recipeSelect.appendChild(option);
+        });
+      } else {
+        // No recipes found - this is a byproduct or market-only material
         const option = document.createElement('option');
-        option.value = recipe.key;
-        option.textContent = recipe.label + ' (' + recipe.building + ')';
+        option.value = '';
+        option.textContent = '-- Market Data Only (No Recipes) --';
         recipeSelect.appendChild(option);
-      });
+      }
     }
     
     // Listen for selection changes
@@ -1867,7 +1913,7 @@
       try {
         // Calculate using cached data
         const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
-        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const recommendationData = recipe ? getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) : null;
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(material);
         
@@ -1897,6 +1943,9 @@
         
         if (recommendationData) {
           displayRecommendation(recommendationData);
+        } else {
+          // Hide recommendation section for byproducts
+          document.getElementById('recommendationSection').style.display = 'none';
         }
         
         // Get building comparison if a recipe is selected
@@ -1975,6 +2024,9 @@
       let workforceCostAsk = bestRow.workforceCostAsk;
       let workforceCostBid = bestRow.workforceCostBid;
       
+      // Check if this is a byproduct (no recipe)
+      const isByproduct = !bestRow.recipe || bestRow.recipe === 'N/A';
+      
       // Check if this is an extraction recipe
       const recipeStr = bestRow.recipe || '';
       const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
@@ -1982,7 +2034,13 @@
       // Check if this is a farming recipe
       const isFarming = recipeStr.startsWith('FRM:') || recipeStr.startsWith('ORC:') || recipeStr.startsWith('VIN:');
       
-      // Calculate total efficiency (ADDITIVE SYSTEM)
+      // For byproducts, set costs to 0 (market-only)
+      if (isByproduct) {
+        inputCostAsk = 0;
+        inputCostBid = 0;
+        workforceCostAsk = 0;
+        workforceCostBid = 0;
+      }
       // Total Efficiency = Base Worker Efficiency + Planet Bonus/Penalty + CoGC Program + Experts
       // Example: 79% worker + 40% fertility + 25% CoGC + 22% (2 experts) = 166% total = faster production
       // Production time = Base time / Total Efficiency
@@ -2651,11 +2709,14 @@
     
     // Display calculation results
     function displayResults(data) {
-      // Recipe details
-      setValueRaw('recipeInputs', data.recipeInputs || '-');
-      setValueRaw('recipeOutputs', data.recipeOutputs || '-');
-      
-      // Pricing
+      // Recipe details - handle byproducts
+      if (data.recipe === 'N/A' || !data.recipe) {
+        setValueRaw('recipeInputs', 'Market Data Only');
+        setValueRaw('recipeOutputs', 'Market Data Only');
+      } else {
+        setValueRaw('recipeInputs', data.recipeInputs || '-');
+        setValueRaw('recipeOutputs', data.recipeOutputs || '-');
+      }
       setValue('askPrice', data.askPrice);
       setValue('bidPrice', data.bidPrice);
       
