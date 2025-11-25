@@ -40,10 +40,16 @@ def main():
             rid = row['Key']
             inputs_by_recipe.setdefault(rid, []).append(row['Material'].lower())
 
+        # Map each material to all recipe keys that produce it
+        recipes_by_material = {}
         outputs_by_recipe = {}
         for row in recipe_outputs:
             rid = row['Key']
-            outputs_by_recipe.setdefault(rid, []).append(row['Material'].lower())
+            mat = row['Material'].lower()
+            outputs_by_recipe.setdefault(rid, []).append(mat)
+            recipes_by_material.setdefault(mat, set()).add(rid)
+
+        # ...existing code...
 
         # Map recipe key to building
         building_by_recipe = {}
@@ -77,11 +83,11 @@ def main():
         
         for row in materials:
             ticker = row['Ticker'].lower()
-            producing_recipes = [rid for rid, outputs in outputs_by_recipe.items() if ticker in outputs]
-            
+            producing_recipes = list(recipes_by_material.get(ticker, []))
+
             # Check if material is extractable from planets (tier 0)
             is_extractable = ticker in extractable_materials
-            
+
             if producing_recipes:
                 # Store ALL recipes for materials with multiple production methods
                 all_recipe_data = []
@@ -89,20 +95,20 @@ def main():
                 primary_recipe = None
                 primary_building = None
                 primary_inputs = None
-                
+
                 for rid in producing_recipes:
                     building = building_by_recipe.get(rid, "")
                     building_code = building.split(":")[0] if ":" in building else building
                     workforce_tier = workforce_by_building.get(building_code, 0)
                     inputs = [i for i in inputs_by_recipe.get(rid, [])]
                     outputs = outputs_by_recipe.get(rid, [])
-                    
+
                     # Determine tier for this recipe
                     if not inputs:
                         recipe_tier = 0  # No inputs = tier 0 (extractable/basic)
                     else:
                         recipe_tier = workforce_tier
-                    
+
                     # Store recipe data
                     recipe_data = {
                         "recipe_id": rid,
@@ -114,7 +120,7 @@ def main():
                         "is_byproduct": len(outputs) > 1  # Multiple outputs = byproducts
                     }
                     all_recipe_data.append(recipe_data)
-                    
+
                     # Track byproduct recipes separately
                     if len(outputs) > 1:
                         byproduct_recipes[rid] = {
@@ -124,17 +130,17 @@ def main():
                             "outputs": outputs,
                             "output_materials": outputs  # All materials produced
                         }
-                    
+
                     # Track the minimum tier (if any recipe is tier 0, material is tier 0)
                     if recipe_tier < min_tier:
                         min_tier = recipe_tier
                         primary_recipe = rid
                         primary_building = building
                         primary_inputs = inputs
-                
+
                 # If material is extractable from planets, it's always tier 0
                 tier = 0 if is_extractable else min_tier
-                
+
                 extractable_flag = " [EXTRACTABLE]" if is_extractable else ""
                 print(f"Product: {ticker}, Recipes: {len(producing_recipes)}, Primary Building: {primary_building}, Inputs: {primary_inputs}, Assigned Tier: {tier}{extractable_flag}")
 
