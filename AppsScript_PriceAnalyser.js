@@ -238,11 +238,27 @@ function getMaterials() {
   const data = sheet.getDataRange().getValues();
   const materialsSet = new Set();
   
-  // Skip header row, column B contains materials like "AAR", "DW", etc.
+  // Skip header row, get materials from column B (tickers) or parse from recipes
   for (let i = 1; i < data.length; i++) {
-    const material = data[i][1]; // Column B = Material ticker
+    let material = data[i][1]; // Column B = Material ticker or recipe
+    
     if (material && typeof material === 'string') {
-      materialsSet.add(material);
+      // Check if it's a recipe format (contains =>)
+      if (material.includes('=>')) {
+        // Parse outputs from recipe: "CHP:1xH2O-3xHAL=>1xCL-2xNA" -> ["CL", "NA"]
+        const outputPart = material.split('=>')[1];
+        if (outputPart) {
+          const outputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[2] : item;
+          });
+          // Add each output material
+          outputs.forEach(output => materialsSet.add(output));
+        }
+      } else {
+        // Regular ticker
+        materialsSet.add(material);
+      }
     }
   }
   
@@ -260,19 +276,12 @@ function getExchanges() {
   
   const data = sheet.getDataRange().getValues();
   const exchangesSet = new Set();
-  const knownExchanges = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2'];
   
-  // Skip header row, extract exchanges from column A by removing material prefix
+  // Skip header row, get exchanges from column E
   for (let i = 1; i < data.length; i++) {
-    const fullCode = data[i][0]; // Column A contains codes like "AARCI1"
-    if (fullCode && typeof fullCode === 'string') {
-      // Check if it ends with a known exchange code
-      for (const exchange of knownExchanges) {
-        if (fullCode.endsWith(exchange)) {
-          exchangesSet.add(exchange);
-          break;
-        }
-      }
+    const exchange = data[i][4]; // Column E = Exchange
+    if (exchange && typeof exchange === 'string') {
+      exchangesSet.add(exchange);
     }
   }
   
@@ -352,48 +361,67 @@ function getRecipesForMaterial(material) {
     const recipes = [];
     const seen = new Set();
     
-    // Find all unique recipes for this material (column B is Ticker, column C is Recipe)
+    // Find all unique recipes for this material (column B is Ticker or recipe, column C is Recipe)
     for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === material && data[i][2]) { // Check Ticker and Recipe column exists
-        const recipeKey = data[i][2];
-        
-        if (!seen.has(recipeKey)) {
-          seen.add(recipeKey);
-          
-          // Extract building prefix from recipe (e.g., "BMP:1xC-2xH=>200xPE" -> "BMP")
-          const building = recipeKey.split(':')[0];
-          
-          // Create a visual display label showing only material tickers
-          let visualLabel = recipeKey;
-          if (recipeKey.includes('=>')) {
-            const parts = recipeKey.split('=>');
-            const inputPart = parts[0].split(':')[1] || parts[0];
-            const outputPart = parts[1];
-            
-            // Parse inputs: extract tickers only
-            const inputTickers = inputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
-              return match ? match[2] : item;
-            });
-            
-            // Parse outputs: extract tickers only
-            const outputTickers = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
-              return match ? match[2] : item;
-            });
-            
-            // Create visual format: "INPUT1 + INPUT2 → OUTPUT1"
-            const inputsStr = inputTickers.join(' + ');
-            const outputsStr = outputTickers.join(' + ');
-            visualLabel = inputsStr + ' → ' + outputsStr;
-          }
-          
-          recipes.push({
-            key: recipeKey,
-            label: visualLabel,
-            building: building
+      const tickerOrRecipe = data[i][1]; // Column B
+      const recipeKey = data[i][2]; // Column C
+      
+      let matchesMaterial = false;
+      
+      // Check if ticker matches
+      if (tickerOrRecipe === material) {
+        matchesMaterial = true;
+      }
+      // Check if recipe outputs contain the material
+      else if (recipeKey && recipeKey.includes('=>')) {
+        const outputPart = recipeKey.split('=>')[1];
+        if (outputPart) {
+          const outputs = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[2] : item;
           });
+          if (outputs.includes(material)) {
+            matchesMaterial = true;
+          }
         }
+      }
+      
+      if (matchesMaterial && recipeKey && !seen.has(recipeKey)) {
+        seen.add(recipeKey);
+        
+        // Extract building prefix from recipe (e.g., "BMP:1xC-2xH=>200xPE" -> "BMP")
+        const building = recipeKey.split(':')[0];
+        
+        // Create a visual display label showing only material tickers
+        let visualLabel = recipeKey;
+        if (recipeKey.includes('=>')) {
+          const parts = recipeKey.split('=>');
+          const inputPart = parts[0].split(':')[1] || parts[0];
+          const outputPart = parts[1];
+          
+          // Parse inputs: extract tickers only
+          const inputTickers = inputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[2] : item;
+          });
+          
+          // Parse outputs: extract tickers only
+          const outputTickers = outputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z]+)/);
+            return match ? match[2] : item;
+          });
+          
+          // Create visual format: "INPUT1 + INPUT2 → OUTPUT1"
+          const inputsStr = inputTickers.join(' + ');
+          const outputsStr = outputTickers.join(' + ');
+          visualLabel = inputsStr + ' → ' + outputsStr;
+        }
+        
+        recipes.push({
+          key: recipeKey,
+          label: visualLabel,
+          building: building
+        });
       }
     }
     
