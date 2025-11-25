@@ -1446,13 +1446,26 @@
     function populateCategories() {
       // Building to category mapping
       const buildingCategories = {
-        'ELP': 'electronics', 'EEP': 'electronics', 'AAP': 'electronics', 'EDM': 'electronics',
-        'CHP': 'manufacturing', 'PPF': 'manufacturing', 'BMP': 'manufacturing', 'APF': 'manufacturing', 'ASM': 'manufacturing', 'WEL': 'manufacturing', 'POL': 'manufacturing',
-        'FRM': 'agriculture', 'ORC': 'agriculture', 'VIN': 'agriculture',
-        'FP': 'food industries', 'BWY': 'food industries', 'WPL': 'food industries',
-        'SME': 'metallurgy', 'BLF': 'metallurgy', 'AMP': 'metallurgy',
-        'REF': 'chemistry', 'LAB': 'chemistry',
-        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction', 'DRL': 'extraction'
+        // Manufacturing
+        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing',
+        // Electronics
+        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics',
+        // Chemistry
+        'AML': 'chemistry', 'CHP': 'chemistry', 'EEP': 'chemistry', 'LAB': 'chemistry', 'POL': 'chemistry', 'TNP': 'chemistry',
+        // Metallurgy
+        'ASM': 'metallurgy', 'FS': 'metallurgy', 'GF': 'metallurgy', 'HWP': 'metallurgy', 'SME': 'metallurgy',
+        // Construction
+        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction',
+        // Food Industries
+        'FER': 'food industries', 'FP': 'food industries', 'HYF': 'food industries', 'IVP': 'food industries', 'ORC': 'food industries',
+        // Agriculture
+        'FRM': 'agriculture',
+        // Fuel Refining
+        'REF': 'fuel',
+        // Resource Extraction
+        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction',
+        // Chemistry (INC produces carbon)
+        'INC': 'chemistry'
       };
 
       // Get unique categories from building mappings
@@ -1488,13 +1501,26 @@
 
       // Building to category mapping
       const buildingCategories = {
-        'ELP': 'electronics', 'EEP': 'electronics', 'AAP': 'electronics', 'EDM': 'electronics',
-        'CHP': 'manufacturing', 'PPF': 'manufacturing', 'BMP': 'manufacturing', 'APF': 'manufacturing', 'ASM': 'manufacturing', 'WEL': 'manufacturing', 'POL': 'manufacturing',
-        'FRM': 'agriculture', 'ORC': 'agriculture', 'VIN': 'agriculture',
-        'FP': 'food industries', 'BWY': 'food industries', 'WPL': 'food industries',
-        'SME': 'metallurgy', 'BLF': 'metallurgy', 'AMP': 'metallurgy',
-        'REF': 'chemistry', 'LAB': 'chemistry',
-        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction', 'DRL': 'extraction'
+        // Manufacturing
+        'AAF': 'manufacturing', 'APF': 'manufacturing', 'BMP': 'manufacturing', 'CLF': 'manufacturing', 'MCA': 'manufacturing', 'PPF': 'manufacturing', 'SCA': 'manufacturing', 'SKF': 'manufacturing', 'SPP': 'manufacturing', 'WPL': 'manufacturing',
+        // Electronics
+        'CLR': 'electronics', 'DRS': 'electronics', 'ECA': 'electronics', 'EDM': 'electronics', 'ELP': 'electronics', 'SD': 'electronics', 'SE': 'electronics', 'SL': 'electronics',
+        // Chemistry
+        'AML': 'chemistry', 'CHP': 'chemistry', 'EEP': 'chemistry', 'LAB': 'chemistry', 'POL': 'chemistry', 'TNP': 'chemistry',
+        // Metallurgy
+        'ASM': 'metallurgy', 'FS': 'metallurgy', 'GF': 'metallurgy', 'HWP': 'metallurgy', 'SME': 'metallurgy',
+        // Construction
+        'PP1': 'construction', 'PP2': 'construction', 'PP3': 'construction', 'PP4': 'construction', 'UPF': 'construction', 'WEL': 'construction',
+        // Food Industries
+        'FER': 'food industries', 'FP': 'food industries', 'HYF': 'food industries', 'IVP': 'food industries', 'ORC': 'food industries',
+        // Agriculture
+        'FRM': 'agriculture',
+        // Fuel Refining
+        'REF': 'fuel',
+        // Resource Extraction
+        'COL': 'extraction', 'EXT': 'extraction', 'RIG': 'extraction',
+        // Chemistry (INC produces carbon)
+        'INC': 'chemistry'
       };
 
       const materialsSet = new Set();
