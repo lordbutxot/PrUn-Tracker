@@ -12,26 +12,25 @@ def fetch_csv(url):
 def main():
     """Main function to generate chain dictionary."""
     try:
-        # Fetch all required CSVs
-        materials = fetch_csv("https://rest.fnar.net/csv/materials")
-        buildings = fetch_csv("https://rest.fnar.net/csv/buildings")
-        recipe_inputs = fetch_csv("https://rest.fnar.net/csv/recipeinputs")
-        recipe_outputs = fetch_csv("https://rest.fnar.net/csv/recipeoutputs")
-        buildingworkforces = fetch_csv("https://rest.fnar.net/csv/buildingworkforces")
-        
-        # Fetch planet resources to identify extractable materials (tier 0)
+        # Fetch all required CSVs strictly from FIO API
         try:
+            materials = fetch_csv("https://rest.fnar.net/csv/materials")
+            buildings = fetch_csv("https://rest.fnar.net/csv/buildings")
+            recipe_inputs = fetch_csv("https://rest.fnar.net/csv/recipeinputs")
+            recipe_outputs = fetch_csv("https://rest.fnar.net/csv/recipeoutputs")
+            buildingworkforces = fetch_csv("https://rest.fnar.net/csv/buildingworkforces")
             planet_resources = fetch_csv("https://rest.fnar.net/csv/planetresources")
-            extractable_materials = set(row['Material'].lower() for row in planet_resources)
-            print(f"Found {len(extractable_materials)} extractable materials from planet resources")
         except Exception as e:
-            print(f"Warning: Could not fetch planet resources: {e}")
-            extractable_materials = set()
-        
-        # If API fetch failed, abort pipeline instead of using fallback
+            raise RuntimeError(f"Failed to fetch required data from FIO API: {e}")
+
+        # Build extractable materials set strictly from planetresources
+        try:
+            extractable_materials = set(row['Material'].lower() for row in planet_resources)
+        except Exception as e:
+            raise RuntimeError(f"Failed to parse extractable materials from planetresources: {e}")
         if len(extractable_materials) == 0:
-            raise RuntimeError("Failed to fetch extractable materials from FIO API. Aborting pipeline.")
-        print(f"Total extractable materials fetched from API: {len(extractable_materials)}")
+            raise RuntimeError("Extractable materials set is empty after parsing planetresources. Aborting pipeline.")
+        print(f"Total extractable materials fetched from planetresources: {len(extractable_materials)}")
 
         print(buildingworkforces[0].keys())
 
