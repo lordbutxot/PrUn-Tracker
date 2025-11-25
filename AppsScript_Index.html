@@ -1529,23 +1529,56 @@
       // First, add materials with recipes (filtered by category)
       allData.forEach(row => {
         if (row.ticker) {
-          if (!selectedCategory) {
-            materialsSet.add(row.ticker);
-          } else if (row.recipe) {
-            const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
-            if (isExtractionRecipe && (selectedCategory !== 'extraction' || row.ticker === 'C')) {
-              // Skip extraction recipes unless extraction category is selected and not C
-            } else {
-              const buildingCode = row.recipe.split('=>')[0].split(':')[0];
-              let buildingCategory = buildingCategories[buildingCode];
-              
-              // Check for material-specific category overrides
-              if (materialCategoryOverrides[row.ticker]) {
-                buildingCategory = materialCategoryOverrides[row.ticker];
-              }
-              
-              if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
-                materialsSet.add(row.ticker);
+          if (row.ticker.includes('=>')) {
+            // Parse outputs from recipe string in ticker
+            const outputPart = row.ticker.split('=>')[1];
+            if (outputPart) {
+              const outputs = outputPart.split('-').map(item => {
+                const match = item.match(/(\d+)x([A-Z]+)/);
+                return match ? match[2] : item;
+              });
+              outputs.forEach(output => {
+                if (!selectedCategory) {
+                  materialsSet.add(output);
+                } else if (row.recipe) {
+                  const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
+                  if (isExtractionRecipe && (selectedCategory !== 'extraction' || output === 'C')) {
+                    // Skip extraction recipes unless extraction category is selected and not C
+                  } else {
+                    const buildingCode = row.recipe.split('=>')[0].split(':')[0];
+                    let buildingCategory = buildingCategories[buildingCode];
+                    
+                    // Check for material-specific category overrides
+                    if (materialCategoryOverrides[output]) {
+                      buildingCategory = materialCategoryOverrides[output];
+                    }
+                    
+                    if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
+                      materialsSet.add(output);
+                    }
+                  }
+                }
+              });
+            }
+          } else {
+            if (!selectedCategory) {
+              materialsSet.add(row.ticker);
+            } else if (row.recipe) {
+              const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
+              if (isExtractionRecipe && (selectedCategory !== 'extraction' || row.ticker === 'C')) {
+                // Skip extraction recipes unless extraction category is selected and not C
+              } else {
+                const buildingCode = row.recipe.split('=>')[0].split(':')[0];
+                let buildingCategory = buildingCategories[buildingCode];
+                
+                // Check for material-specific category overrides
+                if (materialCategoryOverrides[row.ticker]) {
+                  buildingCategory = materialCategoryOverrides[row.ticker];
+                }
+                
+                if (buildingCategory && categoryMap[selectedCategory] && categoryMap[selectedCategory].includes(buildingCategory)) {
+                  materialsSet.add(row.ticker);
+                }
               }
             }
           }
@@ -1729,26 +1762,43 @@
       let hasRecipes = false;
       
       allData.forEach(row => {
-        if (row.ticker === material && row.recipe && row.recipe !== 'N/A' && row.recipe !== '') {
-          const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
-          if (isExtractionRecipe && row.ticker === 'C') {
-            // Skip extraction recipes for C
-          } else {
-            if (!recipesMap.has(row.recipe)) {
-              const building = row.recipe.split(':')[0];
-              // Create a shortened input string for the label
-              let inputLabel = '';
-              if (row.recipe.includes('=>')) {
-                const inputPart = row.recipe.split('=>')[0].split(':')[1] || row.recipe.split('=>')[0];
-                const inputs = inputPart.split('-').map(item => {
-                  const match = item.match(/(\d+)x([A-Z0-9]+)/);
-                  return match ? match[2] : item; // Just the ticker, not the amount
-                });
-                inputLabel = inputs.join('+');
+        if (row.recipe && row.recipe !== 'N/A' && row.recipe !== '') {
+          // Check if recipe outputs the selected material
+          let matchesMaterial = false;
+          if (row.recipe.includes('=>')) {
+            const outputPart = row.recipe.split('=>')[1];
+            if (outputPart) {
+              const outputs = outputPart.split('-').map(item => {
+                const match = item.match(/(\d+)x([A-Z]+)/);
+                return match ? match[2] : item;
+              });
+              if (outputs.includes(material)) {
+                matchesMaterial = true;
               }
-              let label = material + (inputLabel ? ':' + inputLabel : ''); // Show material ticker with inputs
-              recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
-              hasRecipes = true;
+            }
+          }
+          
+          if (matchesMaterial) {
+            const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
+            if (isExtractionRecipe && row.ticker === 'C') {
+              // Skip extraction recipes for C
+            } else {
+              if (!recipesMap.has(row.recipe)) {
+                const building = row.recipe.split(':')[0];
+                // Create a shortened input string for the label
+                let inputLabel = '';
+                if (row.recipe.includes('=>')) {
+                  const inputPart = row.recipe.split('=>')[0].split(':')[1] || row.recipe.split('=>')[0];
+                  const inputs = inputPart.split('-').map(item => {
+                    const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                    return match ? match[2] : item; // Just the ticker, not the amount
+                  });
+                  inputLabel = inputs.join('+');
+                }
+                let label = material + (inputLabel ? ':' + inputLabel : ''); // Show material ticker with inputs
+                recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
+                hasRecipes = true;
+              }
             }
           }
         }
@@ -1984,7 +2034,22 @@
       
       // Find matching rows
       for (const row of allData) {
-        if (row.ticker === material && row.exchange === exchange) {
+        // Check if this row's recipe outputs the selected material
+        let rowMatchesMaterial = false;
+        if (row.recipe && row.recipe.includes('=>')) {
+          const outputPart = row.recipe.split('=>')[1];
+          if (outputPart) {
+            const outputs = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[2] : item;
+            });
+            if (outputs.includes(material)) {
+              rowMatchesMaterial = true;
+            }
+          }
+        }
+        
+        if (rowMatchesMaterial && row.exchange === exchange) {
           if (recipe && row.recipe === recipe) {
             bestRow = row;
             break;
@@ -2228,7 +2293,22 @@
       const planet = document.getElementById('planetSelect').value;
       
       for (const row of allData) {
-        if (row.ticker === material && (!recipe || row.recipe === recipe)) {
+        // Check if this row's recipe outputs the selected material
+        let rowMatchesMaterial = false;
+        if (row.recipe && row.recipe.includes('=>')) {
+          const outputPart = row.recipe.split('=>')[1];
+          if (outputPart) {
+            const outputs = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[2] : item;
+            });
+            if (outputs.includes(material)) {
+              rowMatchesMaterial = true;
+            }
+          }
+        }
+        
+        if (rowMatchesMaterial && (!recipe || row.recipe === recipe)) {
           const exch = row.exchange;
           
           // Apply same modifiers as main calculation
@@ -2325,7 +2405,22 @@
       
       // Collect prices for this material at each exchange
       for (const row of allData) {
-        if (row.ticker === material) {
+        // Check if this row's recipe outputs the selected material
+        let rowMatchesMaterial = false;
+        if (row.recipe && row.recipe.includes('=>')) {
+          const outputPart = row.recipe.split('=>')[1];
+          if (outputPart) {
+            const outputs = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[2] : item;
+            });
+            if (outputs.includes(material)) {
+              rowMatchesMaterial = true;
+            }
+          }
+        }
+        
+        if (rowMatchesMaterial) {
           const exch = row.exchange;
           if (!exchangePrices[exch]) {
             exchangePrices[exch] = { ask: row.askPrice, bid: row.bidPrice };
@@ -2377,7 +2472,22 @@
       const recipeComparisons = [];
       
       for (const row of allData) {
-        if (row.ticker === material && row.exchange === exchange && row.recipe) {
+        // Check if this row's recipe outputs the selected material
+        let rowMatchesMaterial = false;
+        if (row.recipe && row.recipe.includes('=>')) {
+          const outputPart = row.recipe.split('=>')[1];
+          if (outputPart) {
+            const outputs = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[2] : item;
+            });
+            if (outputs.includes(material)) {
+              rowMatchesMaterial = true;
+            }
+          }
+        }
+        
+        if (rowMatchesMaterial && row.exchange === exchange && row.recipe) {
           let inputCostAsk = row.inputCostAsk;
           let workforceCostAsk = row.workforceCostAsk;
           
