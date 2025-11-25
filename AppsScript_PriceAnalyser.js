@@ -363,15 +363,34 @@ function getRecipesForMaterial(material) {
           // Extract building prefix from recipe (e.g., "BMP:1xC-2xH=>200xPE" -> "BMP")
           const building = recipeKey.split(':')[0];
           
-          // Create a shortened display label
-          let label = recipeKey;
-          if (label.length > 50) {
-            label = label.substring(0, 47) + '...';
+          // Create a visual display label showing only material tickers
+          let visualLabel = recipeKey;
+          if (recipeKey.includes('=>')) {
+            const parts = recipeKey.split('=>');
+            const inputPart = parts[0].split(':')[1] || parts[0];
+            const outputPart = parts[1];
+            
+            // Parse inputs: extract tickers only
+            const inputTickers = inputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[2] : item;
+            });
+            
+            // Parse outputs: extract tickers only
+            const outputTickers = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z]+)/);
+              return match ? match[2] : item;
+            });
+            
+            // Create visual format: "INPUT1 + INPUT2 → OUTPUT1"
+            const inputsStr = inputTickers.join(' + ');
+            const outputsStr = outputTickers.join(' + ');
+            visualLabel = inputsStr + ' → ' + outputsStr;
           }
           
           recipes.push({
             key: recipeKey,
-            label: label,
+            label: visualLabel,
             building: building
           });
         }
