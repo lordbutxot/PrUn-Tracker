@@ -1699,7 +1699,7 @@
       // Filter recipes from cached data
       const recipesMap = new Map();
       allData.forEach(row => {
-        if (row.ticker === material && row.recipe) {
+        if (row.ticker === material && row.recipe && row.recipe !== 'N/A' && row.recipe !== '') {
           const isExtractionRecipe = row.recipe.startsWith('COL=>') || row.recipe.startsWith('EXT=>') || row.recipe.startsWith('RIG=>');
           if (isExtractionRecipe && row.ticker === 'C') {
             // Skip extraction recipes for C
