@@ -316,16 +316,31 @@ class UnifiedSheetsManager:
         try:
             self._rate_limit()
             
-            # Get or create worksheet
-            try:
-                worksheet = self.spreadsheet.worksheet(sheet_name)
-            except Exception:
-                worksheet = self.spreadsheet.add_worksheet(
-                    title=sheet_name, 
-                    rows=max(1000, len(df) + 100), 
-                    cols=max(26, len(df.columns))
-                )
-                self.logger.info(f"Created new worksheet: {sheet_name}")
+            # Get or create worksheet with retry logic
+            max_retries = 3
+            worksheet = None
+            for attempt in range(max_retries):
+                try:
+                    worksheet = self.spreadsheet.worksheet(sheet_name)
+                    break
+                except gspread.exceptions.WorksheetNotFound:
+                    worksheet = self.spreadsheet.add_worksheet(
+                        title=sheet_name, 
+                        rows=max(1000, len(df) + 100), 
+                        cols=max(26, len(df.columns))
+                    )
+                    self.logger.info(f"Created new worksheet: {sheet_name}")
+                    break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(2 ** attempt)  # exponential backoff
+                        continue
+                    else:
+                        raise e
+            
+            if worksheet is None:
+                raise Exception(f"Failed to get or create worksheet {sheet_name}")
             
             # Clear and prepare data
             worksheet.clear()
@@ -362,6 +377,10 @@ class UnifiedSheetsManager:
                 )
                 
                 self.logger.info(f" Updated {sheet_name}: {len(df)} rows, {len(df.columns)} columns")
+                
+                # Apply formatting
+                self.apply_data_tab_formatting(sheet_name, df)
+                
                 return True
             
             return False
@@ -962,19 +981,27 @@ class UnifiedSheetsManager:
 
         # --- Send batchUpdate request ---
         if requests:
-            try:
-                self.sheets_service.spreadsheets().batchUpdate(
-                    spreadsheetId=self.spreadsheet_id,
-                    body={"requests": requests}
-                ).execute()
-                if hasattr(self, "logger"):
-                    self.logger.info(f" Applied formatting to {sheet_name}")
-                else:
-                    print(f" Applied formatting to {sheet_name}")
-            except HttpError as e:
-                if hasattr(self, "logger"):
-                    self.logger.error(f" Failed to apply formatting: {e}")
-                print(e)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    self.sheets_service.spreadsheets().batchUpdate(
+                        spreadsheetId=self.spreadsheet_id,
+                        body={"requests": requests}
+                    ).execute()
+                    if hasattr(self, "logger"):
+                        self.logger.info(f" Applied formatting to {sheet_name}")
+                    else:
+                        print(f" Applied formatting to {sheet_name}")
+                    break
+                except HttpError as e:
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(2 ** attempt)
+                        continue
+                    else:
+                        if hasattr(self, "logger"):
+                            self.logger.error(f" Failed to apply formatting: {e}")
+                        print(e)
 
 # Legacy compatibility functions
 def upload_to_sheets(spreadsheet_id, worksheet_name, dataframe):
