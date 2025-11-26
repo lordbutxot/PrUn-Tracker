@@ -629,9 +629,9 @@
             <span class="feature-tag">Auto-Calculated</span>
             <span class="feature-tag">Transfer Costs</span>
           </div>
-          <button class="cta-button" onclick="openArbitrageModal()" style="background: #10b981;">
-            Open Arbitrage Tool
-          </button>
+          <div class="cta-button" style="background: #f59e0b; cursor: not-allowed;">
+            Coming Soon
+          </div>
         </div>
 
         <!-- Trade Routes -->
@@ -767,24 +767,6 @@
     </div>
   </div>
 
-  <!-- Arbitrage Modal -->
-  <div id="arbitrage-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Arbitrage Opportunities</h2>
-        <button class="modal-close" onclick="closeArbitrageModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <iframe
-          class="modal-iframe"
-          src="arbitrage_app.html"
-          allowfullscreen
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
-        </iframe>
-      </div>
-    </div>
-  </div>
-
   <script>
     // Modal functionality
     function openModal() {
@@ -797,36 +779,17 @@
       document.body.style.overflow = ''; // Restore scrolling
     }
 
-    // Arbitrage modal functionality
-    function openArbitrageModal() {
-      document.getElementById('arbitrage-modal').classList.add('active');
-      document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    }
-
-    function closeArbitrageModal() {
-      document.getElementById('arbitrage-modal').classList.remove('active');
-      document.body.style.overflow = ''; // Restore scrolling
-    }
-
-    // Close modals when clicking outside
-    document.addEventListener('click', function(e) {
-      if (e.target.id === 'price-analyser-modal') {
+    // Close modal when clicking outside
+    document.getElementById('price-analyser-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
         closeModal();
-      }
-      if (e.target.id === 'arbitrage-modal') {
-        closeArbitrageModal();
       }
     });
 
-    // Close modals with Escape key
+    // Close modal with Escape key
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        if (document.getElementById('price-analyser-modal').classList.contains('active')) {
-          closeModal();
-        }
-        if (document.getElementById('arbitrage-modal').classList.contains('active')) {
-          closeArbitrageModal();
-        }
+      if (e.key === 'Escape' && document.getElementById('price-analyser-modal').classList.contains('active')) {
+        closeModal();
       }
     });
 

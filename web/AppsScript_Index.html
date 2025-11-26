@@ -163,44 +163,43 @@
       gap: 15px;
     }
     
-      .collapsible-header {
-        cursor: pointer;
-        user-select: none;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0;
-        margin: 0;
-      }
-      
-      .collapsible-header h3 {
-        margin: 0;
-        display: inline-block;
-      }
-      
-      .collapse-icon {
-        font-size: 1.2rem;
-        font-weight: bold;
-        transition: transform 0.3s ease;
-        color: #3b82f6;
-        margin-right: 8px;
-      }
-      
-      .collapse-icon.collapsed {
-        transform: rotate(-90deg);
-      }
-      
-      .collapsible-content {
-        max-height: 2000px;
-        overflow: hidden;
-        transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-        opacity: 1;
-      }
-      
-      .collapsible-content.collapsed {
-        max-height: 0;
-        opacity: 0;
-      }
+    .collapsible-header {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .collapsible-header h3 {
+      margin: 0;
+      display: inline-block;
+    }
+    
+    .collapse-icon {
+      font-size: 1.2rem;
+      font-weight: bold;
+      transition: transform 0.3s ease;
+      color: #3b82f6;
+    }
+    
+    .collapse-icon.collapsed {
+      transform: rotate(-90deg);
+    }
+    
+    .collapsible-content {
+      max-height: 2000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+      opacity: 1;
+    }
+    
+    .collapsible-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
     
     .data-item {
       background: white;
@@ -730,17 +729,6 @@
       .exchange-name {
         width: 100%;
       }
-      
-      /* Mobile: Show all collapsible content by default */
-      .collapsible-content.collapsed {
-        max-height: none !important;
-        opacity: 1 !important;
-      }
-      
-      /* Mobile: Hide collapse icons since content is always visible */
-      .collapse-icon {
-        display: none;
-      }
     }
   </style>
 </head>
@@ -797,7 +785,7 @@
     
     <div class="options-panel">
       <div class="collapsible-header" onclick="toggleCollapse('costOptionsContentWrapper')">
-        <span class="collapse-icon collapsed" id="costOptionsContentWrapper-icon">▶</span>
+        <span class="collapse-icon" id="costOptionsContentWrapper-icon">▼</span>
         <h3>Cost Calculation Options</h3>
       </div>
       <div class="collapsible-content" id="costOptionsContentWrapper">
@@ -921,11 +909,11 @@
     
     <div id="results" class="results">
       <div class="section">
-        <div class="collapsible-header" onclick="toggleCollapse('recipeDetailsContent')">
-          <span class="collapse-icon collapsed" id="recipeDetailsContent-icon">▶</span>
-          <h3>Recipe Details</h3>
-        </div>
-        <div id="recipeDetailsContent" class="collapsible-content collapsed">
+        <h3 class="collapsible-header" onclick="toggleCollapse('recipeDetailsContent')">
+          <span class="collapse-icon" id="recipeDetailsContent-icon">▼</span>
+          Recipe Details
+        </h3>
+        <div id="recipeDetailsContent" class="collapsible-content">
         <div class="data-grid">
           <div class="data-item">
             <div class="data-label">Inputs Required</div>
@@ -940,10 +928,10 @@
       </div>
       
       <div class="section">
-        <div class="collapsible-header" onclick="toggleCollapse('pricingContent')">
+        <h3 class="collapsible-header" onclick="toggleCollapse('pricingContent')">
           <span class="collapse-icon collapsed" id="pricingContent-icon">▶</span>
-          <h3>Pricing</h3>
-        </div>
+          Pricing
+        </h3>
         <div id="pricingContent" class="collapsible-content collapsed">
         <div class="data-grid">
           <div class="data-item">
@@ -959,10 +947,10 @@
       </div>
       
       <div class="section">
-        <div class="collapsible-header" onclick="toggleCollapse('costBreakdownContent')">
+        <h3 class="collapsible-header" onclick="toggleCollapse('costBreakdownContent')">
           <span class="collapse-icon collapsed" id="costBreakdownContent-icon">▶</span>
-          <h3>Cost Breakdown</h3>
-        </div>
+          Cost Breakdown
+        </h3>
         <div id="costBreakdownContent" class="collapsible-content collapsed">
         <div style="display: grid; gap: 12px;">
           <!-- Top Row: 4 columns for Input and Workforce costs -->
@@ -1002,10 +990,10 @@
       
       <!-- Cost Breakdown Tree Section -->
       <div id="costBreakdownTreeSection" class="section" style="display: none;">
-        <div class="collapsible-header" onclick="toggleCollapse('costBreakdownTreeContent')">
+        <h3 class="collapsible-header" onclick="toggleCollapse('costBreakdownTreeContent')">
           <span class="collapse-icon collapsed" id="costBreakdownTreeContent-icon">▶</span>
-          <h3>Input Cost Breakdown Tree</h3>
-        </div>
+          Input Cost Breakdown Tree
+        </h3>
         <div id="costBreakdownTreeContent" class="collapsible-content collapsed">
           <div id="costTree" style="font-family: monospace; font-size: 0.85rem; padding: 10px; background: #f9fafb; border-radius: 4px; overflow-x: auto;">
             <!-- Cost tree will be rendered here -->
@@ -1014,11 +1002,11 @@
       </div>
       
       <div class="section">
-        <div class="collapsible-header" onclick="toggleCollapse('profitabilityContent')">
-          <span class="collapse-icon collapsed" id="profitabilityContent-icon">▶</span>
-          <h3>Profitability - All Scenarios</h3>
-        </div>
-        <div id="profitabilityContent" class="collapsible-content collapsed">
+        <h3 class="collapsible-header" onclick="toggleCollapse('profitabilityContent')">
+          <span class="collapse-icon" id="profitabilityContent-icon">▼</span>
+          Profitability - All Scenarios
+        </h3>
+        <div id="profitabilityContent" class="collapsible-content">
         <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
           <!-- Profit Row -->
           <div class="data-item">
@@ -1060,10 +1048,10 @@
       </div>
       
       <div class="section">
-        <div class="collapsible-header" onclick="toggleCollapse('marketIndicatorsContent')">
+        <h3 class="collapsible-header" onclick="toggleCollapse('marketIndicatorsContent')">
           <span class="collapse-icon collapsed" id="marketIndicatorsContent-icon">▶</span>
-          <h3>Market Indicators</h3>
-        </div>
+          Market Indicators
+        </h3>
         <div id="marketIndicatorsContent" class="collapsible-content collapsed">
         <div class="data-grid">
           <div class="data-item">
@@ -1087,7 +1075,7 @@
           <span class="collapse-icon collapsed" id="breakevenContent-icon">▶</span>
           Breakeven Analysis - All Scenarios
         </h3>
-        <div class="collapsible-content collapsed" id="breakevenContent">
+        <div class="collapsible-content" id="breakevenContent" class="collapsible-content collapsed">
           <div class="data-grid">
             <div class="data-item">
               <div class="data-label">Breakeven Units (Ask + Ask)</div>
@@ -1129,7 +1117,7 @@
         </div>
         <div class="collapsible-content collapsed" id="arbitrageContentWrapper">
           <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 6px; border-left: 4px solid #16a34a; font-size: 0.9rem;">
-            Arbitrage opportunities for the selected material (showing profit > 5% after transfer costs)
+            Arbitrage opportunities involving the selected exchange (showing profit > 5% after transfer costs)
           </div>
           <div id="arbitrageContent"></div>
         </div>
@@ -1864,7 +1852,7 @@
         const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const recommendationData = recipe ? getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) : null;
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
-        const arbitrageData = getArbitrageOpportunitiesFromCache(material, exchange);
+        const arbitrageData = getArbitrageOpportunitiesFromCache(exchange);
         
         const endTime = performance.now();
         const calcTime = (endTime - startTime).toFixed(1);
@@ -2299,49 +2287,53 @@
     }
     
 // Get arbitrage opportunities from cached data
-function getArbitrageOpportunitiesFromCache(material, selectedExchange) {
+function getArbitrageOpportunitiesFromCache(selectedExchange) {
   const materialPrices = {}; // material -> {exchange: {ask, bid}}
   
-  // Collect prices for the selected material at all exchanges
+  // Collect prices for all materials at all exchanges
   for (const row of allData) {
-    if (row.ticker === material) {
-      const exch = row.exchange;
-      
-      if (!materialPrices[material]) {
-        materialPrices[material] = {};
-      }
-      materialPrices[material][exch] = { ask: row.askPrice, bid: row.bidPrice };
+    const material = row.ticker;
+    const exch = row.exchange;
+    
+    if (!materialPrices[material]) {
+      materialPrices[material] = {};
     }
+    materialPrices[material][exch] = { ask: row.askPrice, bid: row.bidPrice };
   }
   
-  // Find arbitrage opportunities for this material
+  // Find arbitrage opportunities involving the selected exchange
   const opportunities = [];
   
-  const exchanges = Object.keys(materialPrices[material] || []);
-  
-  for (let i = 0; i < exchanges.length; i++) {
-    for (let j = 0; j < exchanges.length; j++) {
-      if (i !== j) {
-        const buyExch = exchanges[i];
-        const sellExch = exchanges[j];
-        
-        const buyPrice = materialPrices[material][buyExch].ask;
-        const sellPrice = materialPrices[material][sellExch].bid;
-        
-        const profit = sellPrice - buyPrice;
-        const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
-        
-        // Only include profitable opportunities (> 5% to cover transfer costs)
-        if (profitPercent > 5) {
-          opportunities.push({
-            material: material,
-            buyExchange: buyExch,
-            sellExchange: sellExch,
-            buyPrice: buyPrice,
-            sellPrice: sellPrice,
-            profit: profit,
-            profitPercent: profitPercent
-          });
+  for (const material in materialPrices) {
+    const exchanges = Object.keys(materialPrices[material]);
+    
+    for (let i = 0; i < exchanges.length; i++) {
+      for (let j = 0; j < exchanges.length; j++) {
+        if (i !== j) {
+          const buyExch = exchanges[i];
+          const sellExch = exchanges[j];
+          
+          // Only include opportunities where selectedExchange is involved
+          if (buyExch !== selectedExchange && sellExch !== selectedExchange) continue;
+          
+          const buyPrice = materialPrices[material][buyExch].ask;
+          const sellPrice = materialPrices[material][sellExch].bid;
+          
+          const profit = sellPrice - buyPrice;
+          const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
+          
+          // Only include profitable opportunities (> 5% to cover transfer costs)
+          if (profitPercent > 5) {
+            opportunities.push({
+              material: material,
+              buyExchange: buyExch,
+              sellExchange: sellExch,
+              buyPrice: buyPrice,
+              sellPrice: sellPrice,
+              profit: profit,
+              profitPercent: profitPercent
+            });
+          }
         }
       }
     }
