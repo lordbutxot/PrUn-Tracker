@@ -513,14 +513,20 @@
 
         async function initializeApp() {
             try {
+                console.log('Initializing arbitrage app...');
                 showLoading();
                 await arbitrageCalculator.initialize();
+                console.log('Calculator initialized, arbitrage data:', arbitrageCalculator.arbitrageData);
+                console.log('Orders data length:', arbitrageCalculator.ordersData.length);
+                console.log('All data length:', arbitrageCalculator.allData.length);
                 allArbitrageData = arbitrageCalculator.arbitrageData;
                 filteredData = [...allArbitrageData];
+                console.log('All arbitrage data length:', allArbitrageData.length);
                 populateMaterialFilter();
                 updateStats();
                 renderTable();
                 setupEventListeners();
+                console.log('App initialization complete');
             } catch (error) {
                 console.error('Failed to initialize app:', error);
                 showError('Failed to load arbitrage data. Please refresh the page.');
@@ -536,6 +542,15 @@
                     }
                 });
             });
+
+            // Real-time filtering for select dropdowns
+            document.getElementById('material-filter').addEventListener('change', applyFilters);
+            document.getElementById('buy-exchange-filter').addEventListener('change', applyFilters);
+            document.getElementById('sell-exchange-filter').addEventListener('change', applyFilters);
+
+            // Real-time filtering for number inputs
+            document.getElementById('min-profit').addEventListener('input', applyFilters);
+            document.getElementById('min-roi').addEventListener('input', applyFilters);
         }
 
         function toggleControls() {
@@ -566,14 +581,24 @@
 
         function populateMaterialFilter() {
             const materialFilter = document.getElementById('material-filter');
-            const materials = [...new Set(allArbitrageData.map(item => item.ticker))].sort();
+            // Clear existing options except "All Materials"
+            while (materialFilter.children.length > 1) {
+                materialFilter.removeChild(materialFilter.lastChild);
+            }
+
+            // Get unique tickers from orders data
+            const materials = [...new Set(arbitrageCalculator.ordersData.map(item => item.Ticker))].sort();
+
+            console.log('Available materials:', materials); // Debug log
 
             materials.forEach(material => {
                 const option = document.createElement('option');
                 option.value = material;
-                option.textContent = `${material} - ${allArbitrageData.find(item => item.ticker === material).name}`;
+                option.textContent = material;
                 materialFilter.appendChild(option);
             });
+
+            console.log('Material filter populated with', materials.length, 'materials');
         }
 
         function applyFilters() {
@@ -583,15 +608,26 @@
             const minProfit = parseFloat(document.getElementById('min-profit').value) || 0;
             const minRoi = parseFloat(document.getElementById('min-roi').value) || 0;
 
+            console.log('Applying filters:', { materialFilter, buyExchangeFilter, sellExchangeFilter, minProfit, minRoi });
+
             filteredData = allArbitrageData.filter(item => {
-                if (materialFilter && item.ticker !== materialFilter) return false;
-                if (buyExchangeFilter && item.buy_exchange !== buyExchangeFilter) return false;
-                if (sellExchangeFilter && item.sell_exchange !== sellExchangeFilter) return false;
-                if (item.profit < minProfit) return false;
-                if (item.roi < minRoi) return false;
-                return true;
+                const matchesMaterial = !materialFilter || item.ticker === materialFilter;
+                const matchesBuyEx = !buyExchangeFilter || item.buy_exchange === buyExchangeFilter;
+                const matchesSellEx = !sellExchangeFilter || item.sell_exchange === sellExchangeFilter;
+                const matchesProfit = item.profit >= minProfit;
+                const matchesRoi = item.roi >= minRoi;
+
+                const result = matchesMaterial && matchesBuyEx && matchesSellEx && matchesProfit && matchesRoi;
+
+                // Debug: log first few items
+                if (allArbitrageData.indexOf(item) < 5) {
+                    console.log(`Item ${item.ticker}:`, { matchesMaterial, matchesBuyEx, matchesSellEx, matchesProfit, matchesRoi, result });
+                }
+
+                return result;
             });
 
+            console.log('Filtered data length:', filteredData.length);
             updateStats();
             renderTable();
 
@@ -635,13 +671,15 @@
                         <td colspan="10" class="no-data">
                             <i class="fas fa-search"></i><br>
                             No arbitrage opportunities found matching your criteria.
+                            <br><small>Total loaded: ${allArbitrageData.length} opportunities</small>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = filteredData.map(item => `
+            // Show all opportunities for debugging
+            tbody.innerHTML = filteredData.slice(0, 100).map(item => `  // Limit to first 100 for performance
                 <tr class="opportunity-row">
                     <td><strong>${item.ticker}</strong></td>
                     <td>${item.name}</td>
