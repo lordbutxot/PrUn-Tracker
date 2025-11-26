@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrUn Arbitrage Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+            --border-color: #dee2e6;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .arbitrage-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .table-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .opportunity-row {
+            transition: background-color 0.3s;
+        }
+
+        .opportunity-row:hover {
+            background: #f8f9fa;
+        }
+
+        .profit-positive {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .profit-negative {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .roi-high {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+
+        .roi-medium {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+
+        .roi-low {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+
+        .exchange-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .exchange-AI1 { background: #3498db; color: white; }
+        .exchange-CI1 { background: #e74c3c; color: white; }
+        .exchange-CI2 { background: #f39c12; color: white; }
+        .exchange-IC1 { background: #27ae60; color: white; }
+        .exchange-NC1 { background: #9b59b6; color: white; }
+        .exchange-NC2 { background: #1abc9c; color: white; }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .filters-active {
+            background: #e8f4f8;
+            border: 1px solid var(--secondary-color);
+        }
+
+        .sort-indicator {
+            margin-left: 5px;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: var(--primary-color);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group {
+                min-width: auto;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-container {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .controls {
+                display: none;
+            }
+
+            .controls.show {
+                display: block;
+            }
+        }
+
+        .opportunity-details {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .opportunity-details h4 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-label {
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> PrUn Arbitrage Tracker</h1>
+            <p>Find profitable cross-exchange trading opportunities in real-time</p>
+        </div>
+
+        <button class="mobile-toggle" onclick="toggleControls()">
+            <i class="fas fa-filter"></i> Toggle Filters
+        </button>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="material-filter">
+                        <i class="fas fa-cube"></i> Filter by Material
+                    </label>
+                    <select id="material-filter">
+                        <option value="">All Materials</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="buy-exchange-filter">
+                        <i class="fas fa-shopping-cart"></i> Buy From Exchange
+                    </label>
+                    <select id="buy-exchange-filter">
+                        <option value="">All Exchanges</option>
+                        <option value="AI1">AI1 (Antares)</option>
+                        <option value="CI1">CI1 (Castillo)</option>
+                        <option value="CI2">CI2 (Castillo)</option>
+                        <option value="IC1">IC1 (Insitor)</option>
+                        <option value="NC1">NC1 (Neo Brasilia)</option>
+                        <option value="NC2">NC2 (Neo Brasilia)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="sell-exchange-filter">
+                        <i class="fas fa-cash-register"></i> Sell To Exchange
+                    </label>
+                    <select id="sell-exchange-filter">
+                        <option value="">All Exchanges</option>
+                        <option value="AI1">AI1 (Antares)</option>
+                        <option value="CI1">CI1 (Castillo)</option>
+                        <option value="CI2">CI2 (Castillo)</option>
+                        <option value="IC1">IC1 (Insitor)</option>
+                        <option value="NC1">NC1 (Neo Brasilia)</option>
+                        <option value="NC2">NC2 (Neo Brasilia)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="min-profit">
+                        <i class="fas fa-coins"></i> Min Profit per Unit (ICA)
+                    </label>
+                    <input type="number" id="min-profit" placeholder="0" step="0.01">
+                </div>
+
+                <div class="control-group">
+                    <label for="min-roi">
+                        <i class="fas fa-percentage"></i> Min ROI (%)
+                    </label>
+                    <input type="number" id="min-roi" placeholder="0" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label for="sort-by">
+                        <i class="fas fa-sort"></i> Sort By
+                    </label>
+                    <select id="sort-by">
+                        <option value="profit">Profit per Unit</option>
+                        <option value="roi">ROI %</option>
+                        <option value="size">Opportunity Size</option>
+                        <option value="level">Opportunity Level</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <button class="btn btn-primary" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+                <button class="btn btn-success" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+                <button class="btn" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-opportunities">0</div>
+                <div class="stat-label">Total Opportunities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-profit">0.00</div>
+                <div class="stat-label">Avg Profit per Unit (ICA)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-roi">0.0%</div>
+                <div class="stat-label">Avg ROI</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-volume">0</div>
+                <div class="stat-label">Total Tradable Volume</div>
+            </div>
+        </div>
+
+        <div class="arbitrage-table">
+            <div class="table-header">
+                <i class="fas fa-table"></i> Arbitrage Opportunities
+            </div>
+            <div class="table-container">
+                <table id="arbitrage-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('ticker')">Material <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('name')">Name <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('buy_exchange')">Buy From <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('sell_exchange')">Sell To <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('buy_price')">Buy Price <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('sell_price')">Sell Price <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('profit')">Profit/Unit <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('roi')">ROI % <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('size')">Volume <i class="fas fa-sort sort-indicator"></i></th>
+                            <th onclick="sortTable('level')">Level <i class="fas fa-sort sort-indicator"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="arbitrage-tbody">
+                        <tr>
+                            <td colspan="10" class="loading">
+                                <i class="fas fa-spinner fa-spin"></i><br>
+                                Loading arbitrage opportunities...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="arbitrage_calculator.js"></script>
+    <script>
+        let arbitrageCalculator = new PrUnArbitrageCalculator();
+        let allArbitrageData = [];
+        let filteredData = [];
+        let currentSort = { column: 'profit', direction: 'desc' };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                showLoading();
+                await arbitrageCalculator.initialize();
+                allArbitrageData = arbitrageCalculator.arbitrageData;
+                filteredData = [...allArbitrageData];
+                populateMaterialFilter();
+                updateStats();
+                renderTable();
+                setupEventListeners();
+            } catch (error) {
+                console.error('Failed to initialize app:', error);
+                showError('Failed to load arbitrage data. Please refresh the page.');
+            }
+        }
+
+        function setupEventListeners() {
+            // Enter key support for filters
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        applyFilters();
+                    }
+                });
+            });
+        }
+
+        function toggleControls() {
+            const controls = document.querySelector('.controls');
+            controls.classList.toggle('show');
+        }
+
+        async function loadArbitrageData() {
+            try {
+                showLoading();
+                await arbitrageCalculator.initialize();
+                allArbitrageData = arbitrageCalculator.arbitrageData;
+                filteredData = [...allArbitrageData];
+                populateMaterialFilter();
+                updateStats();
+                renderTable();
+            } catch (error) {
+                console.error('Error loading arbitrage data:', error);
+                showError('Failed to load arbitrage data. Please try again.');
+            }
+        }
+
+        function generateMockData() {
+            // This function is now replaced by the PrUnArbitrageCalculator
+            // Keeping for fallback purposes
+            return [];
+        }
+
+        function populateMaterialFilter() {
+            const materialFilter = document.getElementById('material-filter');
+            const materials = [...new Set(allArbitrageData.map(item => item.ticker))].sort();
+
+            materials.forEach(material => {
+                const option = document.createElement('option');
+                option.value = material;
+                option.textContent = `${material} - ${allArbitrageData.find(item => item.ticker === material).name}`;
+                materialFilter.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const materialFilter = document.getElementById('material-filter').value;
+            const buyExchangeFilter = document.getElementById('buy-exchange-filter').value;
+            const sellExchangeFilter = document.getElementById('sell-exchange-filter').value;
+            const minProfit = parseFloat(document.getElementById('min-profit').value) || 0;
+            const minRoi = parseFloat(document.getElementById('min-roi').value) || 0;
+
+            filteredData = allArbitrageData.filter(item => {
+                if (materialFilter && item.ticker !== materialFilter) return false;
+                if (buyExchangeFilter && item.buy_exchange !== buyExchangeFilter) return false;
+                if (sellExchangeFilter && item.sell_exchange !== sellExchangeFilter) return false;
+                if (item.profit < minProfit) return false;
+                if (item.roi < minRoi) return false;
+                return true;
+            });
+
+            updateStats();
+            renderTable();
+
+            // Highlight active filters
+            document.querySelector('.controls').classList.toggle('filters-active',
+                materialFilter || buyExchangeFilter || sellExchangeFilter || minProfit > 0 || minRoi > 0);
+        }
+
+        function clearFilters() {
+            document.getElementById('material-filter').value = '';
+            document.getElementById('buy-exchange-filter').value = '';
+            document.getElementById('sell-exchange-filter').value = '';
+            document.getElementById('min-profit').value = '';
+            document.getElementById('min-roi').value = '';
+            document.querySelector('.controls').classList.remove('filters-active');
+            filteredData = [...allArbitrageData];
+            updateStats();
+            renderTable();
+        }
+
+        function updateStats() {
+            const totalOpportunities = filteredData.length;
+            const avgProfit = filteredData.length > 0 ?
+                filteredData.reduce((sum, item) => sum + item.profit, 0) / filteredData.length : 0;
+            const avgRoi = filteredData.length > 0 ?
+                filteredData.reduce((sum, item) => sum + item.roi, 0) / filteredData.length : 0;
+            const totalVolume = filteredData.reduce((sum, item) => sum + item.size, 0);
+
+            document.getElementById('total-opportunities').textContent = totalOpportunities.toLocaleString();
+            document.getElementById('avg-profit').textContent = avgProfit.toFixed(2);
+            document.getElementById('avg-roi').textContent = avgRoi.toFixed(1) + '%';
+            document.getElementById('total-volume').textContent = totalVolume.toLocaleString();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('arbitrage-tbody');
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="no-data">
+                            <i class="fas fa-search"></i><br>
+                            No arbitrage opportunities found matching your criteria.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map(item => `
+                <tr class="opportunity-row">
+                    <td><strong>${item.ticker}</strong></td>
+                    <td>${item.name}</td>
+                    <td><span class="exchange-badge exchange-${item.buy_exchange}">${item.buy_exchange}</span></td>
+                    <td><span class="exchange-badge exchange-${item.sell_exchange}">${item.sell_exchange}</span></td>
+                    <td>${item.buy_price.toFixed(2)}</td>
+                    <td>${item.sell_price.toFixed(2)}</td>
+                    <td class="profit-positive">+${item.profit.toFixed(2)}</td>
+                    <td class="${getRoiClass(item.roi)}">${item.roi.toFixed(2)}%</td>
+                    <td>${item.size.toLocaleString()}</td>
+                    <td><span class="opportunity-level level-${item.level.toLowerCase().replace(' ', '-')}">${item.level}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function getRoiClass(roi) {
+            if (roi >= 50) return 'roi-high';
+            if (roi >= 20) return 'roi-medium';
+            return 'roi-low';
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'desc';
+            }
+
+            filteredData.sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (currentSort.direction === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+
+            renderTable();
+            updateSortIndicators();
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.className = 'fas fa-sort sort-indicator';
+            });
+
+            const currentHeader = document.querySelector(`th[onclick*="${currentSort.column}"] .sort-indicator`);
+            if (currentHeader) {
+                currentHeader.className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'} sort-indicator`;
+            }
+        }
+
+        function refreshData() {
+            const refreshBtn = document.querySelector('.btn-success');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            refreshBtn.disabled = true;
+
+            // Simulate refresh delay
+            setTimeout(() => {
+                loadArbitrageData();
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }, 2000);
+        }
+
+        function showLoading() {
+            document.getElementById('arbitrage-tbody').innerHTML = `
+                <tr>
+                    <td colspan="10" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i><br>
+                        Loading arbitrage opportunities...
+                    </td>
+                </tr>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('arbitrage-tbody').innerHTML = `
+                <tr>
+                    <td colspan="10" class="no-data">
+                        <i class="fas fa-exclamation-triangle"></i><br>
+                        ${message}
+                    </td>
+                </tr>
+            `;
+        }
+    </script>
+</body>
+</html>
