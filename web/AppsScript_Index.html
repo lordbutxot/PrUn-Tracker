@@ -1171,7 +1171,20 @@
     ]);
     
     document.addEventListener('DOMContentLoaded', function() {
-      loadAllData();
+      // Load static spreadsheet data from web/data.json
+      fetch('data.json')
+        .then(response => response.json())
+        .then(data => {
+          // TODO: Replace this with your actual data rendering logic
+          // For now, just log and optionally display
+          console.log('Loaded spreadsheet data:', data);
+          // Example: Display in a div
+          // document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+          // You can now use 'data' to populate your UI instead of calling Apps Script
+        })
+        .catch(err => {
+          console.error('Error loading spreadsheet data:', err);
+        });
     });
     
     // Calculate expert efficiency bonus (cumulative with synergy)

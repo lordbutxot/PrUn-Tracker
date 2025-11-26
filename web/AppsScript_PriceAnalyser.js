@@ -34,14 +34,23 @@
 //
 // ====================================================================
 
-// Main function to serve the HTML page
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('PrUn Price Analyser')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setSandboxMode(HtmlService.SandboxMode.IFRAME); // Try different sandbox mode
+// Instead of Apps Script, load static spreadsheet data from web/data.json
+function loadStaticSpreadsheetData() {
+  fetch('data.json')
+    .then(response => response.json())
+    .then(data => {
+      // TODO: Replace this with your actual data rendering logic
+      console.log('Loaded spreadsheet data:', data);
+      // Example: Display in a div
+      // document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+      // You can now use 'data' to populate your UI instead of calling Apps Script
+    })
+    .catch(err => {
+      console.error('Error loading spreadsheet data:', err);
+    });
 }
+
+document.addEventListener('DOMContentLoaded', loadStaticSpreadsheetData);
 
 // TEST FUNCTION - Analyze byproduct recipes
 function analyzeByproductRecipes() {
