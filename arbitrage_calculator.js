@@ -10,14 +10,14 @@ class PrUnArbitrageCalculator {
 
         // Configuration
         this.googleAppsScriptUrl = options.googleAppsScriptUrl ||
-            'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+            'https://script.google.com/macros/s/1-msZsudVPRW4aJcuPbFQAC8XhSj6Fc0FH52nefiHqn3e0r1TvklxMUq2/exec';
     }
 
     // Initialize the calculator
     async initialize() {
         this.isLoading = true;
         try {
-            await this.loadLocalData();
+            await this.loadFromGoogleAppsScript();
             // Arbitrage data is computed locally now
         } catch (error) {
             console.error('Failed to initialize arbitrage calculator:', error);
@@ -27,41 +27,34 @@ class PrUnArbitrageCalculator {
         }
     }
 
-    // Load data from local CSV files
-    async loadLocalData() {
-        console.log('Loading data from local CSV files...');
+    // Load data from Google Apps Script
+    async loadFromGoogleAppsScript() {
+        console.log('Loading data from Google Apps Script...');
 
         try {
-            // Load orders.csv (asks)
-            const ordersResponse = await fetch('pu-tracker/cache/orders.csv');
-            const ordersText = await ordersResponse.text();
-            this.ordersData = this.parseCSV(ordersText, ['MaterialTicker', 'ExchangeCode', 'CompanyId', 'CompanyName', 'CompanyCode', 'ItemCount', 'ItemCost']);
+            // Load data from Google Apps Script
+            const response = await fetch(this.googleAppsScriptUrl + '?action=getArbitrageData');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
 
-            // Load bids.csv (bids)
-            const bidsResponse = await fetch('pu-tracker/cache/bids.csv');
-            const bidsText = await bidsResponse.text();
-            const bidsData = this.parseCSV(bidsText, ['MaterialTicker', 'ExchangeCode', 'CompanyId', 'CompanyName', 'CompanyCode', 'ItemCount', 'ItemCost']);
+            if (data.error) {
+                throw new Error(data.error);
+            }
 
-            // Load materials.csv for names
-            const materialsResponse = await fetch('pu-tracker/cache/materials.csv');
-            const materialsText = await materialsResponse.text();
-            const materialsData = this.parseCSV(materialsText, ['Ticker', 'Name', 'Category', 'Weight', 'Volume', 'Tier']);
-            const materialNames = {};
-            materialsData.forEach(row => {
-                materialNames[row.Ticker] = row.Name;
-            });
-
-            // Compute arbitrage opportunities
-            this.arbitrageData = this.computeArbitrageOpportunities(this.ordersData, bidsData, materialsData);
+            // Process the data
+            this.ordersData = data.orders || [];
+            this.arbitrageData = this.computeArbitrageOpportunities(this.ordersData, [], []);
 
             // Create mock allData for compatibility
             this.allData = this.createMockMarketDataFromArbitrageData(this.arbitrageData);
 
-            console.log('Data loaded successfully from local CSV files!');
+            console.log('Data loaded successfully from Google Apps Script!');
             console.log('Arbitrage opportunities:', this.arbitrageData.length);
 
         } catch (error) {
-            console.error('Failed to load data from local CSV files:', error);
+            console.error('Failed to load data from Google Apps Script:', error);
             throw new Error(`Data loading failed: ${error.message}`);
         }
     }
