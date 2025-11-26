@@ -26,67 +26,82 @@ class PrUnArbitrageCalculator {
 
     // Load data from CSV files
     async loadData() {
+        console.log('Loading data from cache CSV files...');
+
         try {
-            console.log('Loading data from CSV files...');
-
-            // For debugging, let's try loading with a timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
             // Load orders data (asks/sell orders)
-            const ordersResponse = await fetch('/pu-tracker/cache/orders.csv', {
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            console.log('Orders response status:', ordersResponse.status);
+            console.log('Loading orders.csv...');
+            const ordersResponse = await fetch('/pu-tracker/cache/orders.csv');
             if (!ordersResponse.ok) {
-                throw new Error(`HTTP ${ordersResponse.status}: ${ordersResponse.statusText}`);
+                throw new Error(`Failed to load orders.csv: HTTP ${ordersResponse.status}`);
             }
-
             const ordersText = await ordersResponse.text();
-            console.log('Orders CSV length:', ordersText.length);
+            console.log('Orders CSV loaded, length:', ordersText.length);
             this.ordersData = this.parseCSV(ordersText, ['MaterialTicker', 'ExchangeCode', 'CompanyId', 'CompanyName', 'CompanyCode', 'ItemCount', 'ItemCost']);
             console.log('Parsed orders data:', this.ordersData.length, 'rows');
 
             // Load bids data (bids/buy orders)
+            console.log('Loading bids.csv...');
             const bidsResponse = await fetch('/pu-tracker/cache/bids.csv');
-            console.log('Bids response status:', bidsResponse.status);
+            if (!bidsResponse.ok) {
+                throw new Error(`Failed to load bids.csv: HTTP ${bidsResponse.status}`);
+            }
             const bidsText = await bidsResponse.text();
+            console.log('Bids CSV loaded, length:', bidsText.length);
             const bidsData = this.parseCSV(bidsText, ['MaterialTicker', 'ExchangeCode', 'CompanyId', 'CompanyName', 'CompanyCode', 'ItemCount', 'ItemCost']);
             console.log('Parsed bids data:', bidsData.length, 'rows');
 
             // Combine orders and bids into a unified orders data structure
             this.ordersData = [
-                ...this.ordersData.map(order => ({ ...order, Side: 'ask', Price: parseFloat(order.ItemCost), Quantity: parseInt(order.ItemCount), Ticker: order.MaterialTicker, Exchange: order.ExchangeCode })),
-                ...bidsData.map(bid => ({ ...bid, Side: 'bid', Price: parseFloat(bid.ItemCost), Quantity: parseInt(bid.ItemCount), Ticker: bid.MaterialTicker, Exchange: bid.ExchangeCode }))
+                ...this.ordersData.map(order => ({
+                    ...order,
+                    Side: 'ask',
+                    Price: parseFloat(order.ItemCost),
+                    Quantity: parseInt(order.ItemCount),
+                    Ticker: order.MaterialTicker,
+                    Exchange: order.ExchangeCode
+                })),
+                ...bidsData.map(bid => ({
+                    ...bid,
+                    Side: 'bid',
+                    Price: parseFloat(bid.ItemCost),
+                    Quantity: parseInt(bid.ItemCount),
+                    Ticker: bid.MaterialTicker,
+                    Exchange: bid.ExchangeCode
+                }))
             ];
             console.log('Combined orders data:', this.ordersData.length, 'total orders');
 
             // Load market data for material names and categories
+            console.log('Loading market_data.csv...');
             const marketResponse = await fetch('/pu-tracker/cache/market_data.csv');
-            console.log('Market data response status:', marketResponse.status);
+            if (!marketResponse.ok) {
+                throw new Error(`Failed to load market_data.csv: HTTP ${marketResponse.status}`);
+            }
             const marketText = await marketResponse.text();
+            console.log('Market data CSV loaded, length:', marketText.length);
             this.allData = this.parseMarketDataCSV(marketText);
             console.log('Parsed market data:', this.allData.length, 'rows');
 
+            console.log('All cache data loaded successfully!');
+
         } catch (error) {
-            console.warn('Failed to load real data, using mock data:', error);
-            // Generate mock data for development
-            this.allData = this.generateMockMarketData();
-            this.ordersData = this.generateMockOrdersData();
+            console.error('Failed to load cache data:', error);
+            throw new Error(`Data loading failed: ${error.message}`);
         }
     }
 
     // Compute arbitrage opportunities using the same logic as the Python script
     computeArbitrageOpportunities() {
-        console.log('Computing arbitrage opportunities...');
+        console.log('Computing arbitrage opportunities from real market data...');
         const arbitrageRows = [];
         const exchanges = [...new Set(this.ordersData.map(item => item.Exchange))];
         const tickers = [...new Set(this.ordersData.map(item => item.Ticker))];
 
         console.log('Found exchanges:', exchanges);
-        console.log('Found tickers:', tickers);
+        console.log('Found tickers:', tickers.length, 'unique materials');
+
+        let totalOpportunities = 0;
 
         for (const ticker of tickers) {
             for (const buyEx of exchanges) {
@@ -120,12 +135,19 @@ class PrUnArbitrageCalculator {
                             size: Math.floor(size.matchedQty),
                             level: null // Will be assigned later
                         });
+
+                        totalOpportunities++;
+
+                        // Debug: Show first few opportunities
+                        if (totalOpportunities <= 5) {
+                            console.log(`Found opportunity: ${ticker} ${buyEx}->${sellEx}: Buy@${avgBuy.toFixed(2)}, Sell@${avgSell.toFixed(2)}, Profit:${profitPerUnit.toFixed(2)}, ROI:${roi.toFixed(2)}%, Size:${size.matchedQty}`);
+                        }
                     }
                 }
             }
         }
 
-        console.log('Found', arbitrageRows.length, 'arbitrage opportunities');
+        console.log('Found', arbitrageRows.length, 'arbitrage opportunities from real market data');
         return arbitrageRows;
     }
 
@@ -325,81 +347,6 @@ class PrUnArbitrageCalculator {
         }
 
         return data;
-    }
-
-    // Generate mock orders data for development
-    generateMockOrdersData() {
-        const exchanges = ['NC1', 'IC1', 'CI1', 'AI1'];
-        const materials = ['AL', 'CU', 'FE', 'LI', 'TI', 'AU', 'AG', 'PT', 'H2O', 'O2'];
-        const orders = [];
-
-        materials.forEach(material => {
-            exchanges.forEach(exchange => {
-                // Add some ask orders (sell orders) - base price varies by material
-                const basePrice = 50 + (materials.indexOf(material) * 20); // Different base prices
-                const askPrice = basePrice + Math.random() * 50; // Random price around base
-                const askQuantity = Math.floor(Math.random() * 1000) + 100;
-                orders.push({
-                    Ticker: material,
-                    Exchange: exchange,
-                    Side: 'ask',
-                    Price: askPrice,
-                    Quantity: askQuantity,
-                    CompanyId: 'COMP' + Math.floor(Math.random() * 100),
-                    CompanyName: 'Company ' + Math.floor(Math.random() * 100),
-                    CompanyCode: 'C' + Math.floor(Math.random() * 100)
-                });
-
-                // Add bid orders (buy orders) - some higher than asks on other exchanges to create arbitrage
-                let bidPrice;
-                if (exchange === 'AI1') {
-                    // Make AI1 bids higher to create arbitrage opportunities
-                    bidPrice = basePrice + 30 + Math.random() * 50; // Higher bids
-                } else {
-                    bidPrice = basePrice + Math.random() * 30; // Lower bids on other exchanges
-                }
-                const bidQuantity = Math.floor(Math.random() * 1000) + 100;
-                orders.push({
-                    Ticker: material,
-                    Exchange: exchange,
-                    Side: 'bid',
-                    Price: bidPrice,
-                    Quantity: bidQuantity,
-                    CompanyId: 'COMP' + Math.floor(Math.random() * 100),
-                    CompanyName: 'Company ' + Math.floor(Math.random() * 100),
-                    CompanyCode: 'C' + Math.floor(Math.random() * 100)
-                });
-            });
-        });
-
-        console.log('Generated mock orders with arbitrage opportunities');
-        return orders;
-    }
-
-    // Generate mock market data for testing
-    generateMockMarketData() {
-        return [
-            { Ticker: 'AL', 'Material Name': 'Aluminum', CategoryName: 'Minerals', Price: 100.0, Supply: 1000, Demand: 800 },
-            { Ticker: 'CU', 'Material Name': 'Copper', CategoryName: 'Minerals', Price: 150.0, Supply: 800, Demand: 900 },
-            { Ticker: 'FE', 'Material Name': 'Iron', CategoryName: 'Minerals', Price: 80.0, Supply: 1200, Demand: 1100 },
-            { Ticker: 'LI', 'Material Name': 'Lithium', CategoryName: 'Minerals', Price: 200.0, Supply: 500, Demand: 600 },
-            { Ticker: 'TI', 'Material Name': 'Titanium', CategoryName: 'Minerals', Price: 300.0, Supply: 300, Demand: 400 },
-            { Ticker: 'AU', 'Material Name': 'Gold', CategoryName: 'Minerals', Price: 500.0, Supply: 100, Demand: 150 },
-            { Ticker: 'AG', 'Material Name': 'Silver', CategoryName: 'Minerals', Price: 250.0, Supply: 200, Demand: 180 },
-            { Ticker: 'PT', 'Material Name': 'Platinum', CategoryName: 'Minerals', Price: 600.0, Supply: 50, Demand: 80 },
-            { Ticker: 'H2O', 'Material Name': 'Water', CategoryName: 'Resources', Price: 10.0, Supply: 5000, Demand: 4500 },
-            { Ticker: 'O2', 'Material Name': 'Oxygen', CategoryName: 'Resources', Price: 5.0, Supply: 8000, Demand: 7500 },
-            { Ticker: 'CO2', 'Material Name': 'Carbon Dioxide', CategoryName: 'Resources', Price: 2.0, Supply: 10000, Demand: 9000 },
-            { Ticker: 'CH4', 'Material Name': 'Methane', CategoryName: 'Resources', Price: 15.0, Supply: 2000, Demand: 1800 },
-            { Ticker: 'NH3', 'Material Name': 'Ammonia', CategoryName: 'Resources', Price: 25.0, Supply: 1500, Demand: 1600 },
-            { Ticker: 'H2', 'Material Name': 'Hydrogen', CategoryName: 'Resources', Price: 8.0, Supply: 3000, Demand: 2800 },
-            { Ticker: 'N2', 'Material Name': 'Nitrogen', CategoryName: 'Resources', Price: 3.0, Supply: 12000, Demand: 11000 },
-            { Ticker: 'HE', 'Material Name': 'Helium', CategoryName: 'Resources', Price: 1000.0, Supply: 20, Demand: 30 },
-            { Ticker: 'AR', 'Material Name': 'Argon', CategoryName: 'Resources', Price: 50.0, Supply: 800, Demand: 700 },
-            { Ticker: 'NE', 'Material Name': 'Neon', CategoryName: 'Resources', Price: 200.0, Supply: 100, Demand: 120 },
-            { Ticker: 'XE', 'Material Name': 'Xenon', CategoryName: 'Resources', Price: 1500.0, Supply: 10, Demand: 15 },
-            { Ticker: 'KR', 'Material Name': 'Krypton', CategoryName: 'Resources', Price: 800.0, Supply: 25, Demand: 35 }
-        ];
     }
 }
 

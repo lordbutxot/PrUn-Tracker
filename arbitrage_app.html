@@ -679,7 +679,7 @@
             }
 
             // Show all opportunities for debugging
-            tbody.innerHTML = filteredData.slice(0, 100).map(item => `  // Limit to first 100 for performance
+            tbody.innerHTML = filteredData.slice(0, 100).map(item => `
                 <tr class="opportunity-row">
                     <td><strong>${item.ticker}</strong></td>
                     <td>${item.name}</td>
