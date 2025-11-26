@@ -508,18 +508,45 @@
 
         // Check if URL is configured
         if (GOOGLE_APPS_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-            alert('Please configure your Google Apps Script URL in the arbitrage_app.html file!\n\n' +
-                  '1. Deploy your Google Apps Script as a web app\n' +
-                  '2. Copy the web app URL\n' +
-                  '3. Replace YOUR_SCRIPT_ID in this file');
+            console.warn('Please configure your Google Apps Script URL in the arbitrage_app.html file!');
         }
 
-        let arbitrageCalculator = new PrUnArbitrageCalculator({
-            googleAppsScriptUrl: GOOGLE_APPS_SCRIPT_URL
-        });
+        let arbitrageCalculator = null;
         let allArbitrageData = [];
         let filteredData = [];
         let currentSort = { column: 'profit', direction: 'desc' };
+
+        // Wait for the calculator class to be available
+        function waitForCalculator() {
+            return new Promise((resolve, reject) => {
+                const checkInterval = setInterval(() => {
+                    if (typeof window !== 'undefined' && window.PrUnArbitrageCalculator) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 50);
+
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    reject(new Error('PrUnArbitrageCalculator class not found after 5 seconds'));
+                }, 5000);
+            });
+        }
+
+        // Initialize the calculator
+        async function initializeCalculator() {
+            try {
+                await waitForCalculator();
+                arbitrageCalculator = new window.PrUnArbitrageCalculator({
+                    googleAppsScriptUrl: GOOGLE_APPS_SCRIPT_URL
+                });
+                console.log('Arbitrage calculator instantiated successfully');
+            } catch (error) {
+                console.error('Failed to initialize calculator:', error);
+                throw error;
+            }
+        }
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
@@ -530,6 +557,11 @@
             try {
                 console.log('Initializing arbitrage app...');
                 showLoading();
+
+                // Initialize calculator first
+                await initializeCalculator();
+
+                // Then initialize data
                 await arbitrageCalculator.initialize();
                 console.log('Calculator initialized, arbitrage data:', arbitrageCalculator.arbitrageData);
                 console.log('Orders data length:', arbitrageCalculator.ordersData.length);
@@ -602,7 +634,7 @@
             }
 
             // Get unique tickers from orders data
-            const materials = [...new Set(arbitrageCalculator.ordersData.map(item => item.Ticker))].sort();
+            const materials = [...new Set(arbitrageCalculator.ordersData.map(item => item.MaterialTicker))].sort();
 
             console.log('Available materials:', materials); // Debug log
 

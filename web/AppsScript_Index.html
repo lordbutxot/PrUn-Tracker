@@ -1369,83 +1369,109 @@
       }
     }
     
-    // Load all data once at startup
-    function loadAllData() {
+    // Load all data from local CSV files instead of Google Apps Script
+    async function loadAllData() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('loading').textContent = 'Loading data...';
 
-      google.script.run
-        .withSuccessHandler(function(result) {
-          if (result.error) {
-            showError('Failed to load data: ' + result.error);
-            return;
+      try {
+        // Load processed_data.csv (main data)
+        const processedDataResponse = await fetch('pu-tracker/cache/processed_data.csv');
+        const processedDataText = await processedDataResponse.text();
+        allData = parseCSV(processedDataText, ['lookupKey', 'ticker', 'recipe', 'materialName', 'exchange', 'askPrice', 'bidPrice', 'inputCostAsk', 'inputCostBid', 'workforceCostAsk', 'workforceCostBid', 'amountPerRecipe', 'supply', 'demand', 'traded']);
+
+        // Load bids.csv
+        const bidsResponse = await fetch('pu-tracker/cache/bids.csv');
+        const bidsText = await bidsResponse.text();
+        allBids = parseCSV(bidsText, ['ticker', 'exchange', 'companyId', 'companyName', 'companyCode', 'quantity', 'price']);
+
+        // Load planetresources.csv
+        const planetResponse = await fetch('pu-tracker/cache/planetresources.csv');
+        const planetText = await planetResponse.text();
+        planetData = parseCSV(planetText, ['key', 'planet', 'ticker', 'type', 'factor']);
+
+        // Load planet_fertility.csv
+        const fertilityResponse = await fetch('pu-tracker/cache/planet_fertility.csv');
+        const fertilityText = await fertilityResponse.text();
+        fertilityData = parseCSV(fertilityText, ['planet', 'fertility']);
+
+        // Load materials.csv for names
+        const materialsResponse = await fetch('pu-tracker/cache/materials.csv');
+        const materialsText = await materialsResponse.text();
+        const materialsLookup = parseCSV(materialsText, ['ticker', 'name', 'category', 'weight', 'volume', 'tier']);
+
+        // Create material name lookup
+        const materialNames = {};
+        materialsLookup.forEach(row => {
+          materialNames[row.ticker] = row.name;
+        });
+
+        // Add material names to allData
+        allData.forEach(row => {
+          if (row.ticker && materialNames[row.ticker]) {
+            row.materialName = materialNames[row.ticker];
           }
+        });
 
-          allData = result.data;
-          allBids = result.bids || [];
-          planetData = result.planets || [];
-          fertilityData = result.fertility || [];
+        // Set last updated timestamp (use current time since we don't have metadata)
+        const lastUpdatedElement = document.getElementById('lastUpdatedText');
+        const now = new Date();
+        const localTimeString = now.toLocaleString(undefined, {
+          year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        });
+        lastUpdatedElement.textContent = `📊 Data loaded locally (${localTimeString})`;
 
-          // Display last updated timestamp
-          const lastUpdatedElement = document.getElementById('lastUpdatedText');
-          if (result.lastUpdated) {
-            const updateDate = new Date(result.lastUpdated);
-            const now = new Date();
-            const diffMs = now - updateDate;
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            let timeAgo = '';
-            if (diffHours > 0) {
-              timeAgo = `${diffHours}h ${diffMins}m ago`;
-            } else if (diffMins > 0) {
-              timeAgo = `${diffMins}m ago`;
+        document.getElementById('loading').style.display = 'none';
+
+        // Populate dropdowns
+        populateCategories();
+        populateMaterials();
+        populateExchanges();
+
+        // Setup event listeners
+        setupEventListeners();
+
+        console.log('Data loaded successfully from local CSV files');
+        console.log('Main data rows:', allData.length);
+        console.log('Bids data rows:', allBids.length);
+        console.log('Planet data rows:', planetData.length);
+        console.log('Fertility data rows:', fertilityData.length);
+
+      } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        showError('Failed to load data from local CSV files: ' + error.message);
+        console.error('Data loading error:', error);
+      }
+    }
+
+    // Parse CSV text into array of objects
+    function parseCSV(csvText, headers) {
+      const lines = csvText.trim().split('\n');
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) { // Skip header row
+        const line = lines[i].trim();
+        if (!line) continue; // Skip empty lines
+
+        // Simple CSV parsing - split on commas
+        const values = line.split(',');
+
+        if (values.length >= headers.length) {
+          const obj = {};
+          headers.forEach((header, index) => {
+            const value = values[index] || '';
+            // Convert numeric fields
+            if (['askPrice', 'bidPrice', 'inputCostAsk', 'inputCostBid', 'workforceCostAsk', 'workforceCostBid', 'amountPerRecipe', 'supply', 'demand', 'traded', 'quantity', 'price', 'factor', 'fertility', 'weight', 'volume', 'tier'].includes(header)) {
+              obj[header] = value === '' ? 0 : parseFloat(value);
             } else {
-              timeAgo = 'just now';
+              obj[header] = value;
             }
-            const localTimeString = updateDate.toLocaleString(undefined, {
-              year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-            });
-            lastUpdatedElement.textContent = `📊 Data last updated: ${timeAgo} (${localTimeString} local time)`;
-          } else {
-            lastUpdatedElement.textContent = '📊 Data loaded successfully';
-          }
-          document.getElementById('loading').style.display = 'none';
+          });
+          data.push(obj);
+        }
+      }
 
-          // Only populate categories after allData is loaded
-          populateCategories();
-          populateMaterials();
-          populateExchanges();
-
-          // Setup event listeners for new controls
-          document.getElementById('categorySelect').addEventListener('change', function() {
-            populateMaterials();
-            loadRecipes();
-            calculate();
-          });
-          document.getElementById('materialSelect').addEventListener('change', function() {
-            loadRecipes();
-            calculate();
-          });
-          document.getElementById('recipeSelect').addEventListener('change', function() {
-            checkExtractionRecipe();
-            updateHqBonusDisplay();
-            calculate();
-          });
-          document.getElementById('planetSelect').addEventListener('change', calculate);
-          document.getElementById('exchangeSelect').addEventListener('change', calculate);
-
-          document.getElementById('expertCount').addEventListener('input', function() {
-            updateExpertBonusDisplay();
-            calculate();
-          });
-          document.getElementById('cogcBonus').addEventListener('change', calculate);
-          updateExpertBonusDisplay();
-        })
-        .withFailureHandler(function(error) {
-          document.getElementById('loading').style.display = 'none';
-          showError('Failed to load data: ' + error.message);
-        })
-        .getAllData();
+      return data;
     }
     
     // Populate category dropdown from cached data
@@ -1837,114 +1863,6 @@
         recipeSelect.appendChild(option);
       }
     }
-    
-    // Listen for selection changes
-    document.getElementById('materialSelect').addEventListener('change', function() {
-      loadRecipes();
-      calculate();
-    });
-    document.getElementById('recipeSelect').addEventListener('change', function() {
-      checkExtractionRecipe();
-      updateHqBonusDisplay(); // Update HQ status when recipe changes
-      calculate();
-    });
-    document.getElementById('planetSelect').addEventListener('change', calculate);
-    document.getElementById('exchangeSelect').addEventListener('change', calculate);
-    
-    // Handle planet search input
-    document.getElementById('planetSearch').addEventListener('input', function() {
-      const planetList = document.getElementById('planetList');
-      const planetSelect = document.getElementById('planetSelect');
-      const searchValue = this.value.trim();
-      
-      // Find matching option in datalist
-      const options = planetList.querySelectorAll('option');
-      let matchedPlanet = '';
-      
-      for (let option of options) {
-        if (option.value === searchValue) {
-          // Extract planet name from the option
-          matchedPlanet = option.getAttribute('data-planet') || searchValue.split(' (')[0];
-          break;
-        }
-      }
-      
-      // Handle "Average" option
-      if (searchValue === '' || searchValue === '-- Average (All Planets) --') {
-        matchedPlanet = '';
-      }
-      
-      // Update hidden select and trigger calculation
-      planetSelect.value = matchedPlanet;
-      calculate();
-    });
-    
-    document.getElementById('includeLuxury').addEventListener('change', function() {
-      // If luxury is checked, disable custom efficiency
-      if (this.checked) {
-        document.getElementById('customEfficiencyToggle').checked = false;
-        document.getElementById('customEfficiencyGroup').style.display = 'none';
-      }
-      calculate();
-    });
-    
-    document.getElementById('customEfficiencyToggle').addEventListener('change', function() {
-      const customGroup = document.getElementById('customEfficiencyGroup');
-      customGroup.style.display = this.checked ? 'block' : 'none';
-      
-      // If custom efficiency is enabled, uncheck luxury consumables
-      if (this.checked) {
-        document.getElementById('includeLuxury').checked = false;
-      }
-      
-      calculate();
-    });
-    
-    document.getElementById('customEfficiency').addEventListener('input', calculate);
-    // Self-production inputs listener
-    
-    // Add event listeners for new HQ and Corp HQ controls
-    document.getElementById('cogcBonus').addEventListener('change', calculate);
-    document.getElementById('expertCount').addEventListener('input', function() {
-      updateExpertBonusDisplay();
-      calculate();
-    });
-    
-    // HQ specialization method selector
-    document.getElementById('hqSpecMethod').addEventListener('change', toggleHqSpecMethod);
-    
-    // HQ faction bonus
-    document.getElementById('hqFactionBonus').addEventListener('change', function() {
-      updateHqBonusDisplay();
-      calculate();
-    });
-    
-    // Number of bases input
-    document.getElementById('hqNumBases').addEventListener('input', function() {
-      updateHqMultiplierFromBases();
-      updateHqBonusDisplay();
-      calculate();
-    });
-    
-    // Permits inputs
-    document.getElementById('hqUsedPermits').addEventListener('input', function() {
-      updateHqMultiplierFromPermits();
-      updateHqBonusDisplay();
-      calculate();
-    });
-    document.getElementById('hqTotalPermits').addEventListener('input', function() {
-      updateHqMultiplierFromPermits();
-      updateHqBonusDisplay();
-      calculate();
-    });
-    
-    // Manual multiplier input
-    document.getElementById('hqMultiplier').addEventListener('input', function() {
-      updateHqBonusDisplay();
-      calculate();
-    });
-    
-    document.getElementById('corpHqBonus').addEventListener('change', calculate);
     
     // Calculate and display results using cached data
     function calculate() {
@@ -3410,6 +3328,117 @@ function getArbitrageOpportunitiesFromCache(material, selectedExchange) {
       const errorDiv = document.getElementById('error');
       errorDiv.textContent = message;
       errorDiv.style.display = 'block';
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      // Listen for selection changes
+      document.getElementById('materialSelect').addEventListener('change', function() {
+        loadRecipes();
+        calculate();
+      });
+      document.getElementById('recipeSelect').addEventListener('change', function() {
+        checkExtractionRecipe();
+        updateHqBonusDisplay(); // Update HQ status when recipe changes
+        calculate();
+      });
+      document.getElementById('planetSelect').addEventListener('change', calculate);
+      document.getElementById('exchangeSelect').addEventListener('change', calculate);
+      
+      // Handle planet search input
+      document.getElementById('planetSearch').addEventListener('input', function() {
+        const planetList = document.getElementById('planetList');
+        const planetSelect = document.getElementById('planetSelect');
+        const searchValue = this.value.trim();
+        
+        // Find matching option in datalist
+        const options = planetList.querySelectorAll('option');
+        let matchedPlanet = '';
+        
+        for (let option of options) {
+          if (option.value === searchValue) {
+            // Extract planet name from the option
+            matchedPlanet = option.getAttribute('data-planet') || searchValue.split(' (')[0];
+            break;
+          }
+        }
+        
+        // Handle "Average" option
+        if (searchValue === '' || searchValue === '-- Average (All Planets) --') {
+          matchedPlanet = '';
+        }
+        
+        // Update hidden select and trigger calculation
+        planetSelect.value = matchedPlanet;
+        calculate();
+      });
+      
+      document.getElementById('includeLuxury').addEventListener('change', function() {
+        // If luxury is checked, disable custom efficiency
+        if (this.checked) {
+          document.getElementById('customEfficiencyToggle').checked = false;
+          document.getElementById('customEfficiencyGroup').style.display = 'none';
+        }
+        calculate();
+      });
+      
+      document.getElementById('customEfficiencyToggle').addEventListener('change', function() {
+        const customGroup = document.getElementById('customEfficiencyGroup');
+        customGroup.style.display = this.checked ? 'block' : 'none';
+        
+        // If custom efficiency is enabled, uncheck luxury consumables
+        if (this.checked) {
+          document.getElementById('includeLuxury').checked = false;
+        }
+        
+        calculate();
+      });
+      
+      document.getElementById('customEfficiency').addEventListener('input', calculate);
+      // Self-production inputs listener
+      
+      // Add event listeners for new HQ and Corp HQ controls
+      document.getElementById('cogcBonus').addEventListener('change', calculate);
+      document.getElementById('expertCount').addEventListener('input', function() {
+        updateExpertBonusDisplay();
+        calculate();
+      });
+      
+      // HQ specialization method selector
+      document.getElementById('hqSpecMethod').addEventListener('change', toggleHqSpecMethod);
+      
+      // HQ faction bonus
+      document.getElementById('hqFactionBonus').addEventListener('change', function() {
+        updateHqBonusDisplay();
+        calculate();
+      });
+      
+      // Number of bases input
+      document.getElementById('hqNumBases').addEventListener('input', function() {
+        updateHqMultiplierFromBases();
+        updateHqBonusDisplay();
+        calculate();
+      });
+      
+      // Permits inputs
+      document.getElementById('hqUsedPermits').addEventListener('input', function() {
+        updateHqMultiplierFromPermits();
+        updateHqBonusDisplay();
+        calculate();
+      });
+      document.getElementById('hqTotalPermits').addEventListener('input', function() {
+        updateHqMultiplierFromPermits();
+        updateHqBonusDisplay();
+        calculate();
+      });
+      
+      // Manual multiplier input
+      document.getElementById('hqMultiplier').addEventListener('input', function() {
+        updateHqBonusDisplay();
+        calculate();
+      });
+      
+      document.getElementById('corpHqBonus').addEventListener('change', calculate);
     }
   </script>
 </body>

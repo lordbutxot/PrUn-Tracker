@@ -342,5 +342,12 @@ class PrUnArbitrageCalculator {
     }
 }
 
-// Export for use in the main app
-window.PrUnArbitrageCalculator = PrUnArbitrageCalculator;
+// Export for use in the main app (only if window is available)
+if (typeof window !== 'undefined') {
+    window.PrUnArbitrageCalculator = PrUnArbitrageCalculator;
+}
+
+// Also export as a module if in a module context
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PrUnArbitrageCalculator;
+}
