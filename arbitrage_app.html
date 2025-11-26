@@ -501,7 +501,22 @@
 
     <script src="arbitrage_calculator.js"></script>
     <script>
-        let arbitrageCalculator = new PrUnArbitrageCalculator();
+        // CONFIGURATION: Replace with your Google Apps Script web app URL
+        // Get this from: Google Apps Script → Deploy → New deployment → Web app → Copy the URL
+        // Example: https://script.google.com/macros/s/ABC123.../exec
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+
+        // Check if URL is configured
+        if (GOOGLE_APPS_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+            alert('Please configure your Google Apps Script URL in the arbitrage_app.html file!\n\n' +
+                  '1. Deploy your Google Apps Script as a web app\n' +
+                  '2. Copy the web app URL\n' +
+                  '3. Replace YOUR_SCRIPT_ID in this file');
+        }
+
+        let arbitrageCalculator = new PrUnArbitrageCalculator({
+            googleAppsScriptUrl: GOOGLE_APPS_SCRIPT_URL
+        });
         let allArbitrageData = [];
         let filteredData = [];
         let currentSort = { column: 'profit', direction: 'desc' };

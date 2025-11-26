@@ -1,26 +1,6 @@
-// Test script to verify arbitrage calculator
-const { PrUnArbitrageCalculator } = require('./arbitrage_calculator.js');
+// Test script to verify arbitrage calculator loads data correctly
+// This is a browser-based test - open test_arbitrage.html in browser
 
-async function testCalculator() {
-    console.log('Testing arbitrage calculator...');
+console.log('Arbitrage calculator test loaded');
 
-    const calculator = new PrUnArbitrageCalculator();
-
-    try {
-        await calculator.initialize();
-
-        console.log('Orders data length:', calculator.ordersData.length);
-        console.log('All data length:', calculator.allData.length);
-        console.log('Arbitrage opportunities found:', calculator.arbitrageData.length);
-
-        // Show first few opportunities
-        calculator.arbitrageData.slice(0, 5).forEach((opp, i) => {
-            console.log(`${i+1}. ${opp.ticker}: ${opp.buy_exchange} -> ${opp.sell_exchange}, Profit: ${opp.profit}, ROI: ${opp.roi}%, Size: ${opp.size}`);
-        });
-
-    } catch (error) {
-        console.error('Test failed:', error);
-    }
-}
-
-testCalculator();
+// This will be run in the browser context where the calculator is loaded

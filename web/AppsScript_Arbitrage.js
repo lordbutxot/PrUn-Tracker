@@ -33,10 +33,74 @@
 // ====================================================================
 
 // Main function to serve the HTML page
-function doGet() {
+function doGet(e) {
+  // Check if this is an API request
+  if (e.parameter.action === 'getArbitrageData') {
+    return getArbitrageDataAPI();
+  }
+
+  // Otherwise serve the HTML page
   return HtmlService.createHtmlOutputFromFile('ArbitrageIndex')
     .setTitle('PrUn Arbitrage Opportunities')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // Allow embedding
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .setContent(getHtmlWithData());
+}
+
+// API endpoint for arbitrage data
+function getArbitrageDataAPI() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Get orders (sell orders/asks)
+    const ordersSheet = ss.getSheetByName('Orders');
+    if (!ordersSheet) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ error: 'Orders sheet not found' }))
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeaders({'Access-Control-Allow-Origin': '*'});
+    }
+    const ordersData = ordersSheet.getDataRange().getValues();
+
+    // Get bids (buy orders)
+    const bidsSheet = ss.getSheetByName('Bids');
+    if (!bidsSheet) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ error: 'Bids sheet not found' }))
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeaders({'Access-Control-Allow-Origin': '*'});
+    }
+    const bidsData = bidsSheet.getDataRange().getValues();
+
+    // Get market data for material names
+    const marketSheet = ss.getSheetByName('Market Data');
+    const marketData = marketSheet ? marketSheet.getDataRange().getValues() : [];
+
+    // Process the data
+    const arbitrageOpportunities = computeArbitrageOpportunities(ordersData, bidsData, marketData);
+
+    const response = {
+      success: true,
+      data: arbitrageOpportunities,
+      timestamp: new Date().toISOString(),
+      totalOpportunities: arbitrageOpportunities.length
+    };
+
+    return ContentService
+      .createTextOutput(JSON.stringify(response))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders({'Access-Control-Allow-Origin': '*'});
+
+  } catch (error) {
+    const errorResponse = {
+      error: error.toString(),
+      timestamp: new Date().toISOString()
+    };
+
+    return ContentService
+      .createTextOutput(JSON.stringify(errorResponse))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders({'Access-Control-Allow-Origin': '*'});
+  }
 }
 
 // Get arbitrage data from Google Sheets

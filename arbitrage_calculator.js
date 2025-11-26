@@ -2,20 +2,23 @@
 // Enhanced arbitrage functionality for the dedicated arbitrage app
 
 class PrUnArbitrageCalculator {
-    constructor() {
+    constructor(options = {}) {
         this.allData = [];
         this.arbitrageData = [];
         this.ordersData = [];
         this.isLoading = false;
+
+        // Configuration
+        this.googleAppsScriptUrl = options.googleAppsScriptUrl ||
+            'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
     }
 
     // Initialize the calculator
     async initialize() {
         this.isLoading = true;
         try {
-            await this.loadData();
-            this.arbitrageData = this.computeArbitrageOpportunities();
-            this.arbitrageData = this.assignOpportunityLevels(this.arbitrageData);
+            await this.loadLocalData();
+            // Arbitrage data is computed locally now
         } catch (error) {
             console.error('Failed to initialize arbitrage calculator:', error);
             throw error;
@@ -24,91 +27,73 @@ class PrUnArbitrageCalculator {
         }
     }
 
-    // Load data from CSV files
-    async loadData() {
-        console.log('Loading data from cache CSV files...');
+    // Load data from local CSV files
+    async loadLocalData() {
+        console.log('Loading data from local CSV files...');
 
         try {
-            // Load orders data (asks/sell orders)
-            console.log('Loading orders.csv...');
-            const ordersResponse = await fetch('/pu-tracker/cache/orders.csv');
-            if (!ordersResponse.ok) {
-                throw new Error(`Failed to load orders.csv: HTTP ${ordersResponse.status}`);
-            }
+            // Load orders.csv (asks)
+            const ordersResponse = await fetch('pu-tracker/cache/orders.csv');
             const ordersText = await ordersResponse.text();
-            console.log('Orders CSV loaded, length:', ordersText.length);
             this.ordersData = this.parseCSV(ordersText, ['MaterialTicker', 'ExchangeCode', 'CompanyId', 'CompanyName', 'CompanyCode', 'ItemCount', 'ItemCost']);
-            console.log('Parsed orders data:', this.ordersData.length, 'rows');
 
-            // Load bids data (bids/buy orders)
-            console.log('Loading bids.csv...');
-            const bidsResponse = await fetch('/pu-tracker/cache/bids.csv');
-            if (!bidsResponse.ok) {
-                throw new Error(`Failed to load bids.csv: HTTP ${bidsResponse.status}`);
-            }
+            // Load bids.csv (bids)
+            const bidsResponse = await fetch('pu-tracker/cache/bids.csv');
             const bidsText = await bidsResponse.text();
-            console.log('Bids CSV loaded, length:', bidsText.length);
             const bidsData = this.parseCSV(bidsText, ['MaterialTicker', 'ExchangeCode', 'CompanyId', 'CompanyName', 'CompanyCode', 'ItemCount', 'ItemCost']);
-            console.log('Parsed bids data:', bidsData.length, 'rows');
 
-            // Combine orders and bids into a unified orders data structure
-            this.ordersData = [
-                ...this.ordersData.map(order => ({
-                    ...order,
-                    Side: 'ask',
-                    Price: parseFloat(order.ItemCost),
-                    Quantity: parseInt(order.ItemCount),
-                    Ticker: order.MaterialTicker,
-                    Exchange: order.ExchangeCode
-                })),
-                ...bidsData.map(bid => ({
-                    ...bid,
-                    Side: 'bid',
-                    Price: parseFloat(bid.ItemCost),
-                    Quantity: parseInt(bid.ItemCount),
-                    Ticker: bid.MaterialTicker,
-                    Exchange: bid.ExchangeCode
-                }))
-            ];
-            console.log('Combined orders data:', this.ordersData.length, 'total orders');
+            // Load materials.csv for names
+            const materialsResponse = await fetch('pu-tracker/cache/materials.csv');
+            const materialsText = await materialsResponse.text();
+            const materialsData = this.parseCSV(materialsText, ['Ticker', 'Name', 'Category', 'Weight', 'Volume', 'Tier']);
+            const materialNames = {};
+            materialsData.forEach(row => {
+                materialNames[row.Ticker] = row.Name;
+            });
 
-            // Load market data for material names and categories
-            console.log('Loading market_data.csv...');
-            const marketResponse = await fetch('/pu-tracker/cache/market_data.csv');
-            if (!marketResponse.ok) {
-                throw new Error(`Failed to load market_data.csv: HTTP ${marketResponse.status}`);
-            }
-            const marketText = await marketResponse.text();
-            console.log('Market data CSV loaded, length:', marketText.length);
-            this.allData = this.parseMarketDataCSV(marketText);
-            console.log('Parsed market data:', this.allData.length, 'rows');
+            // Compute arbitrage opportunities
+            this.arbitrageData = this.computeArbitrageOpportunities(this.ordersData, bidsData, materialsData);
 
-            console.log('All cache data loaded successfully!');
+            // Create mock allData for compatibility
+            this.allData = this.createMockMarketDataFromArbitrageData(this.arbitrageData);
+
+            console.log('Data loaded successfully from local CSV files!');
+            console.log('Arbitrage opportunities:', this.arbitrageData.length);
 
         } catch (error) {
-            console.error('Failed to load cache data:', error);
+            console.error('Failed to load data from local CSV files:', error);
             throw new Error(`Data loading failed: ${error.message}`);
         }
     }
 
-    // Compute arbitrage opportunities using the same logic as the Python script
-    computeArbitrageOpportunities() {
-        console.log('Computing arbitrage opportunities from real market data...');
+    // Compute arbitrage opportunities using order book crossing
+    computeArbitrageOpportunities(ordersData, bidsData, materialsData) {
         const arbitrageRows = [];
-        const exchanges = [...new Set(this.ordersData.map(item => item.Exchange))];
-        const tickers = [...new Set(this.ordersData.map(item => item.Ticker))];
+        const exchanges = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2'];
+        const tickers = new Set();
 
-        console.log('Found exchanges:', exchanges);
-        console.log('Found tickers:', tickers.length, 'unique materials');
+        // Collect all unique tickers
+        ordersData.forEach(row => {
+            if (row.MaterialTicker) tickers.add(row.MaterialTicker);
+        });
+        bidsData.forEach(row => {
+            if (row.MaterialTicker) tickers.add(row.MaterialTicker);
+        });
 
-        let totalOpportunities = 0;
+        // Create material name lookup
+        const materialNames = {};
+        materialsData.forEach(row => {
+            if (row.Ticker && row.Name) {
+                materialNames[row.Ticker] = row.Name;
+            }
+        });
 
         for (const ticker of tickers) {
             for (const buyEx of exchanges) {
                 for (const sellEx of exchanges) {
                     if (buyEx === sellEx) continue;
 
-                    const size = this.computeArbitrageOpportunitySize(ticker, buyEx, sellEx);
+                    const size = this.computeArbitrageOpportunitySizeLocal(ticker, buyEx, sellEx, ordersData, bidsData);
                     if (size.matchedQty > 0 && size.matches.length > 0) {
                         const totalBuy = size.matches.reduce((sum, match) => sum + (match.askPrice * match.qty), 0);
                         const totalSell = size.matches.reduce((sum, match) => sum + (match.bidPrice * match.qty), 0);
@@ -117,15 +102,12 @@ class PrUnArbitrageCalculator {
                         const profitPerUnit = size.totalProfit / size.matchedQty;
                         const roi = avgBuy > 0 ? (profitPerUnit / avgBuy) * 100 : 0;
 
-                        // Get material name from market data
-                        const matRows = this.allData.filter(item => item.Ticker === ticker);
-                        const name = matRows.length > 0 ? (matRows[0]['Material Name'] || ticker) : ticker;
-                        const product = ticker;
+                        const name = materialNames[ticker] || ticker;
 
                         arbitrageRows.push({
                             ticker: ticker,
                             name: name,
-                            product: product,
+                            product: ticker,
                             buy_exchange: buyEx,
                             sell_exchange: sellEx,
                             buy_price: Number(avgBuy.toFixed(2)),
@@ -135,40 +117,37 @@ class PrUnArbitrageCalculator {
                             size: Math.floor(size.matchedQty),
                             level: null // Will be assigned later
                         });
-
-                        totalOpportunities++;
-
-                        // Debug: Show first few opportunities
-                        if (totalOpportunities <= 5) {
-                            console.log(`Found opportunity: ${ticker} ${buyEx}->${sellEx}: Buy@${avgBuy.toFixed(2)}, Sell@${avgSell.toFixed(2)}, Profit:${profitPerUnit.toFixed(2)}, ROI:${roi.toFixed(2)}%, Size:${size.matchedQty}`);
-                        }
                     }
                 }
             }
         }
 
-        console.log('Found', arbitrageRows.length, 'arbitrage opportunities from real market data');
-        return arbitrageRows;
+        // Assign opportunity levels
+        const opportunitiesWithLevels = this.assignOpportunityLevels(arbitrageRows);
+
+        // Sort by profit descending
+        return opportunitiesWithLevels.sort((a, b) => b.profit - a.profit);
     }
 
-    // Compute arbitrage opportunity size for specific ticker and exchanges
-    computeArbitrageOpportunitySize(ticker, buyEx, sellEx) {
+    // Compute arbitrage opportunity size for specific ticker and exchanges (local version)
+    computeArbitrageOpportunitySizeLocal(ticker, buyEx, sellEx, ordersData, bidsData) {
         // Get asks from buy exchange (where you buy) - sorted by price ascending
-        const asks = this.ordersData
-            .filter(order => order.Ticker === ticker && order.Exchange === buyEx && order.Side === 'ask')
-            .sort((a, b) => a.Price - b.Price);
+        const asks = ordersData
+            .filter(row => row.MaterialTicker === ticker && row.ExchangeCode === buyEx)
+            .map(row => ({
+                price: parseFloat(row.ItemCost),
+                quantity: parseInt(row.ItemCount)
+            }))
+            .sort((a, b) => a.price - b.price);
 
         // Get bids from sell exchange (where you sell) - sorted by price descending
-        const bids = this.ordersData
-            .filter(order => order.Ticker === ticker && order.Exchange === sellEx && order.Side === 'bid')
-            .sort((a, b) => b.Price - a.Price);
-
-        // Debug logging
-        if (ticker === 'AAR' && buyEx === 'AI1' && sellEx === 'CI1') {
-            console.log(`Checking ${ticker}: ${buyEx} -> ${sellEx}`);
-            console.log('Asks:', asks.slice(0, 3));
-            console.log('Bids:', bids.slice(0, 3));
-        }
+        const bids = bidsData
+            .filter(row => row.MaterialTicker === ticker && row.ExchangeCode === sellEx)
+            .map(row => ({
+                price: parseFloat(row.ItemCost),
+                quantity: parseInt(row.ItemCount)
+            }))
+            .sort((a, b) => b.price - a.price);
 
         let askIdx = 0;
         let bidIdx = 0;
@@ -177,10 +156,10 @@ class PrUnArbitrageCalculator {
         const matches = [];
 
         while (askIdx < asks.length && bidIdx < bids.length) {
-            const askPrice = asks[askIdx].Price;
-            const askQty = asks[askIdx].Quantity;
-            const bidPrice = bids[bidIdx].Price;
-            const bidQty = bids[bidIdx].Quantity;
+            const askPrice = asks[askIdx].price;
+            const askQty = asks[askIdx].quantity;
+            const bidPrice = bids[bidIdx].price;
+            const bidQty = bids[bidIdx].quantity;
 
             if (bidPrice >= askPrice) {
                 const qty = Math.min(askQty, bidQty);
@@ -196,11 +175,11 @@ class PrUnArbitrageCalculator {
                 totalProfit += profit;
 
                 // Update quantities
-                asks[askIdx].Quantity -= qty;
-                bids[bidIdx].Quantity -= qty;
+                asks[askIdx].quantity -= qty;
+                bids[bidIdx].quantity -= qty;
 
-                if (asks[askIdx].Quantity <= 0) askIdx++;
-                if (bids[bidIdx].Quantity <= 0) bidIdx++;
+                if (asks[askIdx].quantity <= 0) askIdx++;
+                if (bids[bidIdx].quantity <= 0) bidIdx++;
             } else {
                 break;
             }
@@ -213,27 +192,16 @@ class PrUnArbitrageCalculator {
         };
     }
 
-    // Assign opportunity levels based on ROI and size
-    assignOpportunityLevels(arbitrageData) {
-        return arbitrageData.map(item => {
-            const roi = item.roi;
-            const size = item.size;
-
-            let level = 'Very Low';
-            if (roi > 100 && size >= 1000) {
-                level = 'Very High';
-            } else if (roi > 50 && size >= 500) {
+    // Assign opportunity levels based on ROI thresholds
+    assignOpportunityLevels(opportunities) {
+        return opportunities.map(opp => {
+            let level = 'Low';
+            if (opp.roi >= 10) {
                 level = 'High';
-            } else if (roi > 20 && size >= 100) {
+            } else if (opp.roi >= 5) {
                 level = 'Medium';
-            } else if (roi > 5 && size >= 10) {
-                level = 'Low';
             }
-
-            // Debug: Show all opportunities regardless of level
-            // console.log(`Opportunity: ${item.ticker} ${item.buy_exchange}->${item.sell_exchange}: ROI=${roi.toFixed(2)}%, Size=${size}, Level=${level}`);
-
-            return { ...item, level: level };
+            return { ...opp, level: level };
         });
     }
 
@@ -317,36 +285,60 @@ class PrUnArbitrageCalculator {
         return data;
     }
 
-    // Parse market data CSV with complex structure
-    parseMarketDataCSV(csvText) {
-        const lines = csvText.trim().split('\n');
-        const headers = lines[0].split(',');
-        const data = [];
+    // Create mock orders data from arbitrage opportunities for compatibility
+    createMockOrdersFromArbitrageData(arbitrageData) {
+        const orders = [];
 
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const ticker = values[0];
-
-            // Parse data for each exchange
-            const exchanges = ['AI1', 'CI1', 'CI2', 'NC1', 'NC2', 'IC1'];
-            exchanges.forEach(exchange => {
-                const baseIndex = headers.findIndex(h => h.startsWith(`${exchange}-`));
-                if (baseIndex !== -1 && values[baseIndex + 5] && values[baseIndex + 5] !== '0') { // Check if bid available
-                    data.push({
-                        Ticker: ticker,
-                        'Material Name': ticker, // Will be updated if we have materials.csv
-                        Product: ticker,
-                        Exchange: exchange,
-                        Ask_Price: parseFloat(values[baseIndex + 2]) || 0,
-                        Bid_Price: parseFloat(values[baseIndex + 4]) || 0,
-                        Ask_Amount: parseInt(values[baseIndex + 1]) || 0,
-                        Bid_Amount: parseInt(values[baseIndex + 3]) || 0
-                    });
-                }
+        // Create minimal order data for each unique ticker/exchange combination
+        arbitrageData.forEach(opp => {
+            // Add buy order (ask) for buy exchange
+            orders.push({
+                Ticker: opp.ticker,
+                Exchange: opp.buy_exchange,
+                Side: 'ask',
+                Price: opp.buy_price,
+                Quantity: opp.size,
+                CompanyId: 'MOCK_BUY',
+                CompanyName: 'Mock Buyer',
+                CompanyCode: 'MB'
             });
-        }
 
-        return data;
+            // Add sell order (bid) for sell exchange
+            orders.push({
+                Ticker: opp.ticker,
+                Exchange: opp.sell_exchange,
+                Side: 'bid',
+                Price: opp.sell_price,
+                Quantity: opp.size,
+                CompanyId: 'MOCK_SELL',
+                CompanyName: 'Mock Seller',
+                CompanyCode: 'MS'
+            });
+        });
+
+        return orders;
+    }
+
+    // Create mock market data from arbitrage opportunities for compatibility
+    createMockMarketDataFromArbitrageData(arbitrageData) {
+        const marketData = [];
+        const uniqueTickers = [...new Set(arbitrageData.map(opp => opp.ticker))];
+
+        uniqueTickers.forEach(ticker => {
+            const opp = arbitrageData.find(o => o.ticker === ticker);
+            if (opp) {
+                marketData.push({
+                    Ticker: ticker,
+                    'Material Name': opp.name || ticker,
+                    CategoryName: 'Unknown',
+                    Price: opp.buy_price,
+                    Supply: 1000,
+                    Demand: 1000
+                });
+            }
+        });
+
+        return marketData;
     }
 }
 

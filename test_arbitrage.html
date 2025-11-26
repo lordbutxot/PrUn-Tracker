@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Arbitrage Calculator</title>
+</head>
+<body>
+    <h1>Testing Arbitrage Calculator</h1>
+    <div id="output"></div>
+
+    <script src="arbitrage_calculator.js"></script>
+    <script src="test_arbitrage.js"></script>
+    <script>
+        async function runTest() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>Testing arbitrage calculator...</p>';
+
+            try {
+                console.log('Creating calculator...');
+                const calculator = new PrUnArbitrageCalculator();
+                output.innerHTML += '<p>Calculator created</p>';
+
+                console.log('Initializing calculator...');
+                await calculator.initialize();
+                output.innerHTML += '<p>Calculator initialized</p>';
+
+                console.log('Arbitrage data loaded:', calculator.arbitrageData.length, 'opportunities');
+                output.innerHTML += `<p>Arbitrage opportunities found: ${calculator.arbitrageData.length}</p>`;
+
+                console.log('Orders data length:', calculator.ordersData.length);
+                output.innerHTML += `<p>Orders data length: ${calculator.ordersData.length}</p>`;
+
+                console.log('All data length:', calculator.allData.length);
+                output.innerHTML += `<p>All data length: ${calculator.allData.length}</p>`;
+
+                // Show first few opportunities
+                output.innerHTML += '<h2>Sample Opportunities:</h2><ul>';
+                calculator.arbitrageData.slice(0, 5).forEach((opp, i) => {
+                    output.innerHTML += `<li>${i+1}. ${opp.ticker}: ${opp.buy_exchange} -> ${opp.sell_exchange}, Profit: ${opp.profit}, ROI: ${opp.roi}%, Size: ${opp.size}</li>`;
+                });
+                output.innerHTML += '</ul>';
+
+                output.innerHTML += '<p style="color: green;">Test completed successfully!</p>';
+
+            } catch (error) {
+                console.error('Test failed:', error);
+                output.innerHTML += `<p style="color: red;">Test failed: ${error.message}</p>`;
+            }
+        }
+
+        // Run test when page loads
+        window.addEventListener('load', runTest);
+    </script>
+</body>
+</html>
