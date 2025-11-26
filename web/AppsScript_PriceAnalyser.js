@@ -38,7 +38,9 @@
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('PrUn Price Analyser')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // Allow embedding
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setSandboxMode(HtmlService.SandboxMode.IFRAME); // Try different sandbox mode
 }
 
 // TEST FUNCTION - Analyze byproduct recipes
