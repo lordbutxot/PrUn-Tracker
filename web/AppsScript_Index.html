@@ -1737,7 +1737,7 @@
       planetList.innerHTML = '<option value="">-- Average (All Planets) --</option>';
       planets.forEach(function(planet) {
         const option = document.createElement('option');
-        const fertilityPercent = (planet.fertility * 100).toFixed(1);
+        const fertilityPercent = ( planet.fertility * 100).toFixed(1);
         option.value = planet.planet + ' (Fertility: ' + fertilityPercent + '%)';
         option.setAttribute('data-planet', planet.planet);
         planetList.appendChild(option);
@@ -1771,7 +1771,7 @@
             const outputPart = row.recipe.split('=>')[1];
             if (outputPart) {
               const outputs = outputPart.split('-').map(item => {
-                const match = item.match(/(\d+)x([A-Z]+)/);
+                const match = item.match(/(\d+)x([A-Z0-9]+)/);
                 return match ? match[2] : item;
               });
               if (outputs.includes(material)) {
@@ -1786,19 +1786,16 @@
               // Skip extraction recipes for C
             } else {
               if (!recipesMap.has(row.recipe)) {
-                const building = row.recipe.split(':')[0];
-                // Create a shortened input string for the label
-                let inputLabel = '';
-                if (row.recipe.includes('=>')) {
-                  const inputPart = row.recipe.split('=>')[0].split(':')[1] || row.recipe.split('=>')[0];
-                  const inputs = inputPart.split('-').map(item => {
-                    const match = item.match(/(\d+)x([A-Z0-9]+)/);
-                    return match ? match[2] : item; // Just the ticker, not the amount
-                  });
-                  inputLabel = inputs.join('+');
+                const realRecipe = row.recipe;
+                let label = realRecipe;
+                if (realRecipe && realRecipe.includes('=>')) {
+                  const [left, right] = realRecipe.split('=>');
+                  const building = left.split(':')[0];
+                  const inputs = (left.split(':')[1] || '').split('-').map(i => i.replace('x', '×')).join(' + ');
+                  const outputs = right.split('-').map(o => o.replace('x', '×')).join(' + ');
+                  label = `${building}: ${inputs} → ${outputs}`;
                 }
-                let label = material + (inputLabel ? ':' + inputLabel : ''); // Show material ticker with inputs
-                recipesMap.set(row.recipe, { key: row.recipe, label: label, building: building });
+                recipesMap.set(row.recipe, { key: row.recipe, label: label, building: row.recipe.split(':')[0] });
                 hasRecipes = true;
               }
             }
@@ -1898,7 +1895,7 @@
       calculate();
     });
     
-    // HQ specialization method selector
+    // HQ specialization method
     document.getElementById('hqSpecMethod').addEventListener('change', toggleHqSpecMethod);
     
     // HQ faction bonus
@@ -1967,7 +1964,7 @@
         const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const recommendationData = recipe ? getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) : null;
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
-        const arbitrageData = getArbitrageOpportunitiesFromCache(exchange);
+        const arbitrageData = getArbitrageOpportunitiesFromCache(exchange, material);
         
         const endTime = performance.now();
         const calcTime = (endTime - startTime).toFixed(1);
@@ -2054,73 +2051,81 @@
         if (rowMatchesMaterial && row.exchange === exchange) {
           if (recipe && row.recipe === recipe) {
             bestRow = row;
-            break;
-          }
-          
-          if (!recipe) {
-            let inputCostAsk = row.inputCostAsk;
-            let workforceCostAsk = row.workforceCostAsk;
-            
-            // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
-            // Apply efficiency penalty based on settings
-            if (customEfficiencyEnabled) {
-              // Custom efficiency: convert percentage to multiplier
-              const efficiencyMultiplier = 100 / customEfficiency;
-              workforceCostAsk *= efficiencyMultiplier;
-            } else if (!includeLuxury) {
-              // Default: 79% efficiency
-              workforceCostAsk *= (1 / 0.79);
+            // ...existing code...
+            let recipeInputs = '';
+            let recipeOutputs = '';
+            let recipeString = '';
+            try {
+              if (bestRow && typeof bestRow.recipe !== 'undefined' && bestRow.recipe !== null) {
+                recipeString = String(bestRow.recipe);
+              } else {
+                recipeString = 'N/A';
+              }
+            } catch (e) {
+              recipeString = 'N/A';
             }
-            
-            const totalCost = inputCostAsk + workforceCostAsk;
-            if (totalCost < lowestCost) {
-              lowestCost = totalCost;
-              bestRow = row;
+            // Support both '=>' and ':' recipe formats
+            try {
+              if (recipeString !== 'N/A') {
+                if (recipeString.includes('=>')) {
+                  // Standard recipe format: BUILDING:inputs=>outputs
+                  const parts = recipeString.split('=>');
+                  const inputPart = parts[0].split(':')[1] || parts[0];
+                  const outputPart = parts[1];
+                  recipeInputs = inputPart.split('-').map(item => {
+                    const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                    return match ? match[1] + ' ' + match[2] : item;
+                  }).join(', ');
+                  // For extraction recipes with a selected planet, calculate actual output using PCT formula
+                  if (isExtraction && planet) {
+                    const building = recipeString.split('=>')[0];
+                    const planetFactor = getPlanetFactorClientSide(material, planet);
+                    if (planetFactor > 0) {
+                      // Official PCT Extraction Formula
+                      // Step 1: Daily extraction = (Concentration × 100) × Multiplier
+                      const multiplier = (building === 'COL') ? 0.6 : 0.7;
+                      const dailyExtraction = (planetFactor * 100) * multiplier;
+                      // Step 2: Base cycle time (hours)
+                      const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
+                      // Step 3: Units per cycle
+                      const cyclesPerDay = 24 / baseCycleTime;
+                      const unitsPerCycle = dailyExtraction / cyclesPerDay;
+                      // Step 4: Round up to get actual output
+                      const actualOutput = Math.ceil(unitsPerCycle);
+                      // Display the calculated output instead of the base "100" from recipe
+                      recipeOutputs = actualOutput + ' ' + material;
+                    } else {
+                      // No concentration data, fall back to parsing recipe string
+                      recipeOutputs = outputPart.split('-').map(item => {
+                        const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                        return match ? match[1] + ' ' + match[2] : item;
+                      }).join(', ');
+                    }
+                  } else {
+                    // Normal production recipe or extraction without planet selection
+                    recipeOutputs = outputPart.split('-').map(item => {
+                      const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                      return match ? match[1] + ' ' + match[2] : item;
+                    }).join(', ');
+                  }
+                } else if (recipeString.includes(':')) {
+                  // Simple recipe format: BUILDING:inputs
+                  const parts = recipeString.split(':');
+                  const building = parts[0];
+                  const inputPart = parts[1] || '';
+                  recipeInputs = inputPart.split('-').map(item => {
+                    const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                    return match ? match[1] + ' ' + match[2] : item;
+                  }).join(', ');
+                  recipeOutputs = material; // Output is the selected material
+                }
+              }
+            } catch (e) {
+              recipeInputs = '';
+              recipeOutputs = '';
             }
-          }
+      }
         }
-      }
-      
-      if (!bestRow) {
-        return { error: 'No data found for ' + material + ' on ' + exchange };
-      }
-      
-      // Apply modifiers
-      let inputCostAsk = bestRow.inputCostAsk;
-      let inputCostBid = bestRow.inputCostBid;
-      let workforceCostAsk = bestRow.workforceCostAsk;
-      let workforceCostBid = bestRow.workforceCostBid;
-      
-      // Check if this is a byproduct (no recipe)
-      const isByproduct = !bestRow.recipe || bestRow.recipe === 'N/A';
-      
-      // Check if this is an extraction recipe
-      const recipeStr = bestRow.recipe || '';
-      const isExtraction = recipeStr.startsWith('COL=>') || recipeStr.startsWith('EXT=>') || recipeStr.startsWith('RIG=>');
-      
-      // Check if this is a farming recipe
-      const isFarming = recipeStr.startsWith('FRM:') || recipeStr.startsWith('ORC:') || recipeStr.startsWith('VIN:');
-      
-      // For byproducts, set costs to 0 (market-only)
-      if (isByproduct) {
-        inputCostAsk = 0;
-        inputCostBid = 0;
-        workforceCostAsk = 0;
-        workforceCostBid = 0;
-      }
-      // Total Efficiency = Base Worker Efficiency + Planet Bonus/Penalty + CoGC Program + Experts
-      // Example: 79% worker + 40% fertility + 25% CoGC + 22% (2 experts) = 166% total = faster production
-      // Production time = Base time / Total Efficiency
-      // Workforce cost = Base cost / Total Efficiency
-      let totalEfficiency = 1.0; // Start with 100% base efficiency
-      
-      // Apply worker efficiency modifier
-      if (customEfficiencyEnabled) {
-        totalEfficiency = customEfficiency / 100; // e.g., 79% = 0.79
-      } else if (!includeLuxury) {
-        totalEfficiency = 0.79; // 79% without luxury
-      }
-      
       // Apply planet-specific bonuses/penalties (ADDITIVE)
       if (isExtraction && planet) {
         const planetFactor = getPlanetFactorClientSide(material, planet);
@@ -2181,54 +2186,73 @@
       // Parse recipe
       let recipeInputs = '';
       let recipeOutputs = '';
-      const recipeString = bestRow.recipe || 'N/A';
-      
-      if (recipeString !== 'N/A' && recipeString.includes('=>')) {
-        const parts = recipeString.split('=>');
-        const inputPart = parts[0].split(':')[1] || parts[0];
-        const outputPart = parts[1];
-        
-        recipeInputs = inputPart.split('-').map(item => {
-          const match = item.match(/(\d+)x([A-Z0-9]+)/);
-          return match ? match[1] + ' ' + match[2] : item;
-        }).join(', ');
-        
-        // For extraction recipes with a selected planet, calculate actual output using PCT formula
-        if (isExtraction && planet) {
-          const building = recipeString.split('=>')[0];
-          const planetFactor = getPlanetFactorClientSide(material, planet);
-          
-          if (planetFactor > 0) {
-            // Official PCT Extraction Formula
-            // Step 1: Daily extraction = (Concentration × 100) × Multiplier
-            const multiplier = (building === 'COL') ? 0.6 : 0.7;
-            const dailyExtraction = (planetFactor * 100) * multiplier;
-            
-            // Step 2: Base cycle time (hours)
-            const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
-            
-            // Step 3: Units per cycle
-            const cyclesPerDay = 24 / baseCycleTime;
-            const unitsPerCycle = dailyExtraction / cyclesPerDay;
-            
-            // Step 4: Round up to get actual output
-            const actualOutput = Math.ceil(unitsPerCycle);
-            
-            // Display the calculated output instead of the base "100" from recipe
-            recipeOutputs = actualOutput + ' ' + material;
+      let recipeString = '';
+      if (bestRow && typeof bestRow.recipe !== 'undefined' && bestRow.recipe !== null) {
+        recipeString = String(bestRow.recipe);
+      } else {
+        recipeString = 'N/A';
+      }
+
+      // Support both '=>' and ':' recipe formats
+      if (recipeString !== 'N/A') {
+        if (recipeString.includes('=>')) {
+          // Standard recipe format: BUILDING:inputs=>outputs
+          const parts = recipeString.split('=>');
+          const inputPart = parts[0].split(':')[1] || parts[0];
+          const outputPart = parts[1];
+
+          recipeInputs = inputPart.split('-').map(item => {
+            const match = item.match(/(\d+)x([A-Z0-9]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+
+          // For extraction recipes with a selected planet, calculate actual output using PCT formula
+          if (isExtraction && planet) {
+            const building = recipeString.split('=>')[0];
+            const planetFactor = getPlanetFactorClientSide(material, planet);
+
+            if (planetFactor > 0) {
+              // Official PCT Extraction Formula
+              // Step 1: Daily extraction = (Concentration × 100) × Multiplier
+              const multiplier = (building === 'COL') ? 0.6 : 0.7;
+              const dailyExtraction = (planetFactor * 100) * multiplier;
+
+              // Step 2: Base cycle time (hours)
+              const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
+
+              // Step 3: Units per cycle
+              const cyclesPerDay = 24 / baseCycleTime;
+              const unitsPerCycle = dailyExtraction / cyclesPerDay;
+
+              // Step 4: Round up to get actual output
+              const actualOutput = Math.ceil(unitsPerCycle);
+
+              // Display the calculated output instead of the base "100" from recipe
+              recipeOutputs = actualOutput + ' ' + material;
+            } else {
+              // No concentration data, fall back to parsing recipe string
+              recipeOutputs = outputPart.split('-').map(item => {
+                const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                return match ? match[1] + ' ' + match[2] : item;
+              }).join(', ');
+            }
           } else {
-            // No concentration data, fall back to parsing recipe string
+            // Normal production recipe or extraction without planet selection
             recipeOutputs = outputPart.split('-').map(item => {
               const match = item.match(/(\d+)x([A-Z0-9]+)/);
               return match ? match[1] + ' ' + match[2] : item;
             }).join(', ');
           }
-        } else {
-          // Normal production recipe or extraction without planet selection
-          recipeOutputs = outputPart.split('-').map(item => {
+        } else if (recipeString.includes(':')) {
+          // Simple recipe format: BUILDING:inputs
+          const parts = recipeString.split(':');
+          const building = parts[0];
+          const inputPart = parts[1] || '';
+          recipeInputs = inputPart.split('-').map(item => {
             const match = item.match(/(\d+)x([A-Z0-9]+)/);
             return match ? match[1] + ' ' + match[2] : item;
           }).join(', ');
+          recipeOutputs = material; // Output is the selected material
         }
       }
       
@@ -2285,7 +2309,7 @@
         costTree: costTree
       };
     }
-    
+    }
     // Get exchange comparison from cached data
     function getExchangeComparisonFromCache(material, recipe, currentExchange, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const exchanges = {};
@@ -2377,6 +2401,16 @@
           const profitAsk = row.askPrice - totalCost;
           const roiAsk = totalCost > 0 ? (profitAsk / totalCost) * 100 : 0;
           
+          // Parse recipe outputs
+          let outputDisplay = '';
+          if (recipeString.includes('=>')) {
+            const outputPart = recipeString.split('=>')[1];
+            outputDisplay = outputPart.split('-').map(item => {
+              const match = item.match(/(\d+)x([A-Z0-9]+)/);
+              return match ? match[1] + ' ' + match[2] : item;
+            }).join(', ');
+          }
+          
           exchanges[exch] = {
             exchange: exch,
             askPrice: row.askPrice,
@@ -2401,67 +2435,7 @@
       };
     }
     
-// Get arbitrage opportunities from cached data
-function getArbitrageOpportunitiesFromCache(selectedExchange) {
-  const materialPrices = {}; // material -> {exchange: {ask, bid}}
-  
-  // Collect prices for all materials at all exchanges
-  for (const row of allData) {
-    const material = row.ticker;
-    const exch = row.exchange;
-    
-    if (!materialPrices[material]) {
-      materialPrices[material] = {};
-    }
-    materialPrices[material][exch] = { ask: row.askPrice, bid: row.bidPrice };
-  }
-  
-  // Find arbitrage opportunities involving the selected exchange
-  const opportunities = [];
-  
-  for (const material in materialPrices) {
-    const exchanges = Object.keys(materialPrices[material]);
-    
-    for (let i = 0; i < exchanges.length; i++) {
-      for (let j = 0; j < exchanges.length; j++) {
-        if (i !== j) {
-          const buyExch = exchanges[i];
-          const sellExch = exchanges[j];
-          
-          // Only include opportunities where selectedExchange is involved
-          if (buyExch !== selectedExchange && sellExch !== selectedExchange) continue;
-          
-          const buyPrice = materialPrices[material][buyExch].ask;
-          const sellPrice = materialPrices[material][sellExch].bid;
-          
-          const profit = sellPrice - buyPrice;
-          const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
-          
-          // Only include profitable opportunities (> 5% to cover transfer costs)
-          if (profitPercent > 5) {
-            opportunities.push({
-              material: material,
-              buyExchange: buyExch,
-              sellExchange: sellExch,
-              buyPrice: buyPrice,
-              sellPrice: sellPrice,
-              profit: profit,
-              profitPercent: profitPercent
-            });
-          }
-        }
-      }
-    }
-  }
-  
-  opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
-  
-  return {
-    success: true,
-    opportunities: opportunities,
-    count: opportunities.length
-  };
-}    // Get recommendation from cached data
+    // Get recommendation from cached data
     function getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const recipeComparisons = [];
       
