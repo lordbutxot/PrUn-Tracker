@@ -997,46 +997,66 @@ function getCalculationData(material, exchange, recipe, includeLuxury, selfProdu
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   
+  // Helper to normalize strings for robust matching
+  function normalizeString(str) {
+    return (str || '').toString().trim().replace(/&gt;/g, '=>').replace(/&lt;/g, '<').replace(/\s+/g, '').toUpperCase();
+  }
+
   let bestRow = null;
+  let bestRowIndex = null;
   let lowestCost = Infinity;
-  
+
+  // Normalize input selection
+  const normMaterial = normalizeString(material);
+  const normExchange = normalizeString(exchange);
+  const normRecipe = normalizeString(recipe);
+
   // Find matching rows (Ticker in column B, Exchange in column E (4), Recipe in column C)
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === material && data[i][4] === exchange) {
-      // If specific recipe requested, match it exactly
-      if (recipe && data[i][2] === recipe) {
-        bestRow = i;
+    const rowMaterial = normalizeString(data[i][1]);
+    const rowExchange = normalizeString(data[i][4]);
+    const rowRecipe = normalizeString(data[i][2]);
+    if (rowMaterial === normMaterial && rowExchange === normExchange) {
+      // If specific recipe requested, match it exactly (normalized)
+      if (recipe && rowRecipe === normRecipe) {
+        bestRow = data[i];
+        bestRowIndex = i;
         break;
       }
-      
       // If no recipe specified, find the one with lowest total cost (Ask basis)
       if (!recipe) {
         let inputCostAsk = parseFloat(data[i][7]) || 0;
         let workforceCostAsk = parseFloat(data[i][9]) || 0;
-        
-        // Apply efficiency penalty if no luxury (79% efficiency = 1/0.79 = ~1.266x cost)
         if (!includeLuxury) workforceCostAsk *= (1 / 0.79);
         if (selfProduced) inputCostAsk = calculateSelfProductionCost(data[i][2], data, exchange);
-        
         const totalCost = inputCostAsk + workforceCostAsk;
-        
         if (totalCost < lowestCost) {
           lowestCost = totalCost;
-          bestRow = i;
+          bestRow = data[i];
+          bestRowIndex = i;
         }
       }
     }
   }
-  
-  if (bestRow === null) {
-    return { error: 'No data found for ' + material + ' on ' + exchange + (recipe ? ' with recipe ' + recipe : '') };
+
+  if (!bestRow) {
+    // Log possible recipes for debugging
+    const possibleRows = [];
+    for (let i = 1; i < data.length; i++) {
+      const rowMaterial = normalizeString(data[i][1]);
+      const rowExchange = normalizeString(data[i][4]);
+      if (rowMaterial === normMaterial && rowExchange === normExchange) {
+        possibleRows.push(data[i][2]);
+      }
+    }
+    return { error: `No data found for material='${material}', exchange='${exchange}', recipe='${recipe}'. Possible recipes for this material/exchange: [${possibleRows.join(', ')}]` };
   }
-  
+
   // Use the best matching row
-  const i = bestRow;
-  
-  // Extract data from the found row
-  if (data[i][0] && data[i][1] === material) {
+  const i = bestRowIndex;
+
+  // Extract data from the found row (robust null check)
+  if (bestRow && bestRow[0] && normalizeString(bestRow[1]) === normMaterial) {
       // Actual column structure:
       // A: LookupKey, B: Ticker, C: Recipe, D: Material Name, E: Exchange,
       // F: Ask_Price, G: Bid_Price, H: Input Cost Ask, I: Input Cost Bid,

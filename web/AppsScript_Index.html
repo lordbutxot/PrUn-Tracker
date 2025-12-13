@@ -1795,6 +1795,7 @@
                   const outputs = right.split('-').map(o => o.replace('x', '×')).join(' + ');
                   label = `${building}: ${inputs} → ${outputs}`;
                 }
+                // Use the raw recipe string as the value to guarantee exact match
                 recipesMap.set(row.recipe, { key: row.recipe, label: label, building: row.recipe.split(':')[0] });
                 hasRecipes = true;
               }
@@ -1810,8 +1811,9 @@
       if (hasRecipes) {
         recipes.forEach(function(recipe) {
           const option = document.createElement('option');
+          // Show and use the real recipe string from allData for both value and label
           option.value = recipe.key;
-          option.textContent = recipe.label + ' (' + recipe.building + ')';
+          option.textContent = recipe.key; // Show the exact recipe string as in allData
           recipeSelect.appendChild(option);
         });
       } else {
@@ -1965,49 +1967,52 @@
         const recommendationData = recipe ? getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) : null;
         const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(exchange, material);
-        
+
         const endTime = performance.now();
         const calcTime = (endTime - startTime).toFixed(1);
-        
+
         // Log performance info for debugging
-        
+
         document.getElementById('loading').style.display = 'none';
-        
-        if (calculationData && calculationData.error) {
-          showError(calculationData.error);
+
+        // Robust error handling for calculationData
+        if (!calculationData || calculationData.error) {
+          showError(calculationData && calculationData.error ? calculationData.error : 'No calculation data found for the selected options.');
+          // Hide all result sections
+          document.getElementById('results').style.display = 'none';
+          document.getElementById('recommendationSection').style.display = 'none';
+          document.getElementById('buildingComparisonSection').style.display = 'none';
           return;
         }
-        
-        if (calculationData) {
-          displayResults(calculationData);
-        }
-        
+
+        displayResults(calculationData);
+
         if (exchangeComparisonData) {
           displayExchangeComparison(exchangeComparisonData, exchange);
         }
-        
+
         if (arbitrageData) {
           displayArbitrageOpportunities(arbitrageData);
         }
-        
+
         if (recommendationData) {
           displayRecommendation(recommendationData);
         } else {
           // Hide recommendation section for byproducts
           document.getElementById('recommendationSection').style.display = 'none';
         }
-        
+
         // Get building comparison if a recipe is selected
         if (calculationData && calculationData.recipe) {
           console.log('=== BUILDING COMPARISON TRIGGER ===');
           console.log('Recipe:', calculationData.recipe);
           console.log('Material:', calculationData.material);
           console.log('Exchange:', exchange);
-          
+
           const buildingComparisonData = getBuildingComparisonFromCache(calculationData.recipe, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
-          
+
           console.log('Building comparison result:', buildingComparisonData ? 'Found data' : 'No data');
-          
+
           if (buildingComparisonData) {
             displayBuildingComparison(buildingComparisonData);
           } else {
@@ -2023,6 +2028,10 @@
       } catch (error) {
         document.getElementById('loading').style.display = 'none';
         showError('Calculation error: ' + error.message);
+        // Hide all result sections on error
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('recommendationSection').style.display = 'none';
+        document.getElementById('buildingComparisonSection').style.display = 'none';
       }
     }
     
@@ -2030,13 +2039,19 @@
     function calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       let bestRow = null;
       let lowestCost = Infinity;
+      let isExtraction = false;
+      let isFarming = false;
+      let recipeString = '';
+      let totalEfficiency = 1.0;
       
       // Find matching rows
       for (const row of allData) {
-        // Check if this row's recipe outputs the selected material
+        // Robustly handle all recipe types and always process the row
+        recipeString = (row && typeof row.recipe === 'string') ? row.recipe : '';
         let rowMatchesMaterial = false;
-        if (row.recipe && row.recipe.includes('=>')) {
-          const outputPart = row.recipe.split('=>')[1];
+        // Handle standard recipe with outputs
+        if (recipeString.includes('=>')) {
+          const outputPart = recipeString.split('=>')[1];
           if (outputPart) {
             const outputs = outputPart.split('-').map(item => {
               const match = item.match(/(\d+)x([A-Z]+)/);
@@ -2046,86 +2061,95 @@
               rowMatchesMaterial = true;
             }
           }
+        } else if (recipeString.includes(':')) {
+          // Simple recipe: treat as producing the material if material matches row.ticker
+          if (row.ticker === material) {
+            rowMatchesMaterial = true;
+          }
+        } else if (recipeString.length === 0) {
+          // No recipe: treat as raw material or byproduct, match if ticker matches
+          if (row.ticker === material) {
+            rowMatchesMaterial = true;
+          }
         }
-        
+
         if (rowMatchesMaterial && row.exchange === exchange) {
-          if (recipe && row.recipe === recipe) {
+          if (recipe && recipeString === recipe) {
             bestRow = row;
-            // ...existing code...
             let recipeInputs = '';
             let recipeOutputs = '';
-            let recipeString = '';
-            try {
-              if (bestRow && typeof bestRow.recipe !== 'undefined' && bestRow.recipe !== null) {
-                recipeString = String(bestRow.recipe);
-              } else {
-                recipeString = 'N/A';
-              }
-            } catch (e) {
-              recipeString = 'N/A';
-            }
             // Support both '=>' and ':' recipe formats
-            try {
-              if (recipeString !== 'N/A') {
-                if (recipeString.includes('=>')) {
-                  // Standard recipe format: BUILDING:inputs=>outputs
-                  const parts = recipeString.split('=>');
-                  const inputPart = parts[0].split(':')[1] || parts[0];
-                  const outputPart = parts[1];
-                  recipeInputs = inputPart.split('-').map(item => {
-                    const match = item.match(/(\d+)x([A-Z0-9]+)/);
-                    return match ? match[1] + ' ' + match[2] : item;
-                  }).join(', ');
-                  // For extraction recipes with a selected planet, calculate actual output using PCT formula
-                  if (isExtraction && planet) {
-                    const building = recipeString.split('=>')[0];
-                    const planetFactor = getPlanetFactorClientSide(material, planet);
-                    if (planetFactor > 0) {
-                      // Official PCT Extraction Formula
-                      // Step 1: Daily extraction = (Concentration × 100) × Multiplier
-                      const multiplier = (building === 'COL') ? 0.6 : 0.7;
-                      const dailyExtraction = (planetFactor * 100) * multiplier;
-                      // Step 2: Base cycle time (hours)
-                      const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
-                      // Step 3: Units per cycle
-                      const cyclesPerDay = 24 / baseCycleTime;
-                      const unitsPerCycle = dailyExtraction / cyclesPerDay;
-                      // Step 4: Round up to get actual output
-                      const actualOutput = Math.ceil(unitsPerCycle);
-                      // Display the calculated output instead of the base "100" from recipe
-                      recipeOutputs = actualOutput + ' ' + material;
-                    } else {
-                      // No concentration data, fall back to parsing recipe string
-                      recipeOutputs = outputPart.split('-').map(item => {
-                        const match = item.match(/(\d+)x([A-Z0-9]+)/);
-                        return match ? match[1] + ' ' + match[2] : item;
-                      }).join(', ');
-                    }
+            isExtraction = typeof recipeString === 'string' && (
+              recipeString.startsWith('COL=>') ||
+              recipeString.startsWith('EXT=>') ||
+              recipeString.startsWith('RIG=>')
+            );
+            isFarming = typeof recipeString === 'string' && (
+              recipeString.startsWith('FRM:') ||
+              recipeString.startsWith('ORC:') ||
+              recipeString.startsWith('VIN:')
+            );
+            if (typeof recipeString === 'string' && recipeString.length > 0) {
+              if (recipeString.includes('=>')) {
+                // Standard recipe format: BUILDING:inputs=>outputs
+                const parts = recipeString.split('=>');
+                const inputPart = parts[0].split(':')[1] || parts[0];
+                const outputPart = parts[1];
+                recipeInputs = inputPart.split('-').map(item => {
+                  const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                  return match ? match[1] + ' ' + match[2] : item;
+                }).join(', ');
+                // For extraction recipes with a selected planet, calculate actual output using PCT formula
+                if (isExtraction && planet) {
+                  const building = recipeString.split('=>')[0];
+                  const planetFactor = getPlanetFactorClientSide(material, planet);
+                  if (planetFactor > 0) {
+                    // Official PCT Extraction Formula
+                    // Step 1: Daily extraction = (Concentration × 100) × Multiplier
+                    const multiplier = (building === 'COL') ? 0.6 : 0.7;
+                    const dailyExtraction = (planetFactor * 100) * multiplier;
+                    // Step 2: Base cycle time (hours)
+                    const baseCycleTime = (building === 'RIG') ? 4.8 : (building === 'COL') ? 6 : 12;
+                    // Step 3: Units per cycle
+                    const cyclesPerDay = 24 / baseCycleTime;
+                    const unitsPerCycle = dailyExtraction / cyclesPerDay;
+                    // Step 4: Round up to get actual output
+                    const actualOutput = Math.ceil(unitsPerCycle);
+                    // Display the calculated output instead of the base "100" from recipe
+                    recipeOutputs = actualOutput + ' ' + material;
                   } else {
-                    // Normal production recipe or extraction without planet selection
+                    // No concentration data, fall back to parsing recipe string
                     recipeOutputs = outputPart.split('-').map(item => {
                       const match = item.match(/(\d+)x([A-Z0-9]+)/);
                       return match ? match[1] + ' ' + match[2] : item;
                     }).join(', ');
                   }
-                } else if (recipeString.includes(':')) {
-                  // Simple recipe format: BUILDING:inputs
-                  const parts = recipeString.split(':');
-                  const building = parts[0];
-                  const inputPart = parts[1] || '';
-                  recipeInputs = inputPart.split('-').map(item => {
+                } else {
+                  // Normal production recipe or extraction without planet selection
+                  recipeOutputs = outputPart.split('-').map(item => {
                     const match = item.match(/(\d+)x([A-Z0-9]+)/);
                     return match ? match[1] + ' ' + match[2] : item;
                   }).join(', ');
-                  recipeOutputs = material; // Output is the selected material
                 }
+              } else if (recipeString.includes(':')) {
+                // Simple recipe format: BUILDING:inputs
+                const parts = recipeString.split(':');
+                const building = parts[0];
+                const inputPart = parts[1] || '';
+                recipeInputs = inputPart.split('-').map(item => {
+                  const match = item.match(/(\d+)x([A-Z0-9]+)/);
+                  return match ? match[1] + ' ' + match[2] : item;
+                }).join(', ');
+                recipeOutputs = material; // Output is the selected material
               }
-            } catch (e) {
+            } else {
               recipeInputs = '';
               recipeOutputs = '';
             }
-      }
+          }
         }
+      }
+      
       // Apply planet-specific bonuses/penalties (ADDITIVE)
       if (isExtraction && planet) {
         const planetFactor = getPlanetFactorClientSide(material, planet);
@@ -2160,7 +2184,7 @@
       // Apply HQ bonuses (MULTIPLICATIVE after additive bonuses)
       // HQ bonus = faction bonus × specialization multiplier
       // Only applies if the building/recipe matches the HQ faction's industry
-      const recipeMatchesHqCategory = checkHqCategoryMatch(bestRow.recipe, bestRow.building);
+      const recipeMatchesHqCategory = bestRow ? checkHqCategoryMatch(bestRow.recipe, bestRow.building) : false;
       
       if (hqBonus > 0 && recipeMatchesHqCategory) {
         totalEfficiency *= (1 + hqBonus); // e.g., 10% HQ bonus = ×1.10
@@ -2172,29 +2196,30 @@
         totalEfficiency *= 1.10; // +10% efficiency on this planet
       }
       
+      // If no matching row was found, return an error object early
+      if (!bestRow) {
+        return {
+          error: `No data found for the selected material (${material}), recipe (${recipe || 'any'}), and exchange (${exchange}). Please check if this combination exists in your data.`
+        };
+      }
+      
       // Ensure minimum efficiency (never below 10% to avoid division by zero)
       totalEfficiency = Math.max(0.1, totalEfficiency);
       
       // Apply efficiency to workforce costs
       // Lower efficiency = longer production time = higher costs
       const efficiencyMultiplier = 1.0 / totalEfficiency;
-      workforceCostAsk *= efficiencyMultiplier;
-      workforceCostBid *= efficiencyMultiplier;
+      let workforceCostAsk = bestRow.workforceCostAsk * efficiencyMultiplier;
+      let workforceCostBid = bestRow.workforceCostBid * efficiencyMultiplier;
       
       let costTree = null;
       
       // Parse recipe
       let recipeInputs = '';
       let recipeOutputs = '';
-      let recipeString = '';
-      if (bestRow && typeof bestRow.recipe !== 'undefined' && bestRow.recipe !== null) {
-        recipeString = String(bestRow.recipe);
-      } else {
-        recipeString = 'N/A';
-      }
-
+      recipeString = bestRow.recipe || '';
       // Support both '=>' and ':' recipe formats
-      if (recipeString !== 'N/A') {
+      if (typeof recipeString === 'string' && recipeString.length > 0) {
         if (recipeString.includes('=>')) {
           // Standard recipe format: BUILDING:inputs=>outputs
           const parts = recipeString.split('=>');
@@ -2254,28 +2279,33 @@
           }).join(', ');
           recipeOutputs = material; // Output is the selected material
         }
+      } else {
+        recipeInputs = '';
+        recipeOutputs = '';
       }
-      
+
       // Calculate totals and profitability
+      const inputCostAsk = bestRow.inputCostAsk;
+      const inputCostBid = bestRow.inputCostBid;
       const totalCostAsk = inputCostAsk + workforceCostAsk;
       const totalCostBid = inputCostBid + workforceCostBid;
-      
+
       const profitAskAsk = bestRow.askPrice - totalCostAsk;
       const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
       const breakevenAskAsk = calculateBreakevenUnits(material, exchange, totalCostAsk);
-      
+
       const profitAskBid = bestRow.askPrice - totalCostBid;
       const roiAskBid = totalCostBid > 0 ? (profitAskBid / totalCostBid) * 100 : 0;
       const breakevenAskBid = calculateBreakevenUnits(material, exchange, totalCostBid);
-      
+
       const profitBidAsk = bestRow.bidPrice - totalCostAsk;
       const roiBidAsk = totalCostAsk > 0 ? (profitBidAsk / totalCostAsk) * 100 : 0;
       const breakevenBidAsk = calculateBreakevenUnits(material, exchange, totalCostAsk);
-      
+
       const profitBidBid = bestRow.bidPrice - totalCostBid;
       const roiBidBid = totalCostBid > 0 ? (profitBidBid / totalCostBid) * 100 : 0;
       const breakevenBidBid = calculateBreakevenUnits(material, exchange, totalCostBid);
-      
+
       return {
         materialCode: bestRow.lookupKey,
         recipe: recipeString,
@@ -2309,7 +2339,7 @@
         costTree: costTree
       };
     }
-    }
+    
     // Get exchange comparison from cached data
     function getExchangeComparisonFromCache(material, recipe, currentExchange, cogcBonus, expertCount, hqBonus, corpHqBonus) {
       const exchanges = {};
@@ -2403,7 +2433,8 @@
           
           // Parse recipe outputs
           let outputDisplay = '';
-          if (recipeString.includes('=>')) {
+          let recipeString = (typeof row.recipe === 'string') ? row.recipe : '';
+          if (typeof recipeString === 'string' && recipeString.includes('=>')) {
             const outputPart = recipeString.split('=>')[1];
             outputDisplay = outputPart.split('-').map(item => {
               const match = item.match(/(\d+)x([A-Z0-9]+)/);
@@ -2549,6 +2580,63 @@
         count: recipeComparisons.length,
         recommended: recipeComparisons[0],
         alternatives: recipeComparisons.slice(1)
+      };
+    }
+    
+    // Get arbitrage opportunities from cached data
+    function getArbitrageOpportunitiesFromCache(exchange, material) {
+      const exchangePrices = {};
+      
+      // Collect prices for this material at each exchange
+      for (const row of allData) {
+        if (row.ticker === material) {
+          const exch = row.exchange;
+          const askPrice = row.askPrice;  // Buy at Ask
+          const bidPrice = row.bidPrice;  // Sell at Bid
+          
+          if (!exchangePrices[exch]) {
+            exchangePrices[exch] = { ask: askPrice, bid: bidPrice };
+          }
+        }
+      }
+      
+      // Find arbitrage opportunities: Buy at Exchange A (ask), Sell at Exchange B (bid)
+      const opportunities = [];
+      const exchanges = Object.keys(exchangePrices);
+      
+      for (let i = 0; i < exchanges.length; i++) {
+        for (let j = 0; j < exchanges.length; j++) {
+          if (i !== j) {
+            const buyExch = exchanges[i];
+            const sellExch = exchanges[j];
+            const buyPrice = exchangePrices[buyExch].ask;  // Cost to buy
+            const sellPrice = exchangePrices[sellExch].bid;  // Revenue from selling
+            
+            const profit = sellPrice - buyPrice;
+            const profitPercent = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
+            
+            // Only include profitable opportunities (accounting for ~5% transfer costs)
+            if (profitPercent > 5) {
+              opportunities.push({
+                buyExchange: buyExch,
+                sellExchange: sellExch,
+                buyPrice: buyPrice,
+                sellPrice: sellPrice,
+                profit: profit,
+                profitPercent: profitPercent
+              });
+            }
+          }
+        }
+      }
+      
+      // Sort by profit percent descending
+      opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
+      
+      return {
+        success: true,
+        opportunities: opportunities,
+        count: opportunities.length
       };
     }
     
