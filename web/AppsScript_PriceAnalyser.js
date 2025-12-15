@@ -36,23 +36,41 @@
 
 // Main function to serve the HTML page with routing support
 function doGet(e) {
-  const page = e.parameter.page || 'priceanalyser';
-  
-  let htmlFile, title;
-  
-  switch(page.toLowerCase()) {
+  const page = (e && e.parameter && e.parameter.page) ? String(e.parameter.page).toLowerCase() : null;
+
+  if (!page) {
+    return HtmlService.createHtmlOutput(
+      '<!doctype html><html><head><meta charset="utf-8"><title>Missing page parameter</title></head>' +
+      '<body style="font-family:Segoe UI,Tahoma,sans-serif;padding:20px;">' +
+      '<h2>Missing page parameter</h2>' +
+      '<p>Please specify a page: <code>?page=price</code> or <code>?page=arbitrage</code>.</p>' +
+      '</body></html>'
+    ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  let htmlFile = null;
+  let title = null;
+
+  switch (page) {
     case 'arbitrage':
       htmlFile = 'ArbitrageCalculator';
       title = 'PrUn Arbitrage Calculator';
       break;
-    case 'priceanalyser':
     case 'price':
-    default:
+    case 'priceanalyser':
       htmlFile = 'Index';
       title = 'PrUn Price Analyser';
       break;
+    default:
+      return HtmlService.createHtmlOutput(
+        '<!doctype html><html><head><meta charset="utf-8"><title>Invalid page</title></head>' +
+        '<body style="font-family:Segoe UI,Tahoma,sans-serif;padding:20px;">' +
+        '<h2>Invalid page parameter</h2>' +
+        '<p>Use <code>?page=price</code> or <code>?page=arbitrage</code>.</p>' +
+        '</body></html>'
+      ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
-  
+
   return HtmlService.createHtmlOutputFromFile(htmlFile)
     .setTitle(title)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
