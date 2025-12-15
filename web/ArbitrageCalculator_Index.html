@@ -667,14 +667,31 @@
       document.getElementById('loadingSpinner').style.display = 'none';
       
       if (result.error) {
-        showMessage('Error: ' + result.error, 'error');
+        let errorMsg = 'Error: ' + result.error;
+        if (result.availableSheets) {
+          errorMsg += '\n\nAvailable sheets in spreadsheet:\n' + result.availableSheets.join(', ');
+        }
+        if (result.debug && result.debug.headerNames) {
+          errorMsg += '\n\nColumn names in data:\n' + result.debug.headerNames.join(', ');
+        }
+        showMessage(errorMsg, 'error');
+        console.log('Debug Info:', result);
         return;
       }
       
       currentResults = result.opportunities;
       
       if (currentResults.length === 0) {
-        showMessage('No arbitrage opportunities found with the current filters. Try adjusting your criteria.', 'info');
+        let noResultsMsg = 'No arbitrage opportunities found with the current filters. Try adjusting your criteria.';
+        if (result.debug) {
+          noResultsMsg += '\n\nDebug Info:\n';
+          noResultsMsg += 'Sheet: ' + result.debug.sheetName + '\n';
+          noResultsMsg += 'Data rows: ' + result.debug.dataRows + '\n';
+          noResultsMsg += 'Columns: ' + result.debug.columns + '\n';
+          noResultsMsg += 'Headers: ' + result.debug.headerNames.join(', ');
+        }
+        showMessage(noResultsMsg, 'info');
+        console.log('Debug Info:', result);
         document.getElementById('exportBtn').disabled = true;
         return;
       }
