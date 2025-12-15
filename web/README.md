@@ -1,36 +1,60 @@
-# Web Apps — Single Apps Script Project (Router)
+# Web Apps — Deployment Options
 
-This folder contains the Google Apps Script web app for PrUn-Tracker. We now use a single Apps Script project with a simple router that serves multiple pages (Price Analyser and Arbitrage Calculator) from the same deployment URL.
+This folder contains the Google Apps Script web apps for PrUn-Tracker. We support **two deployment patterns**:
 
-## How It Works
+## Option 1: Standalone Deployments (Recommended)
 
-- A single `doGet(e)` in `AppsScript_PriceAnalyser.js` routes by URL param `page`.
-- Default (no param) serves the Price Analyser.
-- `?page=arbitrage` serves the Arbitrage Calculator.
+Each app gets its own Apps Script project and URL. This is the **most reliable approach**.
 
-Example URLs (same deployment):
-- Price Analyser: `.../exec`
+**Pros:**
+- ✅ Complete isolation—no routing complexity
+- ✅ Independent updates without affecting other apps
+- ✅ Clear separation and easy debugging
+- ✅ No URL parameter confusion or caching issues
+
+**Setup:** See `ARBITRAGE_STANDALONE_DEPLOYMENT.md` for step-by-step instructions.
+
+**Files:**
+- `ArbitrageCalculator_StandaloneCode.gs` — Server code for standalone arbitrage deployment
+- `ArbitrageCalculator_Index.html` — Arbitrage UI
+- `AppsScript_PriceAnalyser.js` — Server code for Price Analyser (existing project)
+- `AppsScript_Index.html` — Price Analyser UI
+
+**URLs after deployment:**
+- Price Analyser: `https://script.google.com/.../exec` (existing)
+- Arbitrage Calculator: `https://script.google.com/.../exec` (new project, different URL)
+
+---
+
+## Option 2: Single Project with Router
+
+Both apps in one Apps Script project, routed by `?page=` parameter.
+
+**Pros:**
+- Single codebase to maintain
+- One deployment to manage
+
+**Cons:**
+- Requires exact `page` parameter
+- More complex debugging
+- Browser caching can cause issues
+
+**Files:**
+- `AppsScript_PriceAnalyser.js` — Server code with router. Copy to `Code.gs`.
+- `AppsScript_Index.html` — Price Analyser UI. Add as `Index` HTML file.
+- `ArbitrageCalculator_Index.html` — Arbitrage UI. Add as `ArbitrageCalculator` HTML file.
+
+**URLs (same deployment):**
+- Price Analyser: `.../exec?page=price`
 - Arbitrage Calculator: `.../exec?page=arbitrage`
 
-## Files
-
-- `AppsScript_PriceAnalyser.js` — Server-side code AND router. Copy into Apps Script as `Code.gs`.
-- `AppsScript_Index.html` — Price Analyser UI. Add to Apps Script as `Index` HTML file.
-- `ArbitrageCalculator_Index.html` — Arbitrage UI. Add to Apps Script as `ArbitrageCalculator` HTML file.
-- `ArbitrageCalculator_Code.gs` — Reference-only copy of arbitrage server functions (not required; main code is consolidated in `AppsScript_PriceAnalyser.js`).
-- `UnifiedRouter_Code.gs` — Reference-only; router is already in `AppsScript_PriceAnalyser.js`.
-
-## Quick Update / Deploy
-
-1) Open your Google Sheet → Extensions → Apps Script (same project as before).
-2) In the editor:
-   - Replace `Code.gs` with contents of `web/AppsScript_PriceAnalyser.js`.
-   - Ensure `Index` HTML exists; paste `web/AppsScript_Index.html`.
-   - Create `ArbitrageCalculator` HTML; paste `web/ArbitrageCalculator_Index.html`.
-3) Deploy: Deploy → Manage deployments → New version (Web app, Execute as: Me, Access: Anyone).
-4) If the exec URL changed, update `index.html` iframes:
-   - Price Analyser modal iframe → `.../exec`
-   - Arbitrage modal iframe → `.../exec?page=arbitrage`
+**Setup:**
+1. Open your Google Sheet → Extensions → Apps Script
+2. Replace `Code.gs` with `web/AppsScript_PriceAnalyser.js`
+3. Add `Index` HTML from `web/AppsScript_Index.html`
+4. Add `ArbitrageCalculator` HTML from `web/ArbitrageCalculator_Index.html`
+5. Deploy: Deploy → Manage deployments → New version
+6. Update `index.html` iframes with `?page=price` and `?page=arbitrage`
 
 ## Data Requirements
 
