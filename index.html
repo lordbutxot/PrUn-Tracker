@@ -622,16 +622,16 @@
         <!-- Arbitrage Opportunities -->
         <div class="feature-card">
           <div class="feature-icon" data-icon="arrows"></div>
-          <h3>Arbitrage Opportunities</h3>
-          <p>Discover profitable cross-exchange trading opportunities with automatic transfer cost calculations. Identify price discrepancies between AI1, CI1, CI2, IC1, NC1, and NC2.</p>
+          <h3>Arbitrage Calculator</h3>
+          <p>Discover profitable cross-exchange trading opportunities with transport cost modeling. Calculate profit, ROI, and max volume for trades between any two exchanges.</p>
           <div class="feature-tags">
             <span class="feature-tag">Cross-Exchange</span>
-            <span class="feature-tag">Auto-Calculated</span>
-            <span class="feature-tag">Transfer Costs</span>
+            <span class="feature-tag">ROI Analysis</span>
+            <span class="feature-tag">Volume Tracking</span>
           </div>
-          <div class="cta-button" style="background: #f59e0b; cursor: not-allowed;">
-            Coming Soon
-          </div>
+          <button class="cta-button" onclick="openArbitrageModal()">
+            Open Calculator
+          </button>
         </div>
 
         <!-- Trade Routes -->
@@ -754,7 +754,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">Interactive Price Analyser</h2>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <button class="modal-close" onclick="closePriceModal()">&times;</button>
       </div>
       <div class="modal-body">
         <iframe
@@ -767,13 +767,76 @@
     </div>
   </div>
 
+  <!-- Arbitrage Calculator Modal -->
+  <div id="arbitrage-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">💰 Arbitrage Calculator</h2>
+        <button class="modal-close" onclick="closeArbitrageModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <iframe
+          class="modal-iframe"
+          src="https://script.google.com/macros/s/AKfycbxJ5L77_n42IHT8rKe-AgRjONOTSTUDA-U8yooB8UuzP_Lboit1MrxzBBuEP6id2hBCgw/exec?page=arbitrage"
+          allowfullscreen
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
+        </iframe>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Modal functionality
+    // Price Analyser Modal functionality
     function openModal() {
       document.getElementById('price-analyser-modal').classList.add('active');
       document.body.style.overflow = 'hidden'; // Prevent background scrolling
     }
 
+    function closePriceModal() {
+      document.getElementById('price-analyser-modal').classList.remove('active');
+      document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // Backward compatibility
+    function closeModal() {
+      closePriceModal();
+    }
+
+    // Arbitrage Calculator Modal functionality
+    function openArbitrageModal() {
+      document.getElementById('arbitrage-modal').classList.add('active');
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function closeArbitrageModal() {
+      document.getElementById('arbitrage-modal').classList.remove('active');
+      document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // Close modals when clicking outside
+    document.getElementById('price-analyser-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closePriceModal();
+      }
+    });
+
+    document.getElementById('arbitrage-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeArbitrageModal();
+      }
+    });
+
+    // Close modals with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        if (document.getElementById('price-analyser-modal').classList.contains('active')) {
+          closePriceModal();
+        }
+        if (document.getElementById('arbitrage-modal').classList.contains('active')) {
+          closeArbitrageModal();
+        }
+      }
+    });
     function closeModal() {
       document.getElementById('price-analyser-modal').classList.remove('active');
       document.body.style.overflow = ''; // Restore scrolling
