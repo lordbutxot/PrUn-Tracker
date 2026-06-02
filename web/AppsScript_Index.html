@@ -730,6 +730,374 @@
         width: 100%;
       }
     }
+
+    /* Dark trading terminal theme override */
+    :root {
+      --bg: #05070b;
+      --panel: #0b111b;
+      --panel-2: #101826;
+      --panel-3: #142033;
+      --line: #223047;
+      --line-strong: #33455f;
+      --text: #e7edf6;
+      --muted: #8ea1b8;
+      --muted-2: #63748b;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+      --danger: #fb4665;
+      --warning: #f59e0b;
+      --shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 32rem),
+        radial-gradient(circle at 82% 5%, rgba(34, 197, 94, 0.12), transparent 24rem),
+        var(--bg);
+      padding: 18px;
+      padding-bottom: 72px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .container {
+      max-width: 1440px;
+      background: linear-gradient(180deg, rgba(16, 24, 38, 0.98), rgba(8, 13, 21, 0.98));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    h1 {
+      color: var(--text);
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .controls {
+      grid-template-columns: repeat(5, minmax(160px, 1fr));
+      gap: 14px;
+      padding: 14px;
+      margin-bottom: 18px;
+      background: rgba(5, 7, 11, 0.42);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    label,
+    .checkbox-label,
+    .options-panel h3,
+    .section h3,
+    .recipe-title,
+    .exchange-name,
+    .building-recipe-name,
+    .arbitrage-route {
+      color: var(--text);
+    }
+
+    select,
+    input[type="text"],
+    input[type="number"],
+    input[type="search"],
+    textarea,
+    #planetSearch {
+      width: 100%;
+      color: var(--text) !important;
+      background: #080d15 !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 6px !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    select:hover,
+    input:hover,
+    #planetSearch:hover {
+      border-color: var(--line-strong) !important;
+    }
+
+    select:focus,
+    input:focus,
+    #planetSearch:focus {
+      border-color: var(--accent-2) !important;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16) !important;
+      outline: none;
+    }
+
+    option {
+      color: var(--text);
+      background: #0b111b;
+    }
+
+    .options-panel,
+    .section {
+      background: rgba(8, 13, 21, 0.78);
+      border: 1px solid var(--line);
+      border-left: 2px solid var(--accent-2);
+      border-radius: 8px;
+      box-shadow: none;
+    }
+
+    .section {
+      margin-bottom: 18px;
+    }
+
+    .option-item,
+    .data-item,
+    .recipe-comparison,
+    .exchange-card,
+    .arbitrage-card,
+    .building-recipe-card {
+      background: linear-gradient(180deg, rgba(20, 32, 51, 0.86), rgba(11, 17, 27, 0.92));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .data-item {
+      padding: 14px;
+    }
+
+    .data-label,
+    .recipe-detail-label,
+    .arbitrage-detail-label,
+    .option-hint,
+    .subtitle {
+      color: var(--muted);
+    }
+
+    .data-value,
+    .recipe-detail-value,
+    .arbitrage-detail-value {
+      color: var(--text);
+    }
+
+    .data-value.positive,
+    .recipe-detail-value.profit,
+    .arbitrage-profit,
+    .roi-better,
+    .positive {
+      color: var(--accent) !important;
+    }
+
+    .data-value.negative,
+    .recipe-detail-value.loss,
+    .roi-worse,
+    .negative {
+      color: var(--danger) !important;
+    }
+
+    .roi-selected {
+      color: var(--accent-2) !important;
+    }
+
+    .recipe-comparison {
+      border-color: rgba(34, 197, 94, 0.48);
+    }
+
+    .recipe-comparison.alternative {
+      border-color: var(--line);
+      opacity: 1;
+    }
+
+    .exchange-card.best,
+    .building-recipe-card.best {
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.16), rgba(11, 17, 27, 0.95));
+      border-color: rgba(34, 197, 94, 0.5);
+    }
+
+    .exchange-card.current,
+    .building-recipe-card.current {
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.14), rgba(11, 17, 27, 0.95));
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    .recipe-header,
+    .exchange-header,
+    .arbitrage-header,
+    .building-recipe-header {
+      border-bottom-color: var(--line);
+    }
+
+    .recipe-badge,
+    .badge-best,
+    .badge-best-roi,
+    .badge-selected {
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.18);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+
+    .recipe-badge.alternative,
+    .exchange-badge,
+    .badge-current {
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.14);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.32);
+    }
+
+    .badge-best-profit {
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.18);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .recommendation-message,
+    .loading {
+      background: rgba(56, 189, 248, 0.1);
+      color: #b9e6ff;
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-left: 2px solid var(--accent-2);
+      border-radius: 8px;
+    }
+
+    .error {
+      color: #fecdd3;
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    .collapse-icon {
+      color: var(--accent-2);
+    }
+
+    .data-grid,
+    .recipe-details,
+    .exchange-stats,
+    .building-recipe-stats {
+      gap: 10px;
+    }
+
+    .page-footer {
+      color: var(--muted);
+      background: rgba(5, 7, 11, 0.94);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-footer span,
+    .page-footer a {
+      color: #7dd3fc;
+    }
+
+    button,
+    .button,
+    input[type="button"],
+    input[type="submit"] {
+      border-radius: 6px;
+    }
+
+    @media (max-width: 1180px) {
+      .controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+        padding-bottom: 72px;
+      }
+
+      .container {
+        padding: 14px;
+        border-radius: 0;
+      }
+
+      .controls,
+      .options-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      .section,
+      .options-panel {
+        padding: 14px;
+      }
+
+      .data-value {
+        font-size: 1.12rem;
+      }
+
+      .recipe-details,
+      .arbitrage-details,
+      .building-recipe-stats,
+      .exchange-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .recipe-details,
+      .arbitrage-details,
+      .building-recipe-stats,
+      .exchange-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Force generated and inline-styled app fragments into the dark theme. */
+    [style*="background: white"],
+    [style*="background:white"],
+    [style*="background: #f"],
+    [style*="background:#f"],
+    [style*="background: rgb(248"],
+    [style*="background: rgb(249"],
+    [style*="background: rgb(240"] {
+      background: linear-gradient(180deg, rgba(20, 32, 51, 0.9), rgba(11, 17, 27, 0.96)) !important;
+      color: var(--text) !important;
+      border-color: var(--line) !important;
+    }
+
+    [style*="color: #2c3e50"],
+    [style*="color:#2c3e50"],
+    [style*="color: #1e3a8a"],
+    [style*="color:#1e3a8a"],
+    [style*="color: #1e40af"],
+    [style*="color:#1e40af"],
+    [style*="color: #666"],
+    [style*="color:#666"],
+    [style*="color: #6b7280"],
+    [style*="color:#6b7280"] {
+      color: var(--text) !important;
+    }
+
+    [style*="border-left: 4px solid #3b82f6"],
+    [style*="border-left:4px solid #3b82f6"] {
+      border-left-color: var(--accent-2) !important;
+    }
+
+    [style*="border-left: 4px solid #16a34a"],
+    [style*="border-left:4px solid #16a34a"] {
+      border-left-color: var(--accent) !important;
+    }
+
+    [style*="border-left: 4px solid #f59e0b"],
+    [style*="border-left:4px solid #f59e0b"] {
+      border-left-color: var(--warning) !important;
+    }
+
+    [style*="border: 1px solid #d1d5db"],
+    [style*="border:1px solid #d1d5db"],
+    [style*="border: 1px solid #e5e7eb"],
+    [style*="border:1px solid #e5e7eb"],
+    [style*="border: 1px solid #fbbf24"],
+    [style*="border:1px solid #fbbf24"] {
+      border-color: var(--line) !important;
+    }
   </style>
 </head>
 <body>
@@ -836,6 +1204,16 @@
             <span>Corp HQ on Planet (+10% Multiplicative)</span>
           </label>
           <div class="option-hint">Corporate Headquarters provides +10% efficiency for production on that specific planet</div>
+        </div>
+        <div class="option-item">
+          <label for="profitDisplayMode" style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
+            Profit Display
+          </label>
+          <select id="profitDisplayMode" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; width: 100%;">
+            <option value="unit">Per Unit</option>
+            <option value="m3">Per m3 / Ship Volume</option>
+          </select>
+          <div class="option-hint">Use per m3 to compare cargo efficiency when ship capacity is the limiting factor</div>
         </div>
         <div class="option-item">
           <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
@@ -1010,19 +1388,19 @@
         <div class="data-grid" style="grid-template-columns: repeat(4, 1fr);">
           <!-- Profit Row -->
           <div class="data-item">
-            <div class="data-label">Profit (Ask + Ask)</div>
+            <div class="data-label" id="profitAskAskLabel">Profit (Ask + Ask)</div>
             <div class="data-value currency" id="profitAskAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Profit (Ask + Bid)</div>
+            <div class="data-label" id="profitAskBidLabel">Profit (Ask + Bid)</div>
             <div class="data-value currency" id="profitAskBid">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Profit (Bid + Ask)</div>
+            <div class="data-label" id="profitBidAskLabel">Profit (Bid + Ask)</div>
             <div class="data-value currency" id="profitBidAsk">-</div>
           </div>
           <div class="data-item">
-            <div class="data-label">Profit (Bid + Bid)</div>
+            <div class="data-label" id="profitBidBidLabel">Profit (Bid + Bid)</div>
             <div class="data-value currency" id="profitBidBid">-</div>
           </div>
           
@@ -1065,6 +1443,18 @@
           <div class="data-item">
             <div class="data-label">Traded Volume</div>
             <div class="data-value" id="traded">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Material Volume</div>
+            <div class="data-value" id="materialVolume">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Downstream Uses</div>
+            <div class="data-value" id="downstreamUses">-</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Economic Criticality</div>
+            <div class="data-value" id="criticalityLabel">-</div>
           </div>
         </div>
         </div>
@@ -1361,6 +1751,12 @@
     function loadAllData() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('loading').textContent = 'Loading data...';
+
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        document.getElementById('loading').style.display = 'none';
+        showError('Local preview mode: deploy this HTML in Google Apps Script to load live market data.');
+        return;
+      }
 
       google.script.run
         .withSuccessHandler(function(result) {
@@ -1932,6 +2328,7 @@
     });
     
     document.getElementById('corpHqBonus').addEventListener('change', calculate);
+    document.getElementById('profitDisplayMode').addEventListener('change', calculate);
     
     // Calculate and display results using cached data
     function calculate() {
@@ -2336,6 +2733,8 @@
         supply: bestRow.supply,
         demand: bestRow.demand,
         traded: bestRow.traded,
+        volume: bestRow.volume || 0,
+        downstreamUses: bestRow.downstreamUses || 0,
         costTree: costTree
       };
     }
@@ -2452,6 +2851,7 @@
             supply: row.supply || 0,
             demand: row.demand || 0,
             traded: row.traded || 0,
+            volume: row.volume || 0,
             isCurrent: exch === currentExchange
           };
         }
@@ -2556,7 +2956,8 @@
             workforceCost: workforceCostAsk,
             totalCost: totalCostAsk,
             profit: profitAskAsk,
-            roi: roiAskAsk
+            roi: roiAskAsk,
+            volume: row.volume || 0
           });
         }
       }
@@ -2873,6 +3274,35 @@
       return totalUnits;
     }
     
+    function getProfitDisplayMode() {
+      const modeSelect = document.getElementById('profitDisplayMode');
+      return modeSelect ? modeSelect.value : 'unit';
+    }
+
+    function scaleProfitForDisplay(profit, volume) {
+      if (getProfitDisplayMode() !== 'm3') return profit;
+      const numericVolume = parseFloat(volume) || 0;
+      return numericVolume > 0 ? profit / numericVolume : 0;
+    }
+
+    function getProfitUnitLabel() {
+      return getProfitDisplayMode() === 'm3' ? 'per m3' : 'per unit';
+    }
+
+    function getCriticalityLabel(downstreamUses) {
+      const count = parseInt(downstreamUses, 10) || 0;
+      if (count >= 10) return 'Critical';
+      if (count >= 5) return 'High';
+      if (count >= 2) return 'Medium';
+      if (count === 1) return 'Low';
+      return 'None';
+    }
+
+    function setProfitScenarioLabel(id, label) {
+      const elem = document.getElementById(id);
+      if (elem) elem.textContent = label + ' (' + getProfitUnitLabel() + ')';
+    }
+
     // Display calculation results
     function displayResults(data) {
       // Recipe details - handle byproducts
@@ -2895,10 +3325,14 @@
       setValue('totalCostBid', data.totalCostBid);
       
       // Profitability - All Scenarios
-      setValue('profitAskAsk', data.profitAskAsk, true);
-      setValue('profitAskBid', data.profitAskBid, true);
-      setValue('profitBidAsk', data.profitBidAsk, true);
-      setValue('profitBidBid', data.profitBidBid, true);
+      setProfitScenarioLabel('profitAskAskLabel', 'Profit (Ask + Ask)');
+      setProfitScenarioLabel('profitAskBidLabel', 'Profit (Ask + Bid)');
+      setProfitScenarioLabel('profitBidAskLabel', 'Profit (Bid + Ask)');
+      setProfitScenarioLabel('profitBidBidLabel', 'Profit (Bid + Bid)');
+      setValue('profitAskAsk', scaleProfitForDisplay(data.profitAskAsk, data.volume), true);
+      setValue('profitAskBid', scaleProfitForDisplay(data.profitAskBid, data.volume), true);
+      setValue('profitBidAsk', scaleProfitForDisplay(data.profitBidAsk, data.volume), true);
+      setValue('profitBidBid', scaleProfitForDisplay(data.profitBidBid, data.volume), true);
       setValue('roiAskAsk', data.roiAskAsk, true);
       setValue('roiAskBid', data.roiAskBid, true);
       setValue('roiBidAsk', data.roiBidAsk, true);
@@ -2914,6 +3348,9 @@
       setValueRaw('supply', data.supply);
       setValueRaw('demand', data.demand);
       setValueRaw('traded', data.traded);
+      setValueRaw('materialVolume', data.volume ? data.volume + ' m3/unit' : '-');
+      setValueRaw('downstreamUses', data.downstreamUses || 0);
+      setValueRaw('criticalityLabel', getCriticalityLabel(data.downstreamUses));
       
       // Cost breakdown tree
       const treeSection = document.getElementById('costBreakdownTreeSection');
@@ -2947,7 +3384,8 @@
         if (isBest) cardClass += ' best';
         else if (isCurrent) cardClass += ' current';
         
-        const profitClass = exch.profit >= 0 ? 'positive' : 'negative';
+        const displayProfit = scaleProfitForDisplay(exch.profit, exch.volume);
+        const profitClass = displayProfit >= 0 ? 'positive' : 'negative';
         const roiClass = exch.roi >= 0 ? 'positive' : 'negative';
         
         html += `
@@ -2973,8 +3411,8 @@
                 <div class="recipe-detail-value">₡ ${exch.totalCost.toFixed(2)}</div>
               </div>
               <div class="recipe-detail-item">
-                <div class="recipe-detail-label">Profit (Ask)</div>
-                <div class="recipe-detail-value ${profitClass}">₡ ${exch.profit.toFixed(2)}</div>
+                <div class="recipe-detail-label">Profit (Ask, ${getProfitUnitLabel()})</div>
+                <div class="recipe-detail-value ${profitClass}">₡ ${displayProfit.toFixed(2)}</div>
               </div>
               <div class="recipe-detail-item">
                 <div class="recipe-detail-label">ROI</div>
@@ -3091,7 +3529,8 @@
     }
     
     function buildRecipeCard(recipe, isRecommended) {
-      const profitClass = recipe.profit >= 0 ? 'profit' : 'loss';
+      const displayProfit = scaleProfitForDisplay(recipe.profit, recipe.volume);
+      const profitClass = displayProfit >= 0 ? 'profit' : 'loss';
       const badgeClass = isRecommended ? '' : 'alternative';
       const cardClass = isRecommended ? 'recipe-comparison' : 'recipe-comparison alternative';
       const badge = isRecommended ? '🏆 RECOMMENDED' : 'Alternative';
@@ -3119,8 +3558,8 @@
               <div class="recipe-detail-value">₡ ${recipe.totalCost.toFixed(2)}</div>
             </div>
             <div class="recipe-detail-item">
-              <div class="recipe-detail-label">Profit (Ask/Ask)</div>
-              <div class="recipe-detail-value ${profitClass}">₡ ${recipe.profit.toFixed(2)}</div>
+              <div class="recipe-detail-label">Profit (Ask/Ask, ${getProfitUnitLabel()})</div>
+              <div class="recipe-detail-value ${profitClass}">₡ ${displayProfit.toFixed(2)}</div>
             </div>
             <div class="recipe-detail-item">
               <div class="recipe-detail-label">ROI</div>
@@ -3263,6 +3702,7 @@
             supply: row.supply || 0,
             demand: row.demand || 0,
             traded: row.traded || 0,
+            volume: row.volume || 0,
             isCurrent: recipeString === currentRecipe
           });
         }
@@ -3326,7 +3766,8 @@
         if (isBestProfit) cardClass += ' best';
         else if (isCurrent) cardClass += ' current';
         
-        const profitClass = recipe.profit >= 0 ? 'positive' : 'negative';
+        const displayProfit = scaleProfitForDisplay(recipe.profit, recipe.volume);
+        const profitClass = displayProfit >= 0 ? 'positive' : 'negative';
         
         // ROI color coding relative to selected recipe
         let roiClass = '';
@@ -3371,8 +3812,8 @@
                 <div class="recipe-detail-value">₡ ${recipe.totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               </div>
               <div class="recipe-detail-item">
-                <div class="recipe-detail-label">Profit (Ask)</div>
-                <div class="recipe-detail-value ${profitClass}">₡ ${recipe.profit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div class="recipe-detail-label">Profit (Ask, ${getProfitUnitLabel()})</div>
+                <div class="recipe-detail-value ${profitClass}">₡ ${displayProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               </div>
               <div class="recipe-detail-item">
                 <div class="recipe-detail-label">ROI</div>

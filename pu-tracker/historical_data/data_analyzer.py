@@ -261,6 +261,17 @@ class UnifiedAnalysisProcessor:
             # If multiple recipes, use the first (or sum, or max, as appropriate)
             return float(recipes.iloc[0]['Amount'])
         return 1.0  # Default to 1 if not found
+
+    def get_downstream_use_counts(self):
+        """
+        Count how many unique recipes use each material as an input.
+        This is a direct economic criticality signal: higher values mean the item
+        participates in more downstream production paths.
+        """
+        if self.recipe_inputs.empty:
+            return {}
+        counts = self.recipe_inputs.groupby('Material')['Key'].nunique()
+        return {str(ticker): int(count) for ticker, count in counts.items()}
         
     def parse_output_amount_from_recipe(self, recipe_str, ticker):
         """
@@ -391,6 +402,7 @@ class UnifiedAnalysisProcessor:
         
         # Load materials for info
         materials_df = self.load_materials()
+        downstream_use_counts = self.get_downstream_use_counts()
         
         # Generate analysis data
         analysis_data = []
@@ -418,6 +430,7 @@ class UnifiedAnalysisProcessor:
                 'Input Cost per Stack': row.get('Input Cost per Stack', 0),
                 'Input Cost per Hour': row.get('Input Cost per Hour', 0),
                 'Profit per Unit': row.get('Profit per Unit', 0),
+                'Profit per m3': 0,  # Will be calculated
                 'Profit per Stack': 0,  # Will be calculated
                 'ROI Ask %': row.get('ROI Ask %', 0),
                 'ROI Bid %': row.get('ROI Bid %', 0),
@@ -427,6 +440,7 @@ class UnifiedAnalysisProcessor:
                 'Saturation': row.get('Saturation', 0),
                 'Market Cap': 0,  # Will be calculated
                 'Liquidity Ratio': 0,  # Will be calculated
+                'Downstream Uses': downstream_use_counts.get(ticker, 0),
                 'Investment Score': row.get('Investment_Score', 0),
                 'Risk Level': row.get('Risk', 'Low'),
                 'Volatility': 0,
@@ -460,11 +474,15 @@ class UnifiedAnalysisProcessor:
                 result_df[col] = 0
 
         # Fill NaN with 0 for numeric columns
-        numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Investment Score', 'Amount per Recipe', 'Weight', 'Volume', 'Tier']
+        numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per m3', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Downstream Uses', 'Investment Score', 'Amount per Recipe', 'Weight', 'Volume', 'Tier']
         result_df[numeric_cols] = result_df[numeric_cols].apply(pd.to_numeric, errors='coerce').fillna(0)
 
         # Recalculate formulas
         result_df['Profit per Unit'] = pd.to_numeric(result_df['Ask_Price'], errors='coerce').fillna(0) - pd.to_numeric(result_df['Input Cost per Unit'], errors='coerce').fillna(0)
+        result_df['Profit per m3'] = result_df.apply(
+            lambda row: (row['Profit per Unit'] / row['Volume']) if row['Volume'] > 0 else 0,
+            axis=1
+        )
         result_df['Input Cost per Stack'] = result_df['Input Cost per Unit'] * result_df['Amount per Recipe']
         result_df['Profit per Stack'] = result_df['Profit per Unit'] * result_df['Amount per Recipe']
         result_df['ROI Ask %'] = result_df.apply(

@@ -86,6 +86,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
     const supplyIdx = headers.indexOf('Supply');
     const demandIdx = headers.indexOf('Demand');
     const tradedIdx = headers.indexOf('Traded Volume');
+    const volumeIdx = headers.indexOf('Volume');
     
     if (tickerIdx === -1 || exchangeIdx === -1) {
       return { error: 'Required columns not found' };
@@ -108,6 +109,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
       const supply = parseFloat(data[i][supplyIdx]) || 0;
       const demand = parseFloat(data[i][demandIdx]) || 0;
       const traded = parseFloat(data[i][tradedIdx]) || 0;
+      const volume = volumeIdx !== -1 ? (parseFloat(data[i][volumeIdx]) || 0) : 0;
       
       if (!ticker || !exchange) continue;
       
@@ -123,7 +125,8 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         bidPrice: bidPrice,
         supply: supply,
         demand: demand,
-        traded: traded
+        traded: traded,
+        volume: volume
       };
     }
     
@@ -145,6 +148,8 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
       
       // Calculate profit per unit (including transport cost)
       const profit = sellPrice - buyPrice - transportCost;
+      const volume = originData.volume || destData.volume || 0;
+      const profitPerM3 = volume > 0 ? profit / volume : 0;
       
       if (profit <= minProfitValue) continue;
       
@@ -175,6 +180,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         buyPrice: buyPrice,
         sellPrice: sellPrice,
         profit: profit,
+        profitPerM3: profitPerM3,
         roi: roi,
         supply: originData.supply,
         demand: destData.demand,

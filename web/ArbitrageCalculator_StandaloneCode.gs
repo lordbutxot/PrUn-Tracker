@@ -96,7 +96,8 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         bid: headers.indexOf('Bid_Price') !== -1 ? headers.indexOf('Bid_Price') : headers.indexOf('Bid Price'),
         supply: headers.indexOf('Supply'),
         demand: headers.indexOf('Demand'),
-        traded: headers.indexOf('Traded Volume')
+        traded: headers.indexOf('Traded Volume'),
+        volume: headers.indexOf('Volume')
       };
 
       // If critical indices are missing, return empty map with headers for debugging
@@ -115,8 +116,9 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         const supply = idx.supply !== -1 ? (parseFloat(row[idx.supply]) || 0) : 0;
         const demand = idx.demand !== -1 ? (parseFloat(row[idx.demand]) || 0) : 0;
         const traded = idx.traded !== -1 ? (parseFloat(row[idx.traded]) || 0) : 0;
+        const volume = idx.volume !== -1 ? (parseFloat(row[idx.volume]) || 0) : 0;
 
-        map[ticker] = { name, ask, bid, supply, demand, traded };
+        map[ticker] = { name, ask, bid, supply, demand, traded, volume };
       }
 
       return { map, headers, valid: true };
@@ -255,6 +257,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
             buyPrice,
             sellPrice,
             profit,
+            profitPerM3: 0,
             roi,
             supply: opportunitySize,
             demand: opportunitySize,
@@ -286,7 +289,9 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
           const sellPrice = d.ask || d.bid;
           if (buyPrice <= 0 && sellPrice <= 0) continue;
 
-          const profit = sellPrice - buyPrice - transportCost;
+      const profit = sellPrice - buyPrice - transportCost;
+      const volume = o.volume || d.volume || 0;
+      const profitPerM3 = volume > 0 ? profit / volume : 0;
           const roi = buyPrice > 0 ? (profit / (buyPrice + transportCost)) * 100 : 0;
 
           if (minProfitValue === 0 && minROIValue === 0) {
@@ -314,8 +319,9 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
             name: o.name,
             buyPrice: buyPrice,
             sellPrice: sellPrice,
-            profit: profit,
-            roi: roi,
+        profit: profit,
+        profitPerM3: profitPerM3,
+        roi: roi,
             supply: o.supply,
             demand: d.demand,
             maxVolume: maxVolume,
@@ -366,6 +372,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
                 buyPrice,
                 sellPrice,
                 profit,
+                profitPerM3: 0,
                 roi,
                 supply: opportunitySize,
                 demand: opportunitySize,
@@ -454,6 +461,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
             buyPrice,
             sellPrice,
             profit,
+            profitPerM3: 0,
             roi,
             supply: opportunitySize,
             demand: opportunitySize,
@@ -508,6 +516,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
       const supplyIdx = headers.indexOf('Supply');
       const demandIdx = headers.indexOf('Demand');
       const tradedIdx = headers.indexOf('Traded Volume');
+      const volumeIdx = headers.indexOf('Volume');
 
       const priceMap = {};
       for (let i = headerRowIndex2 + 1; i < data.length; i++) {
@@ -522,9 +531,10 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         const supply = supplyIdx !== -1 ? (parseFloat(row[supplyIdx]) || 0) : 0;
         const demand = demandIdx !== -1 ? (parseFloat(row[demandIdx]) || 0) : 0;
         const traded = tradedIdx !== -1 ? (parseFloat(row[tradedIdx]) || 0) : 0;
+        const volume = volumeIdx !== -1 ? (parseFloat(row[volumeIdx]) || 0) : 0;
 
         if (!priceMap[ticker]) priceMap[ticker] = { name, exchanges: {} };
-        priceMap[ticker].exchanges[exchange] = { askPrice, bidPrice, supply, demand, traded };
+        priceMap[ticker].exchanges[exchange] = { askPrice, bidPrice, supply, demand, traded, volume };
       }
 
       for (const ticker in priceMap) {
@@ -538,6 +548,8 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         if (buyPrice <= 0 && sellPrice <= 0) continue;
 
         const profit = sellPrice - buyPrice - transportCost;
+        const volume = o.volume || d.volume || 0;
+        const profitPerM3 = volume > 0 ? profit / volume : 0;
         const roi = buyPrice > 0 ? (profit / (buyPrice + transportCost)) * 100 : 0;
 
         if (minProfitValue === 0 && minROIValue === 0) {
@@ -566,6 +578,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
           buyPrice: buyPrice,
           sellPrice: sellPrice,
           profit: profit,
+          profitPerM3: profitPerM3,
           roi: roi,
           supply: o.supply,
           demand: d.demand,

@@ -26,9 +26,9 @@ REQUIRED_HEADERS = [
     'Material Name', 'Ticker', 'Category', 'Tier', 'Recipe', 'Amount per Recipe',
     'Weight', 'Volume', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack',
     'Input Cost per Hour',  # <-- Add this
-    'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
+    'Profit per Unit', 'Profit per m3', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
     'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
-    'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Exchange'
+    'Liquidity Ratio', 'Downstream Uses', 'Investment Score', 'Risk Level', 'Exchange'
 ]
 EXCHANGE_TABS = ['DATA AI1', 'DATA CI1', 'DATA CI2', 'DATA IC1', 'DATA NC1', 'DATA NC2']
 SPREADSHEET_ID = "1-9vXBU43YjU6LMdivpVwL2ysLHANShHzrCW6MmmGvoI"
@@ -178,14 +178,14 @@ def main() -> bool:
             print(f" Missing columns in enhanced data: {missing}")
             # --- ADD MISSING COLUMNS WITH DEFAULTS ---
             for col in missing:
-                df[col] = "" if col not in ['Tier', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Investment Score'] else 0
+                df[col] = "" if col not in ['Tier', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour', 'Profit per Unit', 'Profit per m3', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 'Downstream Uses', 'Investment Score'] else 0
         df = df[REQUIRED_HEADERS]  # Ensure correct column order
         
         # CRITICAL FIX: Ensure numeric columns are actually numeric (not strings or NaN)
         numeric_columns = ['Tier', 'Ask_Price', 'Bid_Price', 'Input Cost per Unit', 'Input Cost per Stack', 
-                          'Input Cost per Hour', 'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 
+                          'Input Cost per Hour', 'Profit per Unit', 'Profit per m3', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %', 
                           'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap', 'Liquidity Ratio', 
-                          'Investment Score', 'Amount per Recipe', 'Weight', 'Volume']
+                          'Downstream Uses', 'Investment Score', 'Amount per Recipe', 'Weight', 'Volume']
         for col in numeric_columns:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)

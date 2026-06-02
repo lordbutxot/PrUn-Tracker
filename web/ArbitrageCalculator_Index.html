@@ -449,6 +449,363 @@
         padding: 8px 6px;
       }
     }
+
+    /* Dark trading terminal theme override */
+    :root {
+      --bg: #05070b;
+      --panel: #0b111b;
+      --panel-2: #101826;
+      --panel-3: #142033;
+      --line: #223047;
+      --line-strong: #33455f;
+      --text: #e7edf6;
+      --muted: #8ea1b8;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+      --danger: #fb4665;
+      --warning: #f59e0b;
+      --shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 32rem),
+        radial-gradient(circle at 80% 4%, rgba(34, 197, 94, 0.12), transparent 24rem),
+        var(--bg);
+      padding: 18px;
+      padding-bottom: 72px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .container {
+      max-width: 1480px;
+      background: linear-gradient(180deg, rgba(16, 24, 38, 0.98), rgba(8, 13, 21, 0.98));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    .header {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 24px;
+      padding-bottom: 22px;
+    }
+
+    h1 {
+      color: var(--text);
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    .subtitle,
+    .stat-label,
+    .sort-controls label {
+      color: var(--muted);
+    }
+
+    .last-update {
+      background: rgba(56, 189, 248, 0.1);
+      color: #b9e6ff;
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 999px;
+    }
+
+    .controls-section,
+    .results-container {
+      background: rgba(8, 13, 21, 0.78);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+    }
+
+    .controls-grid {
+      grid-template-columns: repeat(5, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    label,
+    .results-title {
+      color: var(--text);
+    }
+
+    select,
+    input {
+      color: var(--text);
+      background: #080d15;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    select:hover,
+    input:hover {
+      border-color: var(--line-strong);
+    }
+
+    select:focus,
+    input:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
+    }
+
+    option {
+      background: #0b111b;
+      color: var(--text);
+    }
+
+    button {
+      border-radius: 6px;
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #16a34a, #0891b2);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #22c55e, #06b6d4);
+      box-shadow: 0 14px 34px rgba(34, 197, 94, 0.2);
+    }
+
+    .btn-secondary {
+      color: #c7d8ec;
+      background: #0b111b;
+      border: 1px solid var(--line);
+    }
+
+    .btn-secondary:hover {
+      color: var(--text);
+      background: var(--panel-3);
+      border-color: var(--line-strong);
+    }
+
+    .btn-export {
+      background: linear-gradient(135deg, #0f766e, #16a34a);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+
+    .summary-stats {
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, rgba(20, 32, 51, 0.86), rgba(11, 17, 27, 0.92));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .stat-value {
+      color: var(--accent);
+      font-size: clamp(1.35rem, 3vw, 2rem);
+    }
+
+    .table-wrapper {
+      border-color: var(--line);
+      border-radius: 8px;
+      background: #080d15;
+    }
+
+    table {
+      background: #080d15;
+      color: var(--text);
+    }
+
+    thead {
+      color: #b9e6ff;
+      background: #0b111b;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: #9ecde8;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      border-bottom: 1px solid rgba(34, 48, 71, 0.72);
+      color: #d9e5f2;
+    }
+
+    tbody tr:hover {
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .number-positive {
+      color: var(--accent);
+    }
+
+    .number-neutral {
+      color: var(--muted);
+    }
+
+    .badge {
+      border-radius: 999px;
+      border: 1px solid;
+      background: transparent;
+    }
+
+    .badge-very-high {
+      color: #86efac;
+      border-color: rgba(34, 197, 94, 0.42);
+      background: rgba(34, 197, 94, 0.14);
+    }
+
+    .badge-high {
+      color: #7dd3fc;
+      border-color: rgba(56, 189, 248, 0.42);
+      background: rgba(56, 189, 248, 0.12);
+    }
+
+    .badge-medium {
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.42);
+      background: rgba(245, 158, 11, 0.12);
+    }
+
+    .badge-low {
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.42);
+      background: rgba(244, 63, 94, 0.12);
+    }
+
+    .spinner {
+      border-color: rgba(255, 255, 255, 0.08);
+      border-top-color: var(--accent-2);
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .message {
+      border-radius: 8px;
+      white-space: pre-line;
+    }
+
+    .message-info {
+      background: rgba(56, 189, 248, 0.1);
+      color: #b9e6ff;
+      border-color: rgba(56, 189, 248, 0.24);
+    }
+
+    .message-error {
+      background: rgba(244, 63, 94, 0.12);
+      color: #fecdd3;
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    .message-success {
+      background: rgba(34, 197, 94, 0.12);
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.32);
+    }
+
+    .page-footer {
+      color: var(--muted);
+      background: rgba(5, 7, 11, 0.94);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.3);
+    }
+
+    .page-footer a {
+      color: #7dd3fc;
+    }
+
+    @media (max-width: 1180px) {
+      .controls-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+        padding-bottom: 72px;
+      }
+
+      .container {
+        padding: 14px;
+        border-radius: 0;
+      }
+
+      .controls-section,
+      .results-container {
+        padding: 14px;
+      }
+
+      .controls-grid,
+      .summary-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        gap: 10px;
+      }
+
+      .results-header {
+        align-items: stretch;
+      }
+
+      .sort-controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .sort-controls select {
+        flex: 1;
+      }
+
+      th,
+      td {
+        padding: 10px 8px;
+      }
+    }
+
+    /* Force generated and inline-styled app fragments into the dark theme. */
+    [style*="background: white"],
+    [style*="background:white"],
+    [style*="background: #f"],
+    [style*="background:#f"],
+    [style*="background: rgb(248"],
+    [style*="background: rgb(249"],
+    [style*="background: rgb(240"] {
+      background: linear-gradient(180deg, rgba(20, 32, 51, 0.9), rgba(11, 17, 27, 0.96)) !important;
+      color: var(--text) !important;
+      border-color: var(--line) !important;
+    }
+
+    [style*="color: #2c3e50"],
+    [style*="color:#2c3e50"],
+    [style*="color: #1e3a8a"],
+    [style*="color:#1e3a8a"],
+    [style*="color: #1e40af"],
+    [style*="color:#1e40af"],
+    [style*="color: #666"],
+    [style*="color:#666"],
+    [style*="color: #6b7280"],
+    [style*="color:#6b7280"] {
+      color: var(--text) !important;
+    }
+
+    [style*="border: 1px solid #d1d5db"],
+    [style*="border:1px solid #d1d5db"],
+    [style*="border: 1px solid #e5e7eb"],
+    [style*="border:1px solid #e5e7eb"] {
+      border-color: var(--line) !important;
+    }
   </style>
 </head>
 <body>
@@ -502,6 +859,14 @@
         <div class="control-group">
           <label><span class="label-icon">📈</span> Min ROI (%)</label>
           <input type="number" id="minROI" value="0" min="0" step="1" placeholder="0">
+        </div>
+
+        <div class="control-group">
+          <label><span class="label-icon">📦</span> Profit Display</label>
+          <select id="profitDisplayMode" onchange="displayTable()">
+            <option value="unit">Per Unit</option>
+            <option value="m3">Per m3 / Ship Volume</option>
+          </select>
         </div>
       </div>
       
@@ -570,7 +935,7 @@
               <th>Name</th>
               <th>Buy Price</th>
               <th>Sell Price</th>
-              <th>Profit/Unit</th>
+              <th id="profitColumnHeader">Profit/Unit</th>
               <th>ROI %</th>
               <th>Max Volume</th>
               <th>Total Profit</th>
@@ -600,6 +965,11 @@
     });
     
     function loadMetadata() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        document.getElementById('lastUpdate').innerHTML = 'Local preview mode - live data loads in Google Apps Script';
+        return;
+      }
+
       google.script.run
         .withSuccessHandler(function(metadata) {
           if (metadata && metadata['Last Data Update']) {
@@ -630,6 +1000,11 @@
     }
     
     function calculateOpportunities() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        showMessage('Local preview mode: deploy this HTML in Google Apps Script to calculate live opportunities.', 'info');
+        return;
+      }
+
       const originExchange = document.getElementById('originExchange').value;
       const destExchange = document.getElementById('destExchange').value;
       const minProfit = document.getElementById('minProfit').value;
@@ -720,16 +1095,22 @@
     function displayTable() {
       const tbody = document.getElementById('resultsBody');
       tbody.innerHTML = '';
+      const profitMode = document.getElementById('profitDisplayMode').value;
+      const profitHeader = document.getElementById('profitColumnHeader');
+      if (profitHeader) {
+        profitHeader.textContent = profitMode === 'm3' ? 'Profit/m3' : 'Profit/Unit';
+      }
       
       currentResults.forEach(opp => {
         const row = tbody.insertRow();
+        const displayProfit = profitMode === 'm3' ? (opp.profitPerM3 || 0) : opp.profit;
         
         row.innerHTML = `
           <td><strong>${opp.ticker}</strong></td>
           <td>${opp.name}</td>
           <td>${formatNumber(opp.buyPrice)} ICA</td>
           <td>${formatNumber(opp.sellPrice)} ICA</td>
-          <td class="number-positive">${formatNumber(opp.profit)} ICA</td>
+          <td class="number-positive">${formatNumber(displayProfit)} ICA</td>
           <td class="number-positive">${formatNumber(opp.roi)}%</td>
           <td class="number-neutral">${formatNumber(opp.maxVolume, 0)}</td>
           <td class="number-positive"><strong>${formatNumber(opp.totalProfit)} ICA</strong></td>
@@ -749,6 +1130,9 @@
           case 'roi':
             return b.roi - a.roi;
           case 'profit':
+            if (document.getElementById('profitDisplayMode').value === 'm3') {
+              return (b.profitPerM3 || 0) - (a.profitPerM3 || 0);
+            }
             return b.profit - a.profit;
           case 'maxVolume':
             return b.maxVolume - a.maxVolume;
@@ -808,6 +1192,11 @@
     }
     
     function exportToSheet() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        showMessage('Local preview mode: export is available after deploying to Google Apps Script.', 'info');
+        return;
+      }
+
       const originExchange = document.getElementById('originExchange').value;
       const destExchange = document.getElementById('destExchange').value;
       const minProfit = document.getElementById('minProfit').value;

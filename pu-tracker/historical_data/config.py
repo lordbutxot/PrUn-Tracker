@@ -102,9 +102,9 @@ ENHANCED_ANALYSIS_COLUMNS = [
     'Amount per Recipe', 'Weight', 'Volume', 
     'Ask_Price', 'Bid_Price',
     'Input Cost per Unit', 'Input Cost per Stack', 'Input Cost per Hour',
-    'Profit per Unit', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
+    'Profit per Unit', 'Profit per m3', 'Profit per Stack', 'ROI Ask %', 'ROI Bid %',
     'Supply', 'Demand', 'Traded Volume', 'Saturation', 'Market Cap',
-    'Liquidity Ratio', 'Investment Score', 'Risk Level', 'Volatility',
+    'Liquidity Ratio', 'Downstream Uses', 'Investment Score', 'Risk Level', 'Volatility',
     'Exchange'
 ]
 

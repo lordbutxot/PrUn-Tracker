@@ -30,6 +30,7 @@ venv/
 env/
 ENV/
 .virtualenv/
+.testdeps/
 
 # Python bytecode
 __pycache__/

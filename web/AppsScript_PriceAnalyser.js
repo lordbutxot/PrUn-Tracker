@@ -177,25 +177,43 @@ function getAllData() {
       Logger.log('Sample row 1 column O value: ' + data[1][14]);
     }
     
+    const columnIndex = {};
+    headers.forEach(function(header, index) {
+      columnIndex[String(header).trim()] = index;
+    });
+
+    function cell(row, names, fallbackIndex) {
+      for (const name of names) {
+        if (columnIndex[name] !== undefined) {
+          return row[columnIndex[name]];
+        }
+      }
+      return fallbackIndex !== undefined ? row[fallbackIndex] : '';
+    }
+
     // Convert to array of objects for easier client-side processing
     const rows = [];
     for (let i = 1; i < data.length; i++) {
+      const row = data[i];
       rows.push({
-        lookupKey: data[i][0],      // Column A
-        ticker: data[i][1],          // Column B
-        recipe: data[i][2],          // Column C
-        materialName: data[i][3],    // Column D
-        exchange: data[i][4],        // Column E (Exchange)
-        askPrice: parseFloat(data[i][5]) || 0,       // Column F (Ask_Price)
-        bidPrice: parseFloat(data[i][6]) || 0,       // Column G (Bid_Price)
-        inputCostAsk: parseFloat(data[i][7]) || 0,   // Column H (Input Cost Ask)
-        inputCostBid: parseFloat(data[i][8]) || 0,   // Column I (Input Cost Bid)
-        workforceCostAsk: parseFloat(data[i][9]) || 0,  // Column J (Workforce Cost Ask)
-        workforceCostBid: parseFloat(data[i][10]) || 0, // Column K (Workforce Cost Bid)
-        amountPerRecipe: parseFloat(data[i][11]) || 1,   // Column L (Amount per Recipe)
-        supply: parseFloat(data[i][12]) || 0,           // Column M (Supply)
-        demand: parseFloat(data[i][13]) || 0,           // Column N (Demand)
-        traded: parseFloat(data[i][14]) || 0            // Column O (Traded Volume)
+        lookupKey: cell(row, ['LookupKey'], 0),
+        ticker: cell(row, ['Ticker'], 1),
+        recipe: cell(row, ['Recipe'], 2),
+        materialName: cell(row, ['Material Name', 'Name'], 3),
+        exchange: cell(row, ['Exchange'], 4),
+        askPrice: parseFloat(cell(row, ['Ask_Price', 'Ask Price'], 5)) || 0,
+        bidPrice: parseFloat(cell(row, ['Bid_Price', 'Bid Price'], 6)) || 0,
+        inputCostAsk: parseFloat(cell(row, ['Input Cost Ask'], 7)) || 0,
+        inputCostBid: parseFloat(cell(row, ['Input Cost Bid'], 8)) || 0,
+        workforceCostAsk: parseFloat(cell(row, ['Workforce Cost Ask'], 9)) || 0,
+        workforceCostBid: parseFloat(cell(row, ['Workforce Cost Bid'], 10)) || 0,
+        amountPerRecipe: parseFloat(cell(row, ['Amount per Recipe'], 11)) || 1,
+        supply: parseFloat(cell(row, ['Supply'], 12)) || 0,
+        demand: parseFloat(cell(row, ['Demand'], 13)) || 0,
+        traded: parseFloat(cell(row, ['Traded Volume'], 14)) || 0,
+        volume: parseFloat(cell(row, ['Volume'])) || 0,
+        downstreamUses: parseInt(cell(row, ['Downstream Uses', 'InputCount']), 10) || 0,
+        profitPerM3: parseFloat(cell(row, ['Profit per m3'])) || 0
       });
     }
     

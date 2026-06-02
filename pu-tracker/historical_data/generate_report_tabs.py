@@ -2466,16 +2466,40 @@ def create_price_analyser_tab(sheets_manager, all_df):
             clean_df['Workforce Cost Ask'] = clean_df['Input Cost Ask'] * 0.10
             clean_df['Workforce Cost Bid'] = clean_df['Input Cost Bid'] * 0.10
     
+    if 'Downstream Uses' not in clean_df.columns:
+        try:
+            recipe_inputs_path = Path(__file__).parent.parent / "cache" / "recipe_inputs.csv"
+            recipe_inputs_df = pd.read_csv(recipe_inputs_path, na_filter=False)
+            downstream_counts = recipe_inputs_df.groupby('Material')['Key'].nunique().to_dict()
+            clean_df['Downstream Uses'] = clean_df['Ticker'].map(downstream_counts).fillna(0).astype(int)
+        except Exception as e:
+            print(f"[WARN] Could not calculate downstream use counts: {e}")
+            clean_df['Downstream Uses'] = 0
+
+    if 'Volume' not in clean_df.columns:
+        clean_df['Volume'] = 0
+    if 'Profit per Unit' not in clean_df.columns:
+        clean_df['Profit per Unit'] = 0
+
+    clean_df['Volume'] = pd.to_numeric(clean_df['Volume'], errors='coerce').fillna(0)
+    clean_df['Profit per Unit'] = pd.to_numeric(clean_df['Profit per Unit'], errors='coerce').fillna(0)
+    clean_df['Profit per m3'] = clean_df.apply(
+        lambda row: (row.get('Profit per Unit', 0) / row.get('Volume', 0)) if row.get('Volume', 0) else 0,
+        axis=1
+    )
+
     # Create the reference data tab first (hidden sheet with all data for lookups)
     # Include Recipe column for multi-recipe selection capability
     reference_df = clean_df[['Ticker', 'Recipe', 'Material Name', 'Exchange', 'Ask_Price', 'Bid_Price', 
                            'Input Cost Ask', 'Input Cost Bid', 
                            'Workforce Cost Ask', 'Workforce Cost Bid',
-                           'Amount per Recipe', 'Supply', 'Demand', 'Traded Volume']].copy()
+                           'Amount per Recipe', 'Supply', 'Demand', 'Traded Volume',
+                           'Volume', 'Downstream Uses', 'Profit per m3']].copy()
     
     # Fill NaN values with 0 for numeric columns
     numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost Ask', 'Input Cost Bid', 
-                    'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand', 'Traded Volume']
+                    'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand',
+                    'Traded Volume', 'Volume', 'Downstream Uses', 'Profit per m3']
     for col in numeric_cols:
         reference_df[col] = reference_df[col].fillna(0)
     

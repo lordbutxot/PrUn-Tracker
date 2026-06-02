@@ -36,6 +36,14 @@ cd pu-tracker/historical_data
 python main.py
 ```
 
+### Run Regression Tests
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The test suite validates the committed cache schema and core calculation helpers without calling the FIO API or Google Sheets.
+
 ### Option 3: Fork & Deploy with GitHub Actions
 1. Fork this repository
 2. Add `GOOGLE_CREDENTIALS_JSON` secret (see [Setup Guide](GITHUB_ACTIONS_SETUP.md))
