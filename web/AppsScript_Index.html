@@ -765,12 +765,43 @@
     }
 
     .container {
-      max-width: 1440px;
+      max-width: 1720px;
       background: linear-gradient(180deg, rgba(16, 24, 38, 0.98), rgba(8, 13, 21, 0.98));
       border: 1px solid var(--line);
       border-radius: 8px;
       box-shadow: var(--shadow);
       padding: 28px;
+    }
+
+    .results {
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .results > .section {
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .results > .section:nth-child(3),
+    .results > .section:nth-child(5),
+    #costBreakdownTreeSection,
+    #exchangeComparisonSection,
+    #arbitrageSection,
+    #recommendationSection,
+    #buildingComparisonSection {
+      grid-column: 1 / -1;
+    }
+
+    #profitabilityContent .data-grid,
+    #costBreakdownContent .data-grid {
+      grid-template-columns: repeat(4, minmax(150px, 1fr)) !important;
+    }
+
+    #marketIndicatorsContent .data-grid,
+    #breakevenContent .data-grid {
+      grid-template-columns: repeat(3, minmax(150px, 1fr));
     }
 
     h1 {
@@ -1004,6 +1035,13 @@
       .controls {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      #profitabilityContent .data-grid,
+      #costBreakdownContent .data-grid,
+      #marketIndicatorsContent .data-grid,
+      #breakevenContent .data-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
     }
 
     @media (max-width: 768px) {
@@ -1023,6 +1061,21 @@
         padding: 10px;
       }
 
+      .results {
+        grid-template-columns: 1fr;
+      }
+
+      .results > .section,
+      .results > .section:nth-child(3),
+      .results > .section:nth-child(5),
+      #costBreakdownTreeSection,
+      #exchangeComparisonSection,
+      #arbitrageSection,
+      #recommendationSection,
+      #buildingComparisonSection {
+        grid-column: auto;
+      }
+
       .section,
       .options-panel {
         padding: 14px;
@@ -1035,7 +1088,11 @@
       .recipe-details,
       .arbitrage-details,
       .building-recipe-stats,
-      .exchange-stats {
+      .exchange-stats,
+      #profitabilityContent .data-grid,
+      #costBreakdownContent .data-grid,
+      #marketIndicatorsContent .data-grid,
+      #breakevenContent .data-grid {
         grid-template-columns: 1fr 1fr;
       }
     }
@@ -1044,7 +1101,11 @@
       .recipe-details,
       .arbitrage-details,
       .building-recipe-stats,
-      .exchange-stats {
+      .exchange-stats,
+      #profitabilityContent .data-grid,
+      #costBreakdownContent .data-grid,
+      #marketIndicatorsContent .data-grid,
+      #breakevenContent .data-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -3362,7 +3423,7 @@
         treeSection.style.display = 'none';
       }
       
-      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').style.display = 'grid';
     }
     
     // Display exchange comparison
