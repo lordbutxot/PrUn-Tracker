@@ -608,13 +608,13 @@
     
     .options-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
     }
     
     .option-item {
       background: white;
-      padding: 15px;
+      padding: 12px;
       border-radius: 6px;
       border: 1px solid #e5e7eb;
     }
@@ -636,10 +636,10 @@
     }
     
     .option-hint {
-      margin-top: 8px;
-      font-size: 0.85rem;
+      margin-top: 6px;
+      font-size: 0.78rem;
       color: #6b7280;
-      font-style: italic;
+      line-height: 1.35;
     }
     
     @media (max-width: 768px) {
@@ -850,6 +850,19 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
+    select {
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%) !important;
+      background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 12px) 50% !important;
+      background-size: 6px 6px, 6px 6px !important;
+      background-repeat: no-repeat !important;
+      padding-right: 34px !important;
+    }
+
     select:hover,
     input:hover,
     #planetSearch:hover {
@@ -893,6 +906,54 @@
       border-radius: 8px;
       color: var(--text);
       box-shadow: none;
+    }
+
+    .option-item {
+      min-height: 0;
+    }
+
+    .option-item label {
+      margin-bottom: 0;
+      font-size: 0.88rem !important;
+      line-height: 1.25;
+    }
+
+    .option-item input[type="number"],
+    .option-item select {
+      min-height: 34px;
+      padding-top: 6px !important;
+      padding-bottom: 6px !important;
+      font-size: 0.9rem !important;
+    }
+
+    .checkbox-label {
+      gap: 8px;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .compact-option-body {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .compact-option-body input[type="number"] {
+      width: 74px !important;
+      flex: 0 0 auto;
+    }
+
+    .compact-status {
+      color: var(--accent-2) !important;
+      font-size: 0.8rem !important;
+      font-weight: 600;
     }
 
     .data-item {
@@ -1003,6 +1064,31 @@
 
     .collapse-icon {
       color: var(--accent-2);
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 18px;
+      font-size: 0;
+    }
+
+    .collapse-icon::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+    }
+
+    .collapse-icon.collapsed {
+      transform: none;
+    }
+
+    .collapse-icon.collapsed::before {
+      transform: rotate(-45deg);
     }
 
     .data-grid,
@@ -1231,13 +1317,12 @@
             <input type="checkbox" id="customEfficiencyToggle">
             <span>Use Custom Workforce Efficiency</span>
           </label>
-          <div class="option-hint" style="margin-bottom: 10px;">Override automatic efficiency calculation with manual percentage</div>
-          <div id="customEfficiencyGroup" style="display: none; padding-left: 24px;">
-            <label for="customEfficiency" style="font-size: 0.85rem; font-weight: 500; color: #6b7280; margin-bottom: 5px; display: block;">Efficiency Percentage:</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="option-hint">Override automatic efficiency calculation with manual percentage</div>
+          <div id="customEfficiencyGroup" style="display: none;">
+            <div class="compact-option-body">
               <input type="number" id="customEfficiency" min="1" max="100" value="79" step="1" 
                      style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 80px; font-size: 1rem;">
-              <span style="font-size: 0.9rem; color: #6b7280;">%</span>
+              <span class="compact-status">Efficiency %</span>
             </div>
           </div>
         </div>
@@ -1252,12 +1337,12 @@
           <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
             Experts Assigned (Cumulative Bonus)
           </label>
-          <div style="display: flex; align-items: center; gap: 12px; padding-left: 24px;">
+          <div class="compact-option-body">
             <input type="number" id="expertCount" min="0" max="5" value="0" step="1" 
                    style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; width: 70px; font-size: 1rem;">
-            <span id="expertBonusDisplay" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
+            <span id="expertBonusDisplay" class="compact-status" style="font-size: 0.85rem; color: #3b82f6; font-weight: 600;">+0% efficiency</span>
           </div>
-          <div class="option-hint" style="margin-top: 5px;">Each expert provides cumulative bonus with synergy effects (1-5 experts)</div>
+          <div class="option-hint">Each expert provides cumulative synergy effects (1-5)</div>
         </div>
         <div class="option-item">
           <label class="checkbox-label">
@@ -1267,20 +1352,17 @@
           <div class="option-hint">Corporate Headquarters provides +10% efficiency for production on that specific planet</div>
         </div>
         <div class="option-item">
-          <label for="profitDisplayMode" style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
-            Profit Display
+          <label class="checkbox-label">
+            <input type="checkbox" id="profitDisplayVolume">
+            <span>Volume Profit Display</span>
           </label>
-          <select id="profitDisplayMode" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; width: 100%;">
-            <option value="unit">Per Unit</option>
-            <option value="m3">Per m3 / Ship Volume</option>
-          </select>
-          <div class="option-hint">Use per m3 to compare cargo efficiency when ship capacity is the limiting factor</div>
+          <div class="option-hint">Checked = show profit per m3 for ship capacity planning. Unchecked = per unit.</div>
         </div>
         <div class="option-item">
           <label style="font-size: 0.95rem; font-weight: 500; color: #2c3e50; margin-bottom: 8px; display: block;">
             Company HQ Faction Bonus (Multiplicative)
           </label>
-          <div style="padding-left: 24px;">
+          <div style="margin-top: 8px;">
             <select id="hqFactionBonus" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; width: 100%; margin-bottom: 8px;">
               <option value="0">No HQ Bonus</option>
               <option value="0.10">+10% Electronics (Antares Initiative)</option>
@@ -2389,7 +2471,7 @@
     });
     
     document.getElementById('corpHqBonus').addEventListener('change', calculate);
-    document.getElementById('profitDisplayMode').addEventListener('change', calculate);
+    document.getElementById('profitDisplayVolume').addEventListener('change', calculate);
     
     // Calculate and display results using cached data
     function calculate() {
@@ -3336,8 +3418,8 @@
     }
     
     function getProfitDisplayMode() {
-      const modeSelect = document.getElementById('profitDisplayMode');
-      return modeSelect ? modeSelect.value : 'unit';
+      const volumeToggle = document.getElementById('profitDisplayVolume');
+      return volumeToggle && volumeToggle.checked ? 'm3' : 'unit';
     }
 
     function scaleProfitForDisplay(profit, volume) {
