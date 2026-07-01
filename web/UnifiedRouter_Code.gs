@@ -410,6 +410,200 @@ function getTradeRouteMaterials(query) {
   }
 }
 
+function getTradeRouteExchanges() {
+  try {
+    return getExchanges().map(code => ({
+      code: code,
+      label: getExchangeName(code)
+    }));
+  } catch (error) {
+    return [];
+  }
+}
+
+function calculateTradeRoute(originExchange, destinationExchange, materialsJson, routeMode) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Price Analyser Data');
+    if (!sheet) {
+      return { error: 'Price Analyser Data sheet not found' };
+    }
+
+    const cargo = Array.isArray(materialsJson) ? materialsJson : JSON.parse(materialsJson || '[]');
+    if (!cargo.length) {
+      return { error: 'Add at least one material to build a route' };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) {
+      return { error: 'Price Analyser Data is empty' };
+    }
+
+    const headers = data[0];
+    const tickerIdx = headers.indexOf('Ticker');
+    const nameIdx = headers.indexOf('Material Name') !== -1 ? headers.indexOf('Material Name') : headers.indexOf('Name');
+    const exchangeIdx = headers.indexOf('Exchange');
+    const askIdx = headers.indexOf('Ask Price');
+    const bidIdx = headers.indexOf('Bid Price');
+    const supplyIdx = headers.indexOf('Supply');
+    const demandIdx = headers.indexOf('Demand');
+    const tradedIdx = headers.indexOf('Traded Volume');
+    const volumeIdx = headers.indexOf('Volume per Unit') !== -1 ? headers.indexOf('Volume per Unit') : headers.indexOf('Volume');
+
+    if (tickerIdx === -1 || exchangeIdx === -1 || askIdx === -1 || bidIdx === -1) {
+      return { error: 'Required columns not found in Price Analyser Data' };
+    }
+
+    const marketMap = {};
+    const exchangeSet = new Set();
+
+    for (let i = 1; i < data.length; i++) {
+      const ticker = String(data[i][tickerIdx] || '').trim();
+      const exchange = String(data[i][exchangeIdx] || '').trim();
+      if (!ticker || !exchange) continue;
+
+      exchangeSet.add(exchange);
+
+      if (!marketMap[ticker]) {
+        marketMap[ticker] = {
+          ticker: ticker,
+          name: nameIdx !== -1 ? String(data[i][nameIdx] || ticker).trim() : ticker,
+          exchanges: {}
+        };
+      }
+
+      marketMap[ticker].exchanges[exchange] = {
+        askPrice: parseFloat(data[i][askIdx]) || 0,
+        bidPrice: parseFloat(data[i][bidIdx]) || 0,
+        supply: parseFloat(data[i][supplyIdx]) || 0,
+        demand: parseFloat(data[i][demandIdx]) || 0,
+        traded: parseFloat(data[i][tradedIdx]) || 0,
+        volume: volumeIdx !== -1 ? (parseFloat(data[i][volumeIdx]) || 0) : 0
+      };
+    }
+
+    const originList = originExchange ? [originExchange] : Array.from(exchangeSet);
+    const destinationList = destinationExchange ? [destinationExchange] : Array.from(exchangeSet);
+    const mode = String(routeMode || 'shortest_profit');
+    const routeBuckets = new Map();
+    const missingMaterials = [];
+
+    cargo.forEach(item => {
+      const ticker = String(item.ticker || '').trim();
+      const qty = Math.max(1, parseFloat(item.qty) || 1);
+      if (!ticker) return;
+
+      const material = marketMap[ticker];
+      if (!material) {
+        missingMaterials.push({ ticker, qty, reason: 'No market data found' });
+        return;
+      }
+
+      const availableOrigins = originList.filter(code => material.exchanges[code]);
+      const availableDestinations = destinationList.filter(code => material.exchanges[code]);
+
+      if (!availableOrigins.length || !availableDestinations.length) {
+        missingMaterials.push({
+          ticker: ticker,
+          qty: qty,
+          reason: 'No matching origin/destination exchange for this material'
+        });
+        return;
+      }
+
+      availableOrigins.forEach(originCode => {
+        availableDestinations.forEach(destCode => {
+          if (originCode === destCode) return;
+
+          const originData = material.exchanges[originCode];
+          const destData = material.exchanges[destCode];
+          const buyPrice = originData.askPrice;
+          const sellPrice = destData.bidPrice;
+          if (buyPrice <= 0 || sellPrice <= 0) return;
+
+          const unitProfit = sellPrice - buyPrice;
+          const totalCost = buyPrice * qty;
+          const totalRevenue = sellPrice * qty;
+          const totalProfit = unitProfit * qty;
+          const roi = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+          const liquidity = Math.min(originData.supply || qty, destData.demand || qty, qty);
+          const routeKey = `${originCode}__${destCode}`;
+
+          if (!routeBuckets.has(routeKey)) {
+            routeBuckets.set(routeKey, {
+              originExchange: originCode,
+              destinationExchange: destCode,
+              routeMode: mode,
+              items: [],
+              totalUnits: 0,
+              totalCost: 0,
+              totalRevenue: 0,
+              totalProfit: 0,
+              avgROI: 0,
+              routeScore: 0,
+              liquidityScore: 0,
+              distanceKm: null,
+              distanceLabel: 'Distance matrix pending'
+            });
+          }
+
+          const route = routeBuckets.get(routeKey);
+          route.items.push({
+            ticker: ticker,
+            name: material.name,
+            qty: qty,
+            buyExchange: originCode,
+            sellExchange: destCode,
+            buyPrice: buyPrice,
+            sellPrice: sellPrice,
+            unitProfit: unitProfit,
+            totalProfit: totalProfit,
+            roi: roi,
+            supply: originData.supply || 0,
+            demand: destData.demand || 0,
+            traded: ((originData.traded || 0) + (destData.traded || 0)) / 2,
+            volume: originData.volume || destData.volume || 0,
+            liquidity: liquidity
+          });
+          route.totalUnits += qty;
+          route.totalCost += totalCost;
+          route.totalRevenue += totalRevenue;
+          route.totalProfit += totalProfit;
+          route.liquidityScore += liquidity;
+        });
+      });
+    });
+
+    const routes = Array.from(routeBuckets.values()).map(route => {
+      route.items.sort((a, b) => b.totalProfit - a.totalProfit);
+      route.avgROI = route.totalCost > 0 ? (route.totalProfit / route.totalCost) * 100 : 0;
+      route.routeScore = mode === 'point_to_point'
+        ? route.totalProfit
+        : route.totalProfit + (route.liquidityScore * 5);
+      route.itemCount = route.items.length;
+      route.originLabel = getExchangeName(route.originExchange);
+      route.destinationLabel = getExchangeName(route.destinationExchange);
+      return route;
+    }).sort((a, b) => {
+      if (b.routeScore !== a.routeScore) return b.routeScore - a.routeScore;
+      return b.totalProfit - a.totalProfit;
+    });
+
+    return {
+      routeMode: mode,
+      originExchange: originExchange || 'ALL',
+      destinationExchange: destinationExchange || 'ALL',
+      routeCount: routes.length,
+      bestRoute: routes[0] || null,
+      routes: routes.slice(0, 10),
+      missingMaterials: missingMaterials,
+      note: 'Profit ranking is active; distance weighting will plug into this engine once the map data is available.'
+    };
+  } catch (error) {
+    return { error: error.toString() };
+  }
+}
+
 // ==================== PRICE ANALYSER FUNCTIONS ====================
 // (Keep all your existing Price Analyser functions below this line)
 // Don't delete any of your existing functions!

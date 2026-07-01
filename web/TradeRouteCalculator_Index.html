@@ -190,6 +190,85 @@
       color: #cdeefe;
       font-size: 0.92rem;
     }
+    .route-results {
+      margin-top: 18px;
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .route-card {
+      padding: 14px;
+      border-radius: 12px;
+      background: #0b111b;
+      border: 1px solid #223047;
+      min-width: 0;
+    }
+    .route-card .label {
+      font-size: 0.74rem;
+      color: #93a7bf;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .route-card .value {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #e5eef9;
+      word-break: break-word;
+    }
+    .route-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .route-item {
+      padding: 14px;
+      border-radius: 12px;
+      background: #0b111b;
+      border: 1px solid #223047;
+    }
+    .route-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .route-item-top strong {
+      font-size: 1rem;
+    }
+    .route-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      color: #7dd3fc;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+    .route-rows {
+      display: grid;
+      gap: 8px;
+    }
+    .route-row {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr 0.9fr 0.8fr;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #101826;
+      color: #dbeafe;
+      font-size: 0.92rem;
+    }
+    .route-row span:last-child {
+      text-align: right;
+    }
     .footer {
       margin-top: 18px;
       color: #7c8ca3;
@@ -201,6 +280,8 @@
       .controls { grid-template-columns: 1fr; }
       .summary { grid-template-columns: 1fr; }
       .basket-item { grid-template-columns: 1fr; }
+      .route-grid { grid-template-columns: 1fr 1fr; }
+      .route-row { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -267,7 +348,7 @@
         </div>
 
         <div class="note">
-          Next step: connect this panel to the route engine so it can score routes by distance, exchange spread, and delivery constraints.
+          Next step: connect this panel to the route engine so it can score routes by profit, distance, and delivery constraints.
         </div>
       </section>
 
@@ -291,19 +372,54 @@
       </section>
     </div>
 
+    <section class="panel route-results">
+      <h2>Route Output</h2>
+      <div class="route-grid">
+        <div class="route-card">
+          <div class="label">Status</div>
+          <div class="value" id="routeStatus">Idle</div>
+        </div>
+        <div class="route-card">
+          <div class="label">Routes</div>
+          <div class="value" id="routeCount">0</div>
+        </div>
+        <div class="route-card">
+          <div class="label">Best Profit</div>
+          <div class="value" id="routeProfit">0</div>
+        </div>
+        <div class="route-card">
+          <div class="label">Best ROI</div>
+          <div class="value" id="routeRoi">0%</div>
+        </div>
+      </div>
+      <div class="note" id="routeNote">
+        Build a route to see the best exchange pair, profit estimate, and the materials that support it.
+      </div>
+      <div class="route-list" id="routeList"></div>
+    </section>
+
     <div class="footer">
-      PrUn-Tracker Trade Route Planner · prepared for the next routing pass
+      PrUn-Tracker Trade Route Planner - prepared for the next routing pass
     </div>
   </div>
 
   <script>
     const basket = [];
+    let materialCatalog = [];
     const sampleMaterials = [
       { ticker: 'ALG', name: 'Algae' },
       { ticker: 'BAC', name: 'Bacteria' },
       { ticker: 'C', name: 'Carbon' },
       { ticker: 'H', name: 'Hydrogen' },
       { ticker: 'GRN', name: 'Grains' }
+    ];
+    const sampleExchanges = [
+      { code: 'AI1', label: 'Antares (AI1)' },
+      { code: 'CI1', label: 'Katoa (CI1)' },
+      { code: 'CI2', label: 'Vallis (CI2)' },
+      { code: 'IC1', label: 'Moria (IC1)' },
+      { code: 'NC1', label: 'Montem (NC1)' },
+      { code: 'NC2', label: 'Hubur (NC2)' }
     ];
 
     function refreshStats() {
@@ -352,25 +468,174 @@
     }
 
     function populateSuggestions(materials) {
+      materialCatalog = Array.isArray(materials) ? materials.slice() : [];
       const list = document.getElementById('materialSuggestions');
-      list.innerHTML = materials.map(item => `<option value="${item.ticker} - ${item.name}"></option>`).join('');
+      const rows = materialCatalog.length ? materialCatalog : sampleMaterials;
+      list.innerHTML = rows.map(item => `<option value="${item.ticker} - ${item.name}"></option>`).join('');
+    }
+
+    function populateExchanges(exchanges) {
+      const rows = Array.isArray(exchanges) && exchanges.length ? exchanges : sampleExchanges;
+      const origin = document.getElementById('originExchange');
+      const destination = document.getElementById('destinationExchange');
+      origin.innerHTML = ['<option value="">Any origin</option>']
+        .concat(rows.map(ex => `<option value="${ex.code}">${ex.label}</option>`))
+        .join('');
+      destination.innerHTML = ['<option value="">Any destination</option>']
+        .concat(rows.map(ex => `<option value="${ex.code}">${ex.label}</option>`))
+        .join('');
+    }
+
+    function findMaterial(raw) {
+      const cleaned = String(raw || '').trim();
+      const ticker = cleaned.split(' - ')[0].trim().toUpperCase();
+      const rows = materialCatalog.length ? materialCatalog : sampleMaterials;
+      return rows.find(item => item.ticker === ticker || cleaned.toLowerCase() === `${item.ticker} - ${item.name}`.toLowerCase())
+        || rows.find(item => cleaned.toUpperCase().includes(item.ticker))
+        || { ticker, name: cleaned.replace(`${ticker} - `, '') || ticker };
     }
 
     function addSelectedMaterial() {
       const raw = document.getElementById('materialSearch').value.trim();
       if (!raw) return;
       const qty = Math.max(1, parseInt(document.getElementById('materialQty').value, 10) || 1);
-      const ticker = raw.split(' - ')[0].trim().toUpperCase();
-      const match = sampleMaterials.find(item => item.ticker === ticker || raw.toUpperCase().includes(item.ticker));
-      const item = match || { ticker, name: raw.replace(`${ticker} - `, '') || ticker };
+      const item = findMaterial(raw);
       basket.push({ ticker: item.ticker, name: item.name, qty });
       document.getElementById('materialSearch').value = '';
       document.getElementById('materialQty').value = '1';
       renderBasket();
     }
 
+    function formatMoney(value) {
+      const num = Number(value) || 0;
+      return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function formatPercent(value) {
+      const num = Number(value) || 0;
+      return `${num.toFixed(1)}%`;
+    }
+
+    function renderRouteResults(result) {
+      const status = document.getElementById('routeStatus');
+      const count = document.getElementById('routeCount');
+      const profit = document.getElementById('routeProfit');
+      const roi = document.getElementById('routeRoi');
+      const note = document.getElementById('routeNote');
+      const list = document.getElementById('routeList');
+
+      if (!result) {
+        status.textContent = 'Idle';
+        count.textContent = '0';
+        profit.textContent = '0';
+        roi.textContent = '0%';
+        note.textContent = 'Build a route to see the best exchange pair, profit estimate, and the materials that support it.';
+        list.innerHTML = '';
+        return;
+      }
+
+      if (result.error) {
+        status.textContent = 'Error';
+        count.textContent = '0';
+        profit.textContent = '0';
+        roi.textContent = '0%';
+        note.textContent = result.error;
+        list.innerHTML = '';
+        return;
+      }
+
+      const best = result.bestRoute;
+      status.textContent = best ? 'Ready' : 'No route';
+      count.textContent = String(result.routeCount || 0);
+      profit.textContent = best ? formatMoney(best.totalProfit) : '0';
+      roi.textContent = best ? formatPercent(best.avgROI) : '0%';
+      const missing = Array.isArray(result.missingMaterials) ? result.missingMaterials : [];
+      note.textContent = result.note || 'Route ranked by profitability.';
+      if (missing.length) {
+        note.textContent += ` Missing data for ${missing.length} item(s).`;
+      }
+
+      if (!result.routes || !result.routes.length) {
+        list.innerHTML = '<div class="note">No profitable route was found with the current basket and exchange filters.</div>';
+        return;
+      }
+
+      list.innerHTML = result.routes.map(route => {
+        const topItems = (route.items || []).slice(0, 4).map(item => `
+          <div class="route-row">
+            <span>${item.ticker} - ${item.name}</span>
+            <span>${item.qty} units</span>
+            <span>${formatMoney(item.totalProfit)}</span>
+            <span>${formatPercent(item.roi)}</span>
+          </div>
+        `).join('');
+        return `
+          <div class="route-item">
+            <div class="route-item-top">
+              <strong>${route.originLabel} -> ${route.destinationLabel}</strong>
+              <span class="route-pill">${route.itemCount} items | ${formatMoney(route.totalProfit)} profit</span>
+            </div>
+            <div class="route-rows">
+              ${topItems}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function buildRoute() {
-      document.getElementById('statStatus').textContent = basket.length ? 'Route queued' : 'Add cargo first';
+      if (!basket.length) {
+        document.getElementById('statStatus').textContent = 'Add cargo first';
+        renderRouteResults({ error: 'Add at least one material before building a route.' });
+        return;
+      }
+
+      document.getElementById('statStatus').textContent = 'Scoring...';
+      renderRouteResults(null);
+
+      const origin = document.getElementById('originExchange').value;
+      const destination = document.getElementById('destinationExchange').value;
+      const routeMode = document.getElementById('routeMode').value;
+      const payload = JSON.stringify(basket);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && google.script.run.calculateTradeRoute) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            document.getElementById('statStatus').textContent = result && result.bestRoute ? 'Ready' : 'No route';
+            renderRouteResults(result);
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('statStatus').textContent = 'Error';
+            renderRouteResults({ error: error && error.message ? error.message : 'Unable to calculate the route.' });
+          })
+          .calculateTradeRoute(origin, destination, payload, routeMode);
+      } else {
+        const simulated = {
+          routeMode: routeMode,
+          routeCount: 1,
+          bestRoute: {
+            originExchange: origin || 'AI1',
+            destinationExchange: destination || 'CI1',
+            originLabel: origin || 'AI1',
+            destinationLabel: destination || 'CI1',
+            totalProfit: basket.reduce((sum, item) => sum + (item.qty * 1000), 0),
+            avgROI: 18.5,
+            itemCount: basket.length,
+            items: basket.map(item => ({
+              ticker: item.ticker,
+              name: item.name,
+              qty: item.qty,
+              totalProfit: item.qty * 1000,
+              roi: 18.5
+            }))
+          },
+          routes: [],
+          note: 'Offline preview only. Connect to Apps Script to calculate live routes.'
+        };
+        simulated.routes = [simulated.bestRoute];
+        document.getElementById('statStatus').textContent = 'Ready';
+        renderRouteResults(simulated);
+      }
     }
 
     document.getElementById('addMaterialBtn').addEventListener('click', addSelectedMaterial);
@@ -378,18 +643,36 @@
     document.getElementById('clearBtn').addEventListener('click', () => {
       basket.length = 0;
       renderBasket();
+      renderRouteResults(null);
+      document.getElementById('statStatus').textContent = 'Idle';
     });
 
     renderBasket();
+    renderRouteResults(null);
 
-    if (typeof google !== 'undefined' && google.script && google.script.run && google.script.run.getTradeRouteMaterials) {
-      google.script.run.withSuccessHandler(function(materials) {
-        populateSuggestions(materials && materials.length ? materials : sampleMaterials);
-      }).withFailureHandler(function() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      if (google.script.run.getTradeRouteMaterials) {
+        google.script.run.withSuccessHandler(function(materials) {
+          populateSuggestions(materials && materials.length ? materials : sampleMaterials);
+        }).withFailureHandler(function() {
+          populateSuggestions(sampleMaterials);
+        }).getTradeRouteMaterials('');
+      } else {
         populateSuggestions(sampleMaterials);
-      }).getTradeRouteMaterials('');
+      }
+
+      if (google.script.run.getTradeRouteExchanges) {
+        google.script.run.withSuccessHandler(function(exchanges) {
+          populateExchanges(exchanges && exchanges.length ? exchanges : sampleExchanges);
+        }).withFailureHandler(function() {
+          populateExchanges(sampleExchanges);
+        }).getTradeRouteExchanges();
+      } else {
+        populateExchanges(sampleExchanges);
+      }
     } else {
       populateSuggestions(sampleMaterials);
+      populateExchanges(sampleExchanges);
     }
   </script>
 </body>
