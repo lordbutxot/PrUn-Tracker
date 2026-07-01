@@ -516,7 +516,7 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
       const supplyIdx = headers.indexOf('Supply');
       const demandIdx = headers.indexOf('Demand');
       const tradedIdx = headers.indexOf('Traded Volume');
-      const volumeIdx = headers.indexOf('Volume');
+      const volumeIdx = headers.indexOf('Volume per Unit') !== -1 ? headers.indexOf('Volume per Unit') : headers.indexOf('Volume');
 
       const priceMap = {};
       for (let i = headerRowIndex2 + 1; i < data.length; i++) {
@@ -537,59 +537,73 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
         priceMap[ticker].exchanges[exchange] = { askPrice, bidPrice, supply, demand, traded, volume };
       }
 
+      const uniqueExchanges = Array.from(new Set(
+        Object.values(priceMap).flatMap(material => Object.keys(material.exchanges))
+      )).filter(Boolean);
+      const originList = originExchange ? [originExchange] : uniqueExchanges;
+      const destList = destExchange ? [destExchange] : uniqueExchanges;
+      const allMode = !originExchange || !destExchange;
+
       for (const ticker in priceMap) {
         const material = priceMap[ticker];
-        const o = material.exchanges[originExchange];
-        const d = material.exchanges[destExchange];
-        if (!o || !d) continue;
+        for (const originCode of originList) {
+          for (const destCode of destList) {
+            if (originCode === destCode) continue;
+            const o = material.exchanges[originCode];
+            const d = material.exchanges[destCode];
+            if (!o || !d) continue;
 
-        const buyPrice = o.bidPrice || o.askPrice;
-        const sellPrice = d.askPrice || d.bidPrice;
-        if (buyPrice <= 0 && sellPrice <= 0) continue;
+            const buyPrice = o.bidPrice || o.askPrice;
+            const sellPrice = d.askPrice || d.bidPrice;
+            if (buyPrice <= 0 && sellPrice <= 0) continue;
 
-        const profit = sellPrice - buyPrice - transportCost;
-        const volume = o.volume || d.volume || 0;
-        const profitPerM3 = volume > 0 ? profit / volume : 0;
-        const roi = buyPrice > 0 ? (profit / (buyPrice + transportCost)) * 100 : 0;
+            const profit = sellPrice - buyPrice - transportCost;
+            const volume = o.volume || d.volume || 0;
+            const profitPerM3 = volume > 0 ? profit / volume : 0;
+            const roi = buyPrice > 0 ? (profit / (buyPrice + transportCost)) * 100 : 0;
 
-        if (minProfitValue === 0 && minROIValue === 0) {
-          if (profit <= 0) continue;
-        } else {
-          if (minProfitValue > 0 && profit < minProfitValue) continue;
-          if (minROIValue > 0 && roi < minROIValue) continue;
+            if (minProfitValue === 0 && minROIValue === 0) {
+              if (profit <= 0) continue;
+            } else {
+              if (minProfitValue > 0 && profit < minProfitValue) continue;
+              if (minROIValue > 0 && roi < minROIValue) continue;
+            }
+
+            const maxVolume = Math.min(o.supply, d.demand);
+            const totalProfit = profit * maxVolume;
+
+            let opportunityLevel = 'Low';
+            if (totalProfit >= 100000) opportunityLevel = 'Very High';
+            else if (totalProfit >= 50000) opportunityLevel = 'High';
+            else if (totalProfit >= 10000) opportunityLevel = 'Medium';
+
+            const avgTraded = (o.traded + d.traded) / 2;
+            let liquidityLevel = 'Low';
+            if (avgTraded >= 1000) liquidityLevel = 'High';
+            else if (avgTraded >= 100) liquidityLevel = 'Medium';
+
+            opportunities.push({
+              ticker: ticker,
+              name: material.name,
+              buyExchange: originCode,
+              sellExchange: destCode,
+              buyPrice: buyPrice,
+              sellPrice: sellPrice,
+              profit: profit,
+              profitPerM3: profitPerM3,
+              roi: roi,
+              supply: o.supply,
+              demand: d.demand,
+              maxVolume: maxVolume,
+              totalProfit: totalProfit,
+              opportunityLevel: opportunityLevel,
+              liquidityLevel: liquidityLevel,
+              originTraded: o.traded,
+              destTraded: d.traded,
+              avgTraded: avgTraded
+            });
+          }
         }
-
-        const maxVolume = Math.min(o.supply, d.demand);
-        const totalProfit = profit * maxVolume;
-
-        let opportunityLevel = 'Low';
-        if (totalProfit >= 100000) opportunityLevel = 'Very High';
-        else if (totalProfit >= 50000) opportunityLevel = 'High';
-        else if (totalProfit >= 10000) opportunityLevel = 'Medium';
-
-        const avgTraded = (o.traded + d.traded) / 2;
-        let liquidityLevel = 'Low';
-        if (avgTraded >= 1000) liquidityLevel = 'High';
-        else if (avgTraded >= 100) liquidityLevel = 'Medium';
-
-        opportunities.push({
-          ticker: ticker,
-          name: material.name,
-          buyPrice: buyPrice,
-          sellPrice: sellPrice,
-          profit: profit,
-          profitPerM3: profitPerM3,
-          roi: roi,
-          supply: o.supply,
-          demand: d.demand,
-          maxVolume: maxVolume,
-          totalProfit: totalProfit,
-          opportunityLevel: opportunityLevel,
-          liquidityLevel: liquidityLevel,
-          originTraded: o.traded,
-          destTraded: d.traded,
-          avgTraded: avgTraded
-        });
       }
     }
 
@@ -601,8 +615,8 @@ function calculateArbitrage(originExchange, destExchange, minProfit, minROI, tra
     return {
       opportunities,
       count: opportunities.length,
-      originExchange,
-      destExchange,
+      originExchange: originExchange || 'ALL',
+      destExchange: destExchange || 'ALL',
       transportCost,
       debug: debugInfo,
       dataProcessed: true

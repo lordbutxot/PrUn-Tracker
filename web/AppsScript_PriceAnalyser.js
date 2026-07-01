@@ -211,7 +211,7 @@ function getAllData() {
         supply: parseFloat(cell(row, ['Supply'], 12)) || 0,
         demand: parseFloat(cell(row, ['Demand'], 13)) || 0,
         traded: parseFloat(cell(row, ['Traded Volume'], 14)) || 0,
-        volume: parseFloat(cell(row, ['Volume'])) || 0,
+        volume: parseFloat(cell(row, ['Volume per Unit', 'Volume'])) || 0,
         downstreamUses: parseInt(cell(row, ['Downstream Uses', 'InputCount']), 10) || 0,
         profitPerM3: parseFloat(cell(row, ['Profit per m3'])) || 0
       });

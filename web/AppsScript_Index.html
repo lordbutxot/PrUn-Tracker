@@ -1639,7 +1639,7 @@
           <div style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6; font-size: 0.9rem;">
             Compare prices and profitability across all exchanges using your current production costs
           </div>
-          <div id="exchangeComparisonContent" style="max-height: 600px; overflow-y: auto;"></div>
+          <div id="exchangeComparisonContent" style="max-height: none; overflow: visible;"></div>
         </div>
       </div>
       
@@ -1662,7 +1662,7 @@
           <h3>Recommended Recipe</h3>
         </div>
         <div class="collapsible-content collapsed" id="recommendationContentWrapper">
-          <div id="recommendationContent" style="margin-top: 15px; max-height: 600px; overflow-y: auto;"></div>
+          <div id="recommendationContent" style="margin-top: 12px; max-height: none; overflow: visible;"></div>
         </div>
       </div>
       
@@ -1675,7 +1675,7 @@
           <div style="margin: 15px 0; padding: 10px; background: #fef3c7; border-radius: 6px; border-left: 4px solid #f59e0b; font-size: 0.9rem;">
             Compare all recipes for the same building to optimize production
           </div>
-          <div id="buildingComparisonContent" style="max-height: 600px; overflow-y: auto;"></div>
+          <div id="buildingComparisonContent" style="max-height: none; overflow: visible;"></div>
         </div>
       </div>
     </div>
@@ -1723,6 +1723,96 @@
       };
       
       return bonusMap[expertCount] || 0;
+    }
+
+    function parseRecipeOutputs(recipeString) {
+      if (!recipeString || typeof recipeString !== 'string' || !recipeString.includes('=>')) {
+        return [];
+      }
+
+      const outputPart = recipeString.split('=>')[1] || '';
+      return outputPart.split('-').map(item => {
+        const match = item.match(/(\d+)x([A-Z0-9]+)/);
+        return match ? match[2] : item;
+      });
+    }
+
+    function rowProducesMaterial(row, material) {
+      const recipeString = (row && typeof row.recipe === 'string') ? row.recipe : '';
+      if (!recipeString) {
+        return row && row.ticker === material;
+      }
+
+      if (recipeString.includes('=>')) {
+        return parseRecipeOutputs(recipeString).includes(material);
+      }
+
+      if (recipeString.includes(':')) {
+        return row && row.ticker === material;
+      }
+
+      return row && row.ticker === material;
+    }
+
+    function formatRecipeParts(recipeString, material, planet) {
+      const parts = {
+        building: '',
+        inputs: '',
+        outputs: '',
+        isExtraction: false,
+        isFarming: false
+      };
+
+      if (!recipeString || typeof recipeString !== 'string') {
+        return parts;
+      }
+
+      parts.isExtraction = recipeString.startsWith('COL=>') || recipeString.startsWith('EXT=>') || recipeString.startsWith('RIG=>');
+      parts.isFarming = recipeString.startsWith('FRM:') || recipeString.startsWith('ORC:') || recipeString.startsWith('VIN:');
+
+      if (recipeString.includes('=>')) {
+        const recipeSplit = recipeString.split('=>');
+        const leftSide = recipeSplit[0];
+        const outputSide = recipeSplit[1] || '';
+        parts.building = leftSide.split(':')[0];
+
+        const inputPart = leftSide.split(':')[1] || leftSide;
+        parts.inputs = inputPart.split('-').map(item => {
+          const match = item.match(/(\d+)x([A-Z0-9]+)/);
+          return match ? match[1] + ' ' + match[2] : item;
+        }).join(', ');
+
+        if (parts.isExtraction && planet) {
+          const planetFactor = getPlanetFactorClientSide(material, planet);
+          if (planetFactor > 0) {
+            const multiplier = parts.building === 'COL' ? 0.6 : 0.7;
+            const baseCycleTime = parts.building === 'RIG' ? 4.8 : (parts.building === 'COL' ? 6 : 12);
+            const dailyExtraction = (planetFactor * 100) * multiplier;
+            const unitsPerCycle = dailyExtraction / (24 / baseCycleTime);
+            parts.outputs = Math.ceil(unitsPerCycle) + ' ' + material;
+          } else {
+            parts.outputs = parseRecipeOutputs(recipeString).map(item => {
+              const match = item.match(/(\d+)x([A-Z0-9]+)/);
+              return match ? match[1] + ' ' + match[2] : item;
+            }).join(', ');
+          }
+        } else {
+          parts.outputs = parseRecipeOutputs(recipeString).map(item => {
+            const match = item.match(/(\d+)x([A-Z0-9]+)/);
+            return match ? match[1] + ' ' + match[2] : item;
+          }).join(', ');
+        }
+      } else if (recipeString.includes(':')) {
+        parts.building = recipeString.split(':')[0];
+        const inputPart = recipeString.split(':')[1] || '';
+        parts.inputs = inputPart.split('-').map(item => {
+          const match = item.match(/(\d+)x([A-Z0-9]+)/);
+          return match ? match[1] + ' ' + match[2] : item;
+        }).join(', ');
+        parts.outputs = material;
+      }
+
+      return parts;
     }
     
     // Update expert bonus display
@@ -2345,7 +2435,7 @@
       
       const recipes = Array.from(recipesMap.values()).sort((a, b) => a.building.localeCompare(b.building));
       
-      recipeSelect.innerHTML = '<option value="">-- All Recipes (Best Cost) --</option>';
+      recipeSelect.innerHTML = '<option value="">-- All Recipes (Best ROI) --</option>';
       
       if (hasRecipes) {
         recipes.forEach(function(recipe) {
@@ -2503,9 +2593,10 @@
       
       try {
         // Calculate using cached data
-        const calculationData = calculateFromCache(material, exchange, recipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
-        const recommendationData = recipe ? getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus) : null;
-        const exchangeComparisonData = getExchangeComparisonFromCache(material, recipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const recommendationData = getRecommendationFromCache(material, exchange, includeLuxury, customEfficiencyEnabled, customEfficiency, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const selectedRecipe = recipe || (recommendationData && recommendationData.recommended ? recommendationData.recommended.recipe : '');
+        const calculationData = calculateFromCache(material, exchange, selectedRecipe, includeLuxury, customEfficiencyEnabled, customEfficiency, planet, cogcBonus, expertCount, hqBonus, corpHqBonus);
+        const exchangeComparisonData = getExchangeComparisonFromCache(material, selectedRecipe, exchange, cogcBonus, expertCount, hqBonus, corpHqBonus);
         const arbitrageData = getArbitrageOpportunitiesFromCache(exchange, material);
 
         const endTime = performance.now();
@@ -2891,20 +2982,7 @@
       const planet = document.getElementById('planetSelect').value;
       
       for (const row of allData) {
-        // Check if this row's recipe outputs the selected material
-        let rowMatchesMaterial = false;
-        if (row.recipe && row.recipe.includes('=>')) {
-          const outputPart = row.recipe.split('=>')[1];
-          if (outputPart) {
-            const outputs = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
-              return match ? match[2] : item;
-            });
-            if (outputs.includes(material)) {
-              rowMatchesMaterial = true;
-            }
-          }
-        }
+        const rowMatchesMaterial = rowProducesMaterial(row, material);
         
         if (rowMatchesMaterial && (!recipe || row.recipe === recipe)) {
           const exch = row.exchange;
@@ -2973,17 +3051,6 @@
           const profitAsk = row.askPrice - totalCost;
           const roiAsk = totalCost > 0 ? (profitAsk / totalCost) * 100 : 0;
           
-          // Parse recipe outputs
-          let outputDisplay = '';
-          let recipeString = (typeof row.recipe === 'string') ? row.recipe : '';
-          if (typeof recipeString === 'string' && recipeString.includes('=>')) {
-            const outputPart = recipeString.split('=>')[1];
-            outputDisplay = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z0-9]+)/);
-              return match ? match[1] + ' ' + match[2] : item;
-            }).join(', ');
-          }
-          
           exchanges[exch] = {
             exchange: exch,
             askPrice: row.askPrice,
@@ -3014,20 +3081,7 @@
       const recipeComparisons = [];
       
       for (const row of allData) {
-        // Check if this row's recipe outputs the selected material
-        let rowMatchesMaterial = false;
-        if (row.recipe && row.recipe.includes('=>')) {
-          const outputPart = row.recipe.split('=>')[1];
-          if (outputPart) {
-            const outputs = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z]+)/);
-              return match ? match[2] : item;
-            });
-            if (outputs.includes(material)) {
-              rowMatchesMaterial = true;
-            }
-          }
-        }
+        const rowMatchesMaterial = rowProducesMaterial(row, material);
         
         if (rowMatchesMaterial && row.exchange === exchange && row.recipe) {
           let inputCostAsk = row.inputCostAsk;
@@ -3068,33 +3122,13 @@
           const profitAskAsk = row.askPrice - totalCostAsk;
           const roiAskAsk = totalCostAsk > 0 ? (profitAskAsk / totalCostAsk) * 100 : 0;
           
-          // Parse recipe
-          let recipeInputs = '';
-          let recipeOutputs = '';
-          let building = '';
-          
-          if (row.recipe.includes('=>')) {
-            building = row.recipe.split(':')[0];
-            const parts = row.recipe.split('=>');
-            const inputPart = parts[0].split(':')[1] || parts[0];
-            const outputPart = parts[1];
-            
-            recipeInputs = inputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z0-9]+)/);
-              return match ? match[1] + ' ' + match[2] : item;
-            }).join(', ');
-            
-            recipeOutputs = outputPart.split('-').map(item => {
-              const match = item.match(/(\d+)x([A-Z0-9]+)/);
-              return match ? match[1] + ' ' + match[2] : item;
-            }).join(', ');
-          }
+          const recipeParts = formatRecipeParts(row.recipe, material, planet);
           
           recipeComparisons.push({
             recipe: row.recipe,
-            building: building,
-            inputs: recipeInputs,
-            outputs: recipeOutputs,
+            building: recipeParts.building,
+            inputs: recipeParts.inputs,
+            outputs: recipeParts.outputs,
             inputCost: inputCostAsk,
             workforceCost: workforceCostAsk,
             totalCost: totalCostAsk,
@@ -3118,7 +3152,10 @@
         };
       }
       
-      recipeComparisons.sort((a, b) => b.profit - a.profit);
+      recipeComparisons.sort((a, b) => {
+        if (b.roi !== a.roi) return b.roi - a.roi;
+        return b.profit - a.profit;
+      });
       
       return {
         count: recipeComparisons.length,
@@ -3654,7 +3691,7 @@
         return;
       }
       
-      let html = '<div class="recommendation-message">📊 Comparing ' + data.count + ' recipes based on current market prices (Ask prices for inputs)</div>';
+      let html = '<div class="recommendation-message">📊 Comparing ' + data.count + ' recipes by ROI, with the selected product defaulting to the strongest option when no recipe is chosen.</div>';
       
       // Display recommended recipe
       html += buildRecipeCard(data.recommended, true);

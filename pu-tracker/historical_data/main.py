@@ -13,13 +13,14 @@ sys.path.insert(0, str(current_dir))
 
 CACHE_DIR = current_dir.parent / "cache"
 
-def is_market_data_ready():
-    market_file = CACHE_DIR / "market_data.csv"
-    prices_file = CACHE_DIR / "prices_all.csv"
-    for f in [market_file, prices_file]:
-        if f.exists() and f.stat().st_size > 0:
-            return True
-    return False
+def _has_nonempty_file(path):
+    return path.exists() and path.stat().st_size > 0
+
+
+def is_market_data_ready(cache_dir=CACHE_DIR):
+    market_file = cache_dir / "market_data.csv"
+    prices_file = cache_dir / "prices_all.csv"
+    return _has_nonempty_file(market_file) and _has_nonempty_file(prices_file)
 
 def run_script(script_name, description=None, log_file=None):
     if description:

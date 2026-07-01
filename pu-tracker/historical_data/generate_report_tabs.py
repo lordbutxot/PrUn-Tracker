@@ -2495,11 +2495,14 @@ def create_price_analyser_tab(sheets_manager, all_df):
                            'Workforce Cost Ask', 'Workforce Cost Bid',
                            'Amount per Recipe', 'Supply', 'Demand', 'Traded Volume',
                            'Volume', 'Downstream Uses', 'Profit per m3']].copy()
+
+    if 'Volume per Unit' not in reference_df.columns:
+        reference_df['Volume per Unit'] = reference_df['Volume']
     
     # Fill NaN values with 0 for numeric columns
     numeric_cols = ['Ask_Price', 'Bid_Price', 'Input Cost Ask', 'Input Cost Bid', 
                     'Workforce Cost Ask', 'Workforce Cost Bid', 'Amount per Recipe', 'Supply', 'Demand',
-                    'Traded Volume', 'Volume', 'Downstream Uses', 'Profit per m3']
+                    'Traded Volume', 'Volume', 'Volume per Unit', 'Downstream Uses', 'Profit per m3']
     for col in numeric_cols:
         reference_df[col] = reference_df[col].fillna(0)
     

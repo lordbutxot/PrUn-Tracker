@@ -13,6 +13,31 @@ from loaders import (
 
 # ==================== WORKFORCE COST CALCULATIONS ====================
 
+def _iter_workforce_requirements(recipe_info):
+    """Yield workforce type and amount pairs for a recipe."""
+    workforce_requirements = recipe_info.get("WorkforceRequirements", {}) or {}
+    if workforce_requirements:
+        yield from workforce_requirements.items()
+        return
+
+    workforce_type = recipe_info.get("Workforce", None)
+    workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
+    if workforce_type and workforce_amount > 0:
+        yield workforce_type, workforce_amount
+
+
+def _calculate_workforce_consumable_cost_single(wf_type, hours, workforce_amount, wf_consumables, price_getter):
+    if wf_type not in wf_consumables:
+        return 0.0
+
+    workforce_data = wf_consumables[wf_type]
+    total = 0.0
+    for bucket in ("necessary", "luxury"):
+        for ticker, amt_per_hour_per_worker in workforce_data.get(bucket, {}).items():
+            qty = amt_per_hour_per_worker * workforce_amount * hours
+            total += qty * price_getter(ticker)
+    return total
+
 def calculate_workforce_consumable_cost(wf_type, hours, workforce_amount, market_prices, wf_consumables, exchange="AI1"):
     """
     Calculate workforce consumable cost.
@@ -28,27 +53,14 @@ def calculate_workforce_consumable_cost(wf_type, hours, workforce_amount, market
     Returns:
         Total workforce consumable cost as float
     """
-    if wf_type not in wf_consumables:
-        return 0.0
-    
-    workforce_data = wf_consumables[wf_type]
-    total = 0.0
-    
-    # Calculate necessary consumables cost
-    if "necessary" in workforce_data:
-        for ticker, amt_per_hour_per_worker in workforce_data["necessary"].items():
-            qty = amt_per_hour_per_worker * workforce_amount * hours
-            price = get_market_price(ticker, market_prices, exchange)
-            total += qty * price
-    
-    # Calculate luxury consumables cost
-    if "luxury" in workforce_data:
-        for ticker, amt_per_hour_per_worker in workforce_data["luxury"].items():
-            qty = amt_per_hour_per_worker * workforce_amount * hours
-            price = get_market_price(ticker, market_prices, exchange)
-            total += qty * price
-    
-    return total
+    price_getter = lambda ticker: get_market_price(ticker, market_prices, exchange)
+    return _calculate_workforce_consumable_cost_single(
+        wf_type,
+        hours,
+        workforce_amount,
+        wf_consumables,
+        price_getter,
+    )
 
 
 def calculate_workforce_cost_for_recipe(recipe_key, buildingrecipes_df, workforceneeds, market_prices, exchange="AI1"):
@@ -74,28 +86,16 @@ def calculate_workforce_cost_for_recipe(recipe_key, buildingrecipes_df, workforc
         time_minutes = float(recipe_info.get("Time", 0))
         time_hours = time_minutes / 60
         
-        # Check for new WorkforceRequirements structure (dict of all workforce types)
-        workforce_requirements = recipe_info.get("WorkforceRequirements", {})
+        workforce_requirements = list(_iter_workforce_requirements(recipe_info))
         if workforce_requirements:
             total_cost = 0.0
-            for wf_type, wf_amount in workforce_requirements.items():
+            for wf_type, wf_amount in workforce_requirements:
                 if wf_amount > 0:
-                    cost = calculate_workforce_consumable_cost(
+                    total_cost += calculate_workforce_consumable_cost(
                         wf_type, time_hours, wf_amount,
                         market_prices, workforceneeds, exchange
                     )
-                    total_cost += cost
             return total_cost
-        
-        # Fallback to old single-workforce structure for backward compatibility
-        workforce_type = recipe_info.get("Workforce", None)
-        workforce_amount = float(recipe_info.get("WorkforceAmount", 0))
-        
-        if workforce_type and workforce_amount > 0:
-            return calculate_workforce_consumable_cost(
-                workforce_type, time_hours, workforce_amount,
-                market_prices, workforceneeds, exchange
-            )
     except Exception as e:
         print(f"[WARN] Error calculating workforce cost for {recipe_key}: {e}")
     

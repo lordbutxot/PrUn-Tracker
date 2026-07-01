@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrUn Trade Route Planner</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px;
+      padding-bottom: 72px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 26%),
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 24%),
+        linear-gradient(180deg, #05070b 0%, #090d14 100%);
+      color: #e5eef9;
+    }
+    .container {
+      max-width: 1560px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(16, 24, 38, 0.98), rgba(8, 13, 21, 0.98));
+      border: 1px solid #223047;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      padding: 28px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #223047;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      letter-spacing: -0.03em;
+    }
+    .subtitle {
+      margin: 0;
+      color: #93a7bf;
+      max-width: 70ch;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #7dd3fc;
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(20, 32, 51, 0.9), rgba(11, 17, 27, 0.95));
+      border: 1px solid #223047;
+      border-radius: 12px;
+      padding: 18px;
+      min-width: 0;
+    }
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 1.05rem;
+      letter-spacing: 0.01em;
+      color: #dbeafe;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+    label {
+      font-size: 0.82rem;
+      color: #9fb0c4;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    input, select, button {
+      font: inherit;
+    }
+    input, select {
+      background: #080d15;
+      color: #e5eef9;
+      border: 1px solid #223047;
+      border-radius: 10px;
+      padding: 12px 14px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, #0ea5e9, #22c55e); color: #03111d; }
+    .btn-secondary { background: #101826; color: #dbeafe; border: 1px solid #223047; }
+    .btn-ghost { background: transparent; color: #94a3b8; border: 1px dashed #33455f; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      padding: 14px;
+      border-radius: 12px;
+      background: #0b111b;
+      border: 1px solid #223047;
+    }
+    .stat .label {
+      font-size: 0.75rem;
+      color: #93a7bf;
+      margin-bottom: 6px;
+    }
+    .stat .value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #e5eef9;
+    }
+    .basket {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .basket-item {
+      display: grid;
+      grid-template-columns: 1fr 110px 36px;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0b111b;
+      border: 1px solid #223047;
+    }
+    .basket-item strong {
+      display: block;
+      color: #f8fafc;
+    }
+    .basket-item small {
+      color: #93a7bf;
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 10px;
+      background: #101826;
+      border: 1px solid #223047;
+      color: #fca5a5;
+    }
+    .note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      color: #cdeefe;
+      font-size: 0.92rem;
+    }
+    .footer {
+      margin-top: 18px;
+      color: #7c8ca3;
+      font-size: 0.86rem;
+      text-align: center;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr; }
+      .basket-item { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Trade Route Planner</h1>
+        <p class="subtitle">A compact route-building workspace for planning origin-to-destination runs, or future multi-stop profit routes. This is the skeleton layer, ready for the route engine.</p>
+      </div>
+      <div class="tag">Skeleton mode · stock-market UI</div>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Route Inputs</h2>
+        <div class="controls">
+          <div class="control">
+            <label for="originExchange">Origin Exchange</label>
+            <select id="originExchange">
+              <option value="">Any origin</option>
+              <option value="AI1">AI1 - Antares</option>
+              <option value="CI1">CI1 - Katoa</option>
+              <option value="CI2">CI2 - Vallis</option>
+              <option value="NC1">NC1 - Montem</option>
+              <option value="NC2">NC2 - Hubur</option>
+              <option value="IC1">IC1 - Moria</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="destinationExchange">Destination Exchange</label>
+            <select id="destinationExchange">
+              <option value="">Any destination</option>
+              <option value="AI1">AI1 - Antares</option>
+              <option value="CI1">CI1 - Katoa</option>
+              <option value="CI2">CI2 - Vallis</option>
+              <option value="NC1">NC1 - Montem</option>
+              <option value="NC2">NC2 - Hubur</option>
+              <option value="IC1">IC1 - Moria</option>
+            </select>
+          </div>
+          <div class="control" style="grid-column: 1 / -1;">
+            <label for="materialSearch">Add Material</label>
+            <input id="materialSearch" list="materialSuggestions" placeholder="Search a material ticker or name">
+            <datalist id="materialSuggestions"></datalist>
+          </div>
+          <div class="control">
+            <label for="materialQty">Quantity</label>
+            <input id="materialQty" type="number" min="1" step="1" value="1">
+          </div>
+          <div class="control">
+            <label for="routeMode">Route Mode</label>
+            <select id="routeMode">
+              <option value="shortest_profit">Best profit / shortest path</option>
+              <option value="point_to_point">Point A to Point B</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" id="addMaterialBtn">Add Material</button>
+          <button class="btn-secondary" id="buildRouteBtn">Build Route</button>
+          <button class="btn-ghost" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="note">
+          Next step: connect this panel to the route engine so it can score routes by distance, exchange spread, and delivery constraints.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Selected Cargo</h2>
+        <div class="summary">
+          <div class="stat">
+            <div class="label">Items</div>
+            <div class="value" id="statItems">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Units</div>
+            <div class="value" id="statUnits">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Status</div>
+            <div class="value" id="statStatus">Idle</div>
+          </div>
+        </div>
+        <div class="basket" id="basket"></div>
+      </section>
+    </div>
+
+    <div class="footer">
+      PrUn-Tracker Trade Route Planner · prepared for the next routing pass
+    </div>
+  </div>
+
+  <script>
+    const basket = [];
+    const sampleMaterials = [
+      { ticker: 'ALG', name: 'Algae' },
+      { ticker: 'BAC', name: 'Bacteria' },
+      { ticker: 'C', name: 'Carbon' },
+      { ticker: 'H', name: 'Hydrogen' },
+      { ticker: 'GRN', name: 'Grains' }
+    ];
+
+    function refreshStats() {
+      const units = basket.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('statItems').textContent = String(basket.length);
+      document.getElementById('statUnits').textContent = String(units);
+      document.getElementById('statStatus').textContent = basket.length ? 'Ready' : 'Idle';
+    }
+
+    function renderBasket() {
+      const container = document.getElementById('basket');
+      if (!basket.length) {
+        container.innerHTML = '<div class="note">No cargo selected yet. Search for a material, set a quantity, and add it to the route basket.</div>';
+        refreshStats();
+        return;
+      }
+
+      container.innerHTML = basket.map((item, index) => `
+        <div class="basket-item">
+          <div>
+            <strong>${item.ticker}</strong>
+            <small>${item.name}</small>
+          </div>
+          <input type="number" min="1" step="1" value="${item.qty}" data-index="${index}" class="qty-input">
+          <button class="icon-btn" data-index="${index}" aria-label="Remove item">×</button>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('input', (event) => {
+          const idx = parseInt(event.target.getAttribute('data-index'), 10);
+          basket[idx].qty = Math.max(1, parseInt(event.target.value, 10) || 1);
+          refreshStats();
+        });
+      });
+
+      container.querySelectorAll('.icon-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+          const idx = parseInt(event.target.getAttribute('data-index'), 10);
+          basket.splice(idx, 1);
+          renderBasket();
+        });
+      });
+
+      refreshStats();
+    }
+
+    function populateSuggestions(materials) {
+      const list = document.getElementById('materialSuggestions');
+      list.innerHTML = materials.map(item => `<option value="${item.ticker} - ${item.name}"></option>`).join('');
+    }
+
+    function addSelectedMaterial() {
+      const raw = document.getElementById('materialSearch').value.trim();
+      if (!raw) return;
+      const qty = Math.max(1, parseInt(document.getElementById('materialQty').value, 10) || 1);
+      const ticker = raw.split(' - ')[0].trim().toUpperCase();
+      const match = sampleMaterials.find(item => item.ticker === ticker || raw.toUpperCase().includes(item.ticker));
+      const item = match || { ticker, name: raw.replace(`${ticker} - `, '') || ticker };
+      basket.push({ ticker: item.ticker, name: item.name, qty });
+      document.getElementById('materialSearch').value = '';
+      document.getElementById('materialQty').value = '1';
+      renderBasket();
+    }
+
+    function buildRoute() {
+      document.getElementById('statStatus').textContent = basket.length ? 'Route queued' : 'Add cargo first';
+    }
+
+    document.getElementById('addMaterialBtn').addEventListener('click', addSelectedMaterial);
+    document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      basket.length = 0;
+      renderBasket();
+    });
+
+    renderBasket();
+
+    if (typeof google !== 'undefined' && google.script && google.script.run && google.script.run.getTradeRouteMaterials) {
+      google.script.run.withSuccessHandler(function(materials) {
+        populateSuggestions(materials && materials.length ? materials : sampleMaterials);
+      }).withFailureHandler(function() {
+        populateSuggestions(sampleMaterials);
+      }).getTradeRouteMaterials('');
+    } else {
+      populateSuggestions(sampleMaterials);
+    }
+  </script>
+</body>
+</html>
