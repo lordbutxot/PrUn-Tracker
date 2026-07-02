@@ -1,0 +1,18 @@
+# Data Processing and Analysis
+pandas>=2.0.0
+numpy>=1.24.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Google APIs
+gspread>=5.10.0
+google-auth>=2.20.0
+google-api-python-client>=2.95.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+
+# PDF and Image Processing
+pdf2image>=1.16.3
+Pillow>=10.0.0

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrUn Trade Route Planner</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px;
+      padding-bottom: 72px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 26%),
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 24%),
+        linear-gradient(180deg, #05070b 0%, #090d14 100%);
+      color: #e5eef9;
+    }
+    .container {
+      max-width: 1560px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(16, 24, 38, 0.98), rgba(8, 13, 21, 0.98));
+      border: 1px solid #223047;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      padding: 28px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #223047;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      letter-spacing: -0.03em;
+    }
+    .subtitle {
+      margin: 0;
+      color: #93a7bf;
+      max-width: 70ch;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #7dd3fc;
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(20, 32, 51, 0.9), rgba(11, 17, 27, 0.95));
+      border: 1px solid #223047;
+      border-radius: 12px;
+      padding: 18px;
+      min-width: 0;
+    }
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 1.05rem;
+      letter-spacing: 0.01em;
+      color: #dbeafe;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+    label {
+      font-size: 0.82rem;
+      color: #9fb0c4;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    input, select, button {
+      font: inherit;
+    }
+    input, select {
+      background: #080d15;
+      color: #e5eef9;
+      border: 1px solid #223047;
+      border-radius: 10px;
+      padding: 12px 14px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, #0ea5e9, #22c55e); color: #03111d; }
+    .btn-secondary { background: #101826; color: #dbeafe; border: 1px solid #223047; }
+    .btn-ghost { background: transparent; color: #94a3b8; border: 1px dashed #33455f; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      padding: 14px;
+      border-radius: 12px;
+      background: #0b111b;
+      border: 1px solid #223047;
+    }
+    .stat .label {
+      font-size: 0.75rem;
+      color: #93a7bf;
+      margin-bottom: 6px;
+    }
+    .stat .value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #e5eef9;
+    }
+    .basket {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .basket-item {
+      display: grid;
+      grid-template-columns: 1fr 110px 36px;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0b111b;
+      border: 1px solid #223047;
+    }
+    .basket-item strong {
+      display: block;
+      color: #f8fafc;
+    }
+    .basket-item small {
+      color: #93a7bf;
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 10px;
+      background: #101826;
+      border: 1px solid #223047;
+      color: #fca5a5;
+    }
+    .note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      color: #cdeefe;
+      font-size: 0.92rem;
+    }
+    .route-results {
+      margin-top: 18px;
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .route-card {
+      padding: 14px;
+      border-radius: 12px;
+      background: #0b111b;
+      border: 1px solid #223047;
+      min-width: 0;
+    }
+    .route-card .label {
+      font-size: 0.74rem;
+      color: #93a7bf;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .route-card .value {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #e5eef9;
+      word-break: break-word;
+    }
+    .route-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .route-item {
+      padding: 14px;
+      border-radius: 12px;
+      background: #0b111b;
+      border: 1px solid #223047;
+    }
+    .route-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .route-item-top strong {
+      font-size: 1rem;
+    }
+    .route-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      color: #7dd3fc;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+    .route-rows {
+      display: grid;
+      gap: 8px;
+    }
+    .route-row {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr 0.9fr 0.8fr;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #101826;
+      color: #dbeafe;
+      font-size: 0.92rem;
+    }
+    .route-row span:last-child {
+      text-align: right;
+    }
+    .footer {
+      margin-top: 18px;
+      color: #7c8ca3;
+      font-size: 0.86rem;
+      text-align: center;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr; }
+      .basket-item { grid-template-columns: 1fr; }
+      .route-grid { grid-template-columns: 1fr 1fr; }
+      .route-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+        padding-bottom: 72px;
+      }
+
+      .container {
+        padding: 16px;
+        border-radius: 0;
+      }
+
+      .header,
+      .route-item-top {
+        align-items: flex-start;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .actions button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .route-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .route-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .route-row span:last-child {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+        padding-bottom: 72px;
+      }
+
+      .container {
+        padding: 12px;
+      }
+
+      .basket-item,
+      .route-item,
+      .route-card,
+      .stat,
+      .note {
+        padding: 12px;
+      }
+
+      .tag {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Trade Route Planner</h1>
+        <p class="subtitle">Plan profitable cargo runs by comparing exchange pairs, ship profiles, transit burden, and material mix in one compact route workspace.</p>
+      </div>
+      <div class="tag">Live route scoring | stock-market UI</div>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Route Inputs</h2>
+        <div class="controls">
+          <div class="control">
+            <label for="originExchange">Origin Exchange</label>
+            <select id="originExchange">
+              <option value="">Any origin</option>
+              <option value="AI1">AI1 - Antares</option>
+              <option value="CI1">CI1 - Katoa</option>
+              <option value="CI2">CI2 - Vallis</option>
+              <option value="NC1">NC1 - Montem</option>
+              <option value="NC2">NC2 - Hubur</option>
+              <option value="IC1">IC1 - Moria</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="destinationExchange">Destination Exchange</label>
+            <select id="destinationExchange">
+              <option value="">Any destination</option>
+              <option value="AI1">AI1 - Antares</option>
+              <option value="CI1">CI1 - Katoa</option>
+              <option value="CI2">CI2 - Vallis</option>
+              <option value="NC1">NC1 - Montem</option>
+              <option value="NC2">NC2 - Hubur</option>
+              <option value="IC1">IC1 - Moria</option>
+            </select>
+          </div>
+          <div class="control" style="grid-column: 1 / -1;">
+            <label for="materialSearch">Add Material</label>
+            <input id="materialSearch" list="materialSuggestions" placeholder="Search a material ticker or name">
+            <datalist id="materialSuggestions"></datalist>
+          </div>
+          <div class="control">
+            <label for="materialQty">Quantity</label>
+            <input id="materialQty" type="number" min="1" step="1" value="1">
+          </div>
+          <div class="control">
+            <label for="routeMode">Route Mode</label>
+            <select id="routeMode">
+              <option value="efficiency">Profit per transit cost</option>
+              <option value="point_to_point">Point A to Point B</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="shipProfile">Ship Profile</label>
+            <select id="shipProfile">
+              <option value="freighter">Freighter - balanced cargo</option>
+              <option value="runner">Runner - agile, low load</option>
+              <option value="hauler">Heavy Hauler - deep cargo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" id="addMaterialBtn">Add Material</button>
+          <button class="btn-secondary" id="buildRouteBtn">Build Route</button>
+          <button class="btn-ghost" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="note">
+          Leave origin or destination empty to scan the full market and surface the strongest routes for your selected cargo.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Selected Cargo</h2>
+        <div class="summary">
+          <div class="stat">
+            <div class="label">Items</div>
+            <div class="value" id="statItems">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Units</div>
+            <div class="value" id="statUnits">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Status</div>
+            <div class="value" id="statStatus">Idle</div>
+          </div>
+        </div>
+        <div class="note" id="shipNote">
+          Ship profile and cargo mix will influence the route score once you build a route.
+        </div>
+        <div class="basket" id="basket"></div>
+      </section>
+    </div>
+
+    <section class="panel route-results" style="margin-top: 18px;">
+      <h2>Route Output</h2>
+      <div class="route-grid" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px;">
+        <div class="route-card">
+          <div class="label">Status</div>
+          <div class="value" id="routeStatus">Idle</div>
+        </div>
+        <div class="route-card">
+          <div class="label">Routes</div>
+          <div class="value" id="routeCount">0</div>
+        </div>
+        <div class="route-card">
+          <div class="label">Best Net</div>
+          <div class="value" id="routeProfit">0</div>
+        </div>
+        <div class="route-card">
+          <div class="label">Transit Load</div>
+          <div class="value" id="routeRoi">0.00</div>
+        </div>
+      </div>
+      <div class="note" id="routeNote">
+        Build a route to compare exchange pairs, adjusted profit, cargo volume, and transit burden for your selected materials.
+      </div>
+      <div class="route-list" id="routeList"></div>
+    </section>
+
+    <div class="footer">
+      PrUn-Tracker Trade Route Planner - route scoring ready
+    </div>
+  </div>
+
+  <script>
+    const basket = [];
+    let materialCatalog = [];
+    let availableShipProfiles = [];
+    const sampleMaterials = [
+      { ticker: 'ALG', name: 'Algae' },
+      { ticker: 'BAC', name: 'Bacteria' },
+      { ticker: 'C', name: 'Carbon' },
+      { ticker: 'H', name: 'Hydrogen' },
+      { ticker: 'GRN', name: 'Grains' }
+    ];
+    const fallbackShipProfiles = {
+      freighter: { key: 'freighter', label: 'Freighter', engineBurn: 1.0, cargoCapacity: 900, loadPenalty: 0.9, mixPenalty: 0.14, handlingPenalty: 0.04 },
+      runner: { key: 'runner', label: 'Runner', engineBurn: 0.85, cargoCapacity: 420, loadPenalty: 0.65, mixPenalty: 0.1, handlingPenalty: 0.03 },
+      hauler: { key: 'hauler', label: 'Heavy Hauler', engineBurn: 1.15, cargoCapacity: 1500, loadPenalty: 1.2, mixPenalty: 0.18, handlingPenalty: 0.06 }
+    };
+    const exchangeOrder = ['AI1', 'CI1', 'CI2', 'IC1', 'NC1', 'NC2'];
+
+    function refreshStats() {
+      const units = basket.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('statItems').textContent = String(basket.length);
+      document.getElementById('statUnits').textContent = String(units);
+      document.getElementById('statStatus').textContent = basket.length ? 'Ready' : 'Idle';
+    }
+
+    function renderBasket() {
+      const container = document.getElementById('basket');
+      if (!basket.length) {
+        container.innerHTML = '<div class="note">No cargo selected yet. Search for a material, set a quantity, and add it to the route basket.</div>';
+        refreshStats();
+        return;
+      }
+
+      container.innerHTML = basket.map((item, index) => `
+        <div class="basket-item">
+          <div>
+            <strong>${item.ticker}</strong>
+            <small>${item.name}</small>
+          </div>
+          <input type="number" min="1" step="1" value="${item.qty}" data-index="${index}" class="qty-input">
+          <button class="icon-btn" data-index="${index}" aria-label="Remove item">×</button>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('input', (event) => {
+          const idx = parseInt(event.target.getAttribute('data-index'), 10);
+          basket[idx].qty = Math.max(1, parseInt(event.target.value, 10) || 1);
+          refreshStats();
+        });
+      });
+
+      container.querySelectorAll('.icon-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+          const idx = parseInt(event.target.getAttribute('data-index'), 10);
+          basket.splice(idx, 1);
+          renderBasket();
+        });
+      });
+
+      refreshStats();
+    }
+
+    function populateSuggestions(materials) {
+      const list = document.getElementById('materialSuggestions');
+      materialCatalog = Array.isArray(materials) && materials.length ? materials.slice() : sampleMaterials.slice();
+      const rows = materialCatalog.length ? materialCatalog : sampleMaterials;
+      list.innerHTML = rows.map(item => `<option value="${item.ticker} - ${item.name}"></option>`).join('');
+    }
+
+    function populateExchanges(exchanges) {
+      const rows = Array.isArray(exchanges) && exchanges.length ? exchanges : exchangeOrder.map(code => ({ code, label: code }));
+      const origin = document.getElementById('originExchange');
+      const destination = document.getElementById('destinationExchange');
+      origin.innerHTML = ['<option value="">Any origin</option>']
+        .concat(rows.map(ex => `<option value="${ex.code}">${ex.label}</option>`))
+        .join('');
+      destination.innerHTML = ['<option value="">Any destination</option>']
+        .concat(rows.map(ex => `<option value="${ex.code}">${ex.label}</option>`))
+        .join('');
+    }
+
+    function populateShipProfiles(profiles) {
+      const rows = Array.isArray(profiles) && profiles.length
+        ? profiles
+        : Object.keys(fallbackShipProfiles).map(key => fallbackShipProfiles[key]);
+      const select = document.getElementById('shipProfile');
+      availableShipProfiles = rows.slice();
+      select.innerHTML = rows.map(profile => {
+        const capacity = Number(profile.cargoCapacity) || 0;
+        return `<option value="${profile.key}">${profile.label}${capacity ? ` - ${formatMoney(capacity)} m3` : ''}</option>`;
+      }).join('');
+    }
+
+    function getSelectedShipProfile() {
+      const key = document.getElementById('shipProfile').value || 'freighter';
+      const liveProfile = availableShipProfiles.find(profile => profile.key === key);
+      if (liveProfile) {
+        return liveProfile;
+      }
+      return fallbackShipProfiles[key] || fallbackShipProfiles.freighter;
+    }
+
+    function findMaterial(raw) {
+      const cleaned = String(raw || '').trim();
+      const ticker = cleaned.split(' - ')[0].trim().toUpperCase();
+      const rows = materialCatalog.length ? materialCatalog : sampleMaterials;
+      return rows.find(item => item.ticker === ticker || cleaned.toLowerCase() === `${item.ticker} - ${item.name}`.toLowerCase())
+        || rows.find(item => cleaned.toUpperCase().includes(item.ticker))
+        || { ticker, name: cleaned.replace(`${ticker} - `, '') || ticker };
+    }
+
+    function formatMoney(value) {
+      const num = Number(value) || 0;
+      return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function formatSignedMoney(value) {
+      const num = Number(value) || 0;
+      const prefix = num > 0 ? '+' : '';
+      return `${prefix}${formatMoney(num)}`;
+    }
+
+    function formatNumber(value) {
+      const num = Number(value) || 0;
+      return num.toFixed(2);
+    }
+
+    function formatVolume(value) {
+      const num = Number(value) || 0;
+      return `${num.toLocaleString(undefined, {
+        minimumFractionDigits: num > 0 && num < 10 ? 2 : 0,
+        maximumFractionDigits: 2
+      })} m3`;
+    }
+
+    function addSelectedMaterial() {
+      const raw = document.getElementById('materialSearch').value.trim();
+      if (!raw) return;
+      const qty = Math.max(1, parseInt(document.getElementById('materialQty').value, 10) || 1);
+      const item = findMaterial(raw);
+      const existing = basket.find(entry => entry.ticker === item.ticker);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        basket.push({ ticker: item.ticker, name: item.name, qty });
+      }
+      document.getElementById('materialSearch').value = '';
+      document.getElementById('materialQty').value = '1';
+      renderBasket();
+    }
+
+    function renderRouteResults(result) {
+      const status = document.getElementById('routeStatus');
+      const count = document.getElementById('routeCount');
+      const profit = document.getElementById('routeProfit');
+      const transit = document.getElementById('routeRoi');
+      const note = document.getElementById('routeNote');
+      const list = document.getElementById('routeList');
+
+      if (!result) {
+        status.textContent = 'Idle';
+        count.textContent = '0';
+        profit.textContent = '0';
+        transit.textContent = '0.00';
+        note.textContent = 'Build a route to compare exchange pairs, adjusted profit, cargo volume, and transit burden for your selected materials.';
+        list.innerHTML = '';
+        return;
+      }
+
+      if (result.error) {
+        status.textContent = 'Error';
+        count.textContent = '0';
+        profit.textContent = '0';
+        transit.textContent = '0.00';
+        note.textContent = result.error;
+        list.innerHTML = '';
+        return;
+      }
+
+      const best = result.bestRoute;
+      status.textContent = best ? 'Ready' : 'No route';
+      count.textContent = String(result.routeCount || 0);
+      profit.textContent = best ? formatSignedMoney(best.adjustedProfit) : '0';
+      transit.textContent = best ? formatNumber(best.transitIndex) : '0.00';
+
+      const shipLabel = result.shipProfile ? result.shipProfile.label : 'Freighter';
+      note.textContent = result.note || 'Route ranked by operational efficiency.';
+      if (best) {
+        note.textContent += ` Ship profile: ${shipLabel}. Best route moves ${formatVolume(best.totalVolume)} across ${formatMoney(best.totalUnits)} units.`;
+      }
+      if (result.missingMaterials && result.missingMaterials.length) {
+        const missingSummary = result.missingMaterials
+          .slice(0, 3)
+          .map(item => `${item.ticker} (${item.reason})`)
+          .join(', ');
+        note.textContent += ` Missing from route scan: ${missingSummary}${result.missingMaterials.length > 3 ? ', ...' : ''}.`;
+      }
+
+      if (!result.routes || !result.routes.length) {
+        list.innerHTML = '<div class="note">No profitable route was found with the current basket and exchange filters.</div>';
+        return;
+      }
+
+      list.innerHTML = result.routes.map(route => {
+        const topItems = (route.items || []).map(item => `
+          <div class="route-row">
+            <span>${item.ticker} - ${item.name}</span>
+            <span>${formatMoney(item.qty)} units | ${formatVolume(item.cargoVolume)}</span>
+            <span>${formatSignedMoney(item.adjustedProfit)} net | ${formatSignedMoney(item.unitProfit)}/unit</span>
+            <span>${item.buyExchange} ${formatMoney(item.buyPrice)} -> ${item.sellExchange} ${formatMoney(item.sellPrice)}</span>
+          </div>
+        `).join('');
+        const routeWarning = route.adjustedProfit <= 0
+          ? '<div class="note">This route is operationally weak after transit burden. It may still be useful for stocking runs or manual follow-up.</div>'
+          : '';
+        return `
+          <div class="route-item">
+            <div class="route-item-top">
+              <strong>${route.originLabel} -> ${route.destinationLabel}</strong>
+              <span class="route-pill">${route.itemCount} items | ${formatSignedMoney(route.adjustedProfit)} net | ${formatNumber(route.transitIndex)} transit</span>
+            </div>
+            <div class="note">Gross ${formatSignedMoney(route.totalProfit)} | Volume ${formatVolume(route.totalVolume)} | Units ${formatMoney(route.totalUnits)} | Mode ${route.routeMode === 'point_to_point' ? 'Point to point' : 'Efficiency'}</div>
+            ${routeWarning}
+            <div class="route-rows">
+              ${topItems}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function buildRoute() {
+      if (!basket.length) {
+        document.getElementById('statStatus').textContent = 'Add cargo first';
+        renderRouteResults({ error: 'Add at least one material before building a route.' });
+        return;
+      }
+
+      document.getElementById('statStatus').textContent = 'Scoring...';
+      renderRouteResults(null);
+
+      const origin = document.getElementById('originExchange').value;
+      const destination = document.getElementById('destinationExchange').value;
+      const routeMode = document.getElementById('routeMode').value;
+      const shipProfile = document.getElementById('shipProfile').value;
+      const payload = JSON.stringify(basket);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && google.script.run.calculateTradeRoute) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            document.getElementById('statStatus').textContent = result && result.bestRoute ? 'Ready' : 'No route';
+            renderRouteResults(result);
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('statStatus').textContent = 'Error';
+            renderRouteResults({ error: error && error.message ? error.message : 'Unable to calculate the route.' });
+          })
+          .calculateTradeRoute(origin, destination, payload, routeMode, shipProfile);
+      } else {
+        const profile = getSelectedShipProfile();
+        const totalUnits = basket.reduce((sum, item) => sum + item.qty, 0);
+        const totalVolume = basket.reduce((sum, item) => sum + item.qty, 0);
+        const simulatedTransit = profile.engineBurn + (totalUnits * 0.02);
+        const simulatedProfit = basket.reduce((sum, item) => sum + (item.qty * 1000), 0);
+        const simulated = {
+          routeMode: routeMode,
+          routeCount: 1,
+          shipProfile: profile,
+          bestRoute: {
+            originExchange: origin || 'AI1',
+            destinationExchange: destination || 'CI1',
+            originLabel: origin || 'AI1',
+            destinationLabel: destination || 'CI1',
+            adjustedProfit: simulatedProfit,
+            totalProfit: simulatedProfit,
+            totalVolume: totalVolume,
+            totalUnits: totalUnits,
+            transitIndex: simulatedTransit,
+            itemCount: basket.length,
+            routeMode: routeMode,
+            items: basket.map(item => ({
+              ticker: item.ticker,
+              name: item.name,
+              qty: item.qty,
+              buyExchange: origin || 'AI1',
+              sellExchange: destination || 'CI1',
+              buyPrice: 100,
+              sellPrice: 1100,
+              unitProfit: 1000,
+              adjustedProfit: item.qty * 1000,
+              cargoVolume: item.qty,
+              transitCost: simulatedTransit / Math.max(1, basket.length)
+            }))
+          },
+          routes: [],
+          note: 'Offline preview only. Connect to Apps Script to calculate live routes.'
+        };
+        simulated.routes = [simulated.bestRoute];
+        document.getElementById('statStatus').textContent = 'Ready';
+        renderRouteResults(simulated);
+      }
+    }
+
+    document.getElementById('addMaterialBtn').addEventListener('click', addSelectedMaterial);
+    document.getElementById('buildRouteBtn').addEventListener('click', buildRoute);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      basket.length = 0;
+      renderBasket();
+      renderRouteResults(null);
+      document.getElementById('statStatus').textContent = 'Idle';
+    });
+
+    renderBasket();
+    renderRouteResults(null);
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      if (google.script.run.getTradeRouteMaterials) {
+        google.script.run.withSuccessHandler(function(materials) {
+          populateSuggestions(materials && materials.length ? materials : sampleMaterials);
+        }).withFailureHandler(function() {
+          populateSuggestions(sampleMaterials);
+        }).getTradeRouteMaterials('');
+      } else {
+        populateSuggestions(sampleMaterials);
+      }
+
+      if (google.script.run.getTradeRouteExchanges) {
+        google.script.run.withSuccessHandler(function(exchanges) {
+          populateExchanges(exchanges && exchanges.length ? exchanges : []);
+        }).withFailureHandler(function() {
+          populateExchanges([]);
+        }).getTradeRouteExchanges();
+      } else {
+        populateExchanges([]);
+      }
+
+      if (google.script.run.getTradeRouteShipProfiles) {
+        google.script.run.withSuccessHandler(function(profiles) {
+          populateShipProfiles(profiles && profiles.length ? profiles : []);
+        }).withFailureHandler(function() {
+          populateShipProfiles([]);
+        }).getTradeRouteShipProfiles();
+      } else {
+        populateShipProfiles([]);
+      }
+    } else {
+      populateSuggestions(sampleMaterials);
+      populateExchanges([]);
+      populateShipProfiles([]);
+    }
+  </script>
+</body>
+</html>
